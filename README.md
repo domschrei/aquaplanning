@@ -24,6 +24,8 @@ The framework is built using Maven. E.g. using Eclipse, the project can be direc
 
 ## Usage
 
-Aquaplanning can be used as an off-the-shelf planner; you can specify a domain file and a problem file as arguments (in that order), and it will attempt to parse, ground, and solve the problem. When you want to use your own planner, implement the Planner interface and take a look at the DefaultPlanner class as a point of reference. The same holds for custom grounding procedures (Grounder, DefaultGrounder).
+Aquaplanning can be used as an off-the-shelf planner; you can specify a domain file and a problem file as arguments (in that order), and it will attempt to parse, ground, and solve the problem. You can try the files provided in the `testfiles/` directory.
+
+When you want to use your own planner, implement the Planner interface and take a look at the DefaultPlanner class as a point of reference. Same holds for custom grounding procedures (Grounder, DefaultGrounder).
 
 If you find any bugs or you consider something to be missing, please let us know. We appreciate receiving issues and/or pull requests!
