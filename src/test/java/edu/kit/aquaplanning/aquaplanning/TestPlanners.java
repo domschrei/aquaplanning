@@ -21,8 +21,7 @@ public class TestPlanners extends TestCase {
 		testPlannerOnProblem(planner, new ProblemParser().parse("testfiles/childsnack/domain.pddl", "testfiles/childsnack/p01.pddl"));
 		testPlannerOnProblem(planner, new ProblemParser().parse("testfiles/gripper/domain.pddl", "testfiles/gripper/p01.pddl"));
 		testPlannerOnProblem(planner, new ProblemParser().parse("testfiles/rover/domain.pddl", "testfiles/rover/p01.pddl"));
-		testPlannerOnProblem(planner, new ProblemParser().parse("testfiles/rpg/domain.pddl", "testfiles/rpg/p01.pddl"));
-		testPlannerOnProblem(planner, new ProblemParser().parse("testfiles/rpg/domain_extended.pddl", "testfiles/rpg/p01_extended.pddl"));
+		testPlannerOnProblem(planner, new ProblemParser().parse("testfiles/TM/domain.pddl", "testfiles/TM/p_det.pddl"));
 	}
 	
 	private void testPlannerOnProblem(Planner planner, PlanningProblem problem) {
