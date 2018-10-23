@@ -1,6 +1,6 @@
 # Aquaplanning – QUick Automated Planning
 
-This is a Java framework for Automated Planning, developed by Tomáš Balyo and Dominik Schreiber for the lecture _Automated Planning and Scheduling_ at Karlsruhe Institute of Technology (KIT). It is meant as a simple, but extensible and reasonably powerful planning environment for PDDL problems, for educational and any other means.
+This is a Java framework for Automated Planning, developed by Tomáš Balyo and Dominik Schreiber for the lecture [Automated Planning and Scheduling](https://baldur.iti.kit.edu/plan/) at Karlsruhe Institute of Technology (KIT). It is meant as a simple, but extensible and reasonably powerful planning environment for PDDL problems, for educational and any other means.
 
 ## Features
 
@@ -8,11 +8,15 @@ Aquaplanning supports PDDL (Planning Domain Description Language) files as an in
 
 * Basic STRIPS planning with typing
 * Negative goals
-* Equality (as a predicate "=" for objects)
-* Conditional effects
-* Universal quantifications for preconditions, effects, and goals
+* Equality (as a universal predicate `(= obj1 obj2)`)
+* Conditional effects (`when (...) (...)`)
+* Universal quantifications (inside preconditions, effects, initial state and goal)
     - Conditional effects and quantifications cannot be used in a nested way right now.
-* Action costs (in its basic form, with constant cost per operator)
+* Action costs (in its basic form `(:function total-cost - number)`, with constant positive cost per operator)
+
+These features (minus any mentioned restrictions) are more or less equivalent with the following [PDDL 3.1](https://helios.hud.ac.uk/scommv/IPC-14/repository/kovacs-pddl-3.1-2011.pdf) requirements:
+	
+	:strips :typing :negative-preconditions :conditional-effects :equality :universal-preconditions :action-cost
 
 For planning problems using these features (or any subset), a full representation of the read problem is available in the form of Java objects after parsing, as well as a separate representation after grounding the problem.
 
