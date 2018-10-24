@@ -99,7 +99,19 @@ public class Action {
 		this.cost = cost;
 	}
 	
-	public double getCost() {
+	public int getCost() {
 		return cost;
+	}
+
+	public List<Atom> getPreconditions() {
+		return preconditions;
+	}
+
+	public List<Atom> getEffects() {
+		return effects;
+	}
+
+	public List<ConditionalEffect> getConditionalEffects() {
+		return conditionalEffects;
 	}
 }
