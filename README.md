@@ -20,7 +20,9 @@ These features (minus any mentioned restrictions) are more or less equivalent wi
 
 For planning problems using these features (or any subset), a full representation of the read problem is available in the form of Java objects after parsing, as well as a separate representation after grounding the problem.
 
-Currently, Aquaplanning features a trivial (but complete) grounding procedure and an equally trivial forward search planner. Better algorithms will be added. At the end of the planning pipeline, a tiny plan validator can be employed to ensure the planner's correctness.
+Currently, Aquaplanning features two grounding procedures: a naïve full enumeration of atoms and actions, and a state-space reachability analysis similar to the GraphPlan approach.
+
+A trivial forward search is provided as a planner. (Better algorithms will be added in the future.) At the end of the planning pipeline, a tiny plan validator can be employed to ensure the planner's correctness.
 
 ## Building and installing
 
