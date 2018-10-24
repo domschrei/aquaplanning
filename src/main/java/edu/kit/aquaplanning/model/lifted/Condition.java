@@ -49,10 +49,39 @@ public class Condition extends AbstractCondition {
 		return c;
 	}
 	
+	@Override
+	public Condition getConditionBoundToArguments(List<Argument> refArgs, List<Argument> argValues) {
+		
+		Condition newCondition = new Condition(predicate);
+		newCondition.negated = negated;
+		for (int condArgIdx = 0; condArgIdx < arguments.size(); condArgIdx++) {
+			Argument condArg = arguments.get(condArgIdx);
+			if (!condArg.isConstant()) {
+				boolean isBound = false;
+				for (int refArgIdx = 0; refArgIdx < refArgs.size(); refArgIdx++) {
+					Argument refArg = refArgs.get(refArgIdx);
+					if (refArg.getName().equals(condArg.getName())) {
+						newCondition.addArgument(argValues.get(refArgIdx));
+						isBound = true;
+						break;
+					}
+				}
+				if (!isBound) {
+					// The variable is not bound by the provided arguments;
+					// it must be part of a quantification
+					newCondition.addArgument(condArg);
+				}
+			} else {
+				newCondition.addArgument(condArg);
+			}
+		}
+		return newCondition;
+	}
+	
 	public Condition copy() {
 		
 		Condition c = new Condition(predicate);
-		arguments.forEach(arg -> c.addArgument(arg));
+		arguments.forEach(arg -> c.addArgument(arg.copy()));
 		c.negated = negated;
 		return c;
 	}

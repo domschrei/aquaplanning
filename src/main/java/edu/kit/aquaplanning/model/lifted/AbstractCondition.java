@@ -1,5 +1,7 @@
 package edu.kit.aquaplanning.model.lifted;
 
+import java.util.List;
+
 public abstract class AbstractCondition {
 
 	public enum ConditionType {
@@ -15,4 +17,6 @@ public abstract class AbstractCondition {
 	public ConditionType getConditionType() {
 		return conditionType;
 	}
+	
+	public abstract AbstractCondition getConditionBoundToArguments(List<Argument> refArgs, List<Argument> argValues);
 }

@@ -9,7 +9,7 @@ public class PlanningProblem {
 	private String domainName;
 	private String problemName;
 	private Map<String, Type> types;
-	private List<Constant> constants; // both from domain and problem
+	private List<Argument> constants; // both from domain and problem
 	private Map<String, Predicate> predicates;
 	private List<Operator> operators;
 	private List<Condition> initialState;
@@ -18,7 +18,7 @@ public class PlanningProblem {
 	private boolean hasActionCosts;
 	
 	public PlanningProblem(String domainName, String problemName, Map<String, Type> types, 
-			List<Constant> constants, Map<String, Predicate> predicates,
+			List<Argument> constants, Map<String, Predicate> predicates,
 			List<Operator> operators, List<Condition> initialState, List<Condition> goals, 
 			List<Quantification> quantifiedGoals, boolean hasActionCosts) {
 		super();
@@ -32,12 +32,6 @@ public class PlanningProblem {
 		this.goals = goals;
 		this.quantifiedGoals = quantifiedGoals;
 		this.hasActionCosts = hasActionCosts;
-	}
-	
-	public boolean isConstantOfType(Constant constant, Type type) {
-		
-		Type constType = constant.getType();
-		return isTypeSupertypeOfType(constType, type);
 	}
 	
 	public boolean isArgumentOfType(Argument arg, Type type) {
@@ -80,7 +74,7 @@ public class PlanningProblem {
 		return types.get(name);
 	}
 	
-	public List<Constant> getConstants() {
+	public List<Argument> getConstants() {
 		return constants;
 	}
 	
@@ -124,7 +118,7 @@ public class PlanningProblem {
 				str.append("  " + type + "\n");
 		}
 		str.append("Constants:\n");
-		for (Constant c : constants) {
+		for (Argument c : constants) {
 			str.append("  " + c + "\n");
 		}
 		str.append("Predicates:\n");

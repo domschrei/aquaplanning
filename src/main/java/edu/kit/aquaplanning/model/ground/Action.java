@@ -80,6 +80,17 @@ public class Action {
 		return out;
 	}
 	
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null) return false;
+		return hashCode() == obj.hashCode();
+	}
+	
+	@Override
+	public int hashCode() {
+		return toString().hashCode();
+	}
+	
 	public String getName() {
 		return name;
 	}

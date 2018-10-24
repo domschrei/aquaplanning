@@ -31,6 +31,19 @@ public class ConsequentialCondition extends AbstractCondition {
 	}
 	
 	@Override
+	public ConsequentialCondition getConditionBoundToArguments(List<Argument> refArgs, List<Argument> argValues) {
+		
+		ConsequentialCondition c = new ConsequentialCondition();
+		for (Condition cond : prerequisites) {
+			c.addPrerequisite(cond.getConditionBoundToArguments(refArgs, argValues));
+		}
+		for (Condition cond : consequences) {
+			c.addConsequence(cond.getConditionBoundToArguments(refArgs, argValues));
+		}
+		return c;
+	}
+	
+	@Override
 	public String toString() {
 		String out = "";
 		out += "{ ";

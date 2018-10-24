@@ -23,11 +23,11 @@ public class Operator {
 		this.arguments.add(arg);
 	}
 	
-	public void addPrecondition(Condition cond) {
+	public void addPrecondition(AbstractCondition cond) {
 		this.preconditions.add(cond);
 	}
 	
-	public void addEffect(Condition cond) {
+	public void addEffect(AbstractCondition cond) {
 		this.effects.add(cond);
 	}
 	
@@ -72,6 +72,26 @@ public class Operator {
 	
 	public int getCost() {
 		return cost;
+	}
+	
+	/**
+	 * Creates a copy of this operator where its arguments have been
+	 * assigned the provided list of constants (in that order).
+	 */
+	public Operator getOperatorWithGroundArguments(List<Argument> args) {
+		
+		Operator op = new Operator(name);
+		args.forEach(arg -> op.addArgument(arg));
+		for (AbstractCondition cond : preconditions) {
+			AbstractCondition c = cond.getConditionBoundToArguments(arguments, args);
+			op.addPrecondition(c);
+		}
+		for (AbstractCondition cond : effects) {
+			AbstractCondition c = cond.getConditionBoundToArguments(arguments, args);
+			op.addEffect(c);
+		}
+		op.cost = cost;
+		return op;
 	}
 	
 	@Override

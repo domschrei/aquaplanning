@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import edu.kit.aquaplanning.model.ground.Action;
 import edu.kit.aquaplanning.model.ground.Atom;
@@ -17,7 +16,6 @@ import edu.kit.aquaplanning.model.lifted.AbstractCondition;
 import edu.kit.aquaplanning.model.lifted.Argument;
 import edu.kit.aquaplanning.model.lifted.Condition;
 import edu.kit.aquaplanning.model.lifted.ConsequentialCondition;
-import edu.kit.aquaplanning.model.lifted.Constant;
 import edu.kit.aquaplanning.model.lifted.Operator;
 import edu.kit.aquaplanning.model.lifted.Predicate;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
@@ -30,7 +28,7 @@ public class DefaultGrounder implements Grounder {
 
 	private PlanningProblem problem;
 	
-	private List<Constant> constants;
+	private List<Argument> constants;
 	private Map<String, Atom> atoms;
 	private List<Action> actions;
 	
@@ -46,10 +44,7 @@ public class DefaultGrounder implements Grounder {
 		constants = new ArrayList<>();
 		constants.addAll(problem.getConstants());
 		constants.sort((c1, c2) -> c1.getName().compareTo(c2.getName()));
-		
-		// Instantiate atoms
-		groundConditions();
-		
+				
 		// Instantiate actions
 		groundOperators();
 		
@@ -70,35 +65,6 @@ public class DefaultGrounder implements Grounder {
 	}
 	
 	/**
-	 * For each predicate in the problem, assigns each possible combination of constants
-	 * to its arguments, creating a number of flat atoms.
-	 */
-	private void groundConditions() {
-		
-		atoms = new HashMap<>();
-		
-		// For each defined predicate
-		for (Entry<String, Predicate> predicateEntry : problem.getPredicates().entrySet()) {
-			Predicate p = predicateEntry.getValue();
-			
-			// Find eligible constants for each position of the predicate
-			List<List<Constant>> eligibleArguments = getEligibleArgumentsOfType(p.getArgumentTypes());
-			
-			// Iterate over all possible argument combinations
-			ArgumentCombinationIterator it = new ArgumentCombinationIterator(eligibleArguments);
-			while (it.hasNext()) {
-				List<Constant> arguments = it.next();
-				
-				// Create atom
-				String atomName = getAtomName(p, arguments);
-				int id = atoms.size();
-				Atom atom = new Atom(id, atomName, true);
-				atoms.put(atomName, atom);
-			}
-		}
-	}
-	
-	/**
 	 * For each operator, assigns each possible combination of constants to its arguments,
 	 * creating a number of flat actions. Also does some primitive filtering: actions with
 	 * inconsistent and/or trivially unsatisfiable condition sets are dismissed.
@@ -110,14 +76,14 @@ public class DefaultGrounder implements Grounder {
 		for (Operator operator : problem.getOperators()) {
 			
 			// Iterator over all possible argument combinations
-			List<List<Constant>> eligibleArguments = getEligibleArgumentsOfType(
+			List<List<Argument>> eligibleArguments = getEligibleArgumentsOfType(
 					operator.getArgumentTypes());
 			ArgumentCombinationIterator it = new ArgumentCombinationIterator(
 					eligibleArguments);
 			while (it.hasNext()) {
 				
 				// Ground the operator using these arguments
-				List<Constant> arguments = it.next();
+				List<Argument> arguments = it.next();
 				
 				// Do grounding, and add resulting action
 				// (if it hasn't been simplified away)
@@ -132,7 +98,7 @@ public class DefaultGrounder implements Grounder {
 	 * Grounds a single operator with the provided constants 
 	 * as a substitution for the operator's arguments.
 	 */
-	private Action groundOperator(Operator operator, List<Constant> arguments) {
+	private Action groundOperator(Operator operator, List<Argument> arguments) {
 		
 		// Ground preconditions
 		List<Atom> preconditions = new ArrayList<>();
@@ -188,7 +154,7 @@ public class DefaultGrounder implements Grounder {
 	 * The result is a flat list of atoms corresponding to each possible 
 	 * combination of the quantified variables.
 	 */
-	private List<Atom> groundQuantification(Quantification q, List<Constant> arguments,
+	private List<Atom> groundQuantification(Quantification q, List<Argument> arguments,
 			List<Argument> operatorArguments) {
 		
 		List<Atom> dequantifiedConds = new ArrayList<>();
@@ -199,7 +165,7 @@ public class DefaultGrounder implements Grounder {
 		
 		// Iterator over all possible combinations of quantified variables' values
 		List<Argument> quantifiedArgs = q.getVariables();
-		List<List<Constant>> eligibleDequantifiedArgs = getEligibleArguments(quantifiedArgs);
+		List<List<Argument>> eligibleDequantifiedArgs = getEligibleArguments(quantifiedArgs);
 		ArgumentCombinationIterator dequantifiedArgIterator = 
 				new ArgumentCombinationIterator(eligibleDequantifiedArgs);
 		
@@ -210,16 +176,16 @@ public class DefaultGrounder implements Grounder {
 			
 			// For each quantified precondition, find the right constants
 			for (Condition cond : q.getConditions()) {
-				List<Constant> condArgs = new ArrayList<>();
+				List<Argument> condArgs = new ArrayList<>();
 				
 				// For each argument of the condition
 				for (int argIdx = 0; argIdx < cond.getNumArgs(); argIdx++) {
 					Argument arg = cond.getArguments().get(argIdx);
-					Constant c = null;
+					Argument c = null;
 					
 					if (arg.isConstant()) {
 						// Easy: arg is already a constant
-						c = arg.toConstant();
+						c = arg;
 					} else {
 						// arg is a variable
 						// Is this variable bound to the quantifier?
@@ -245,7 +211,7 @@ public class DefaultGrounder implements Grounder {
 				}
 				
 				// Assemble atom
-				Atom atom = atoms.get(getAtomName(cond.getPredicate(), condArgs)).copy();
+				Atom atom = getAtom(cond.getPredicate(), condArgs);
 				atom.set(!cond.isNegated());
 				dequantifiedConds.add(atom);
 			}						
@@ -258,10 +224,10 @@ public class DefaultGrounder implements Grounder {
 	 * Assembles the name of an atom with a given predicate and a list
 	 * of constant arguments.
 	 */
-	private String getAtomName(Predicate p, List<Constant> args) {
+	private String getAtomName(Predicate p, List<Argument> args) {
 		
 		String atomName = p.getName() + "( ";
-		for (Constant c : args) {
+		for (Argument c : args) {
 			atomName += c.getName() + " ";
 		}
 		atomName += ")";
@@ -272,10 +238,10 @@ public class DefaultGrounder implements Grounder {
 	 * Assembles the name of an action corresponding to the provided 
 	 * operator with the provided list of constant arguments.
 	 */
-	private String getActionName(Operator op, List<Constant> args) {
+	private String getActionName(Operator op, List<Argument> args) {
 		
 		String name = op.getName() + "( ";
-		for (Constant c : args) {
+		for (Argument c : args) {
 			name += c.getName() + " ";
 		}
 		name += ")";
@@ -302,11 +268,11 @@ public class DefaultGrounder implements Grounder {
 		// For each condition
 		for (Condition cond : constantConditions) {
 			List<Argument> args = cond.getArguments();
-			List<Constant> argsConst = new ArrayList<>();
-			args.forEach(arg -> argsConst.add(new Constant(arg.getName(), arg.getType())));
+			List<Argument> argsConst = new ArrayList<>();
+			args.forEach(arg -> argsConst.add(new Argument(arg.getName(), arg.getType())));
 			
 			// Find correct atom for this condition
-			Atom initAtom = this.atoms.get(getAtomName(cond.getPredicate(), argsConst)).copy();
+			Atom initAtom = getAtom(cond.getPredicate(), argsConst);
 			initAtom.set(!cond.isNegated());
 			atoms.add(initAtom);
 		}
@@ -429,24 +395,24 @@ public class DefaultGrounder implements Grounder {
 	 * Given an operator and a nested condition, instantiates the condition
 	 * with the provided constants to retrieve the corresponding atom.
 	 */
-	private Atom getAtomOfActionCondition(Operator op, Condition cond, List<Constant> args) {
+	private Atom getAtomOfActionCondition(Operator op, Condition cond, List<Argument> args) {
 		
-		List<Constant> condConstants = new ArrayList<>();
+		List<Argument> condConstants = new ArrayList<>();
 		
 		// For each of the condition's arguments
 		for (Argument condArg : cond.getArguments()) {
 			
 			// Find the correct constant for this argument
-			Constant c = null;
+			Argument c = null;
 			if (condArg.isConstant()) {
 				// It is already a constant 
-				c = new Constant(condArg.getName(), condArg.getType());
+				c = new Argument(condArg.getName(), condArg.getType());
 			} else {
 				// It is a variable: find its corresponding constant value
 				int argIdx = 0;
 				for (Argument opArg : op.getArguments()) {
 					if (opArg.getName().equals(condArg.getName())) {
-						c = new Constant(args.get(argIdx).getName(), opArg.getType());
+						c = new Argument(args.get(argIdx).getName(), opArg.getType());
 						break;
 					}
 					argIdx++;
@@ -457,11 +423,28 @@ public class DefaultGrounder implements Grounder {
 		}
 		
 		// Assemble atom
-		Atom condAtom = atoms.get(getAtomName(cond.getPredicate(), condConstants)).copy();
+		Atom condAtom = getAtom(cond.getPredicate(), condConstants);
 		condAtom.set(!cond.isNegated());
 		return condAtom;
 	}
 	
+	/**
+	 * Retrieves the atom corresponding to the provided predicate 
+	 * and constant arguments. If this atom has not been grounded before,
+	 * it will be created.
+	 */
+	private Atom getAtom(Predicate p, List<Argument> constants) {
+		
+		if (atoms == null) {
+			atoms = new HashMap<>();
+		}
+		
+		String atomName = getAtomName(p, constants);
+		if (!atoms.containsKey(atomName)) {
+			atoms.put(atomName, new Atom(atoms.size(), atomName, true));
+		}
+		return atoms.get(atomName).copy();
+	}	
 
 	/**
 	 * For a list of arguments, returns a list containing all valid
@@ -471,7 +454,7 @@ public class DefaultGrounder implements Grounder {
 	 * This list of eligible arguments may have been shortened
 	 * by applying simplification strategies.
 	 */
-	private List<List<Constant>> getEligibleArguments(List<Argument> args) {
+	private List<List<Argument>> getEligibleArguments(List<Argument> args) {
 		
 		List<Type> argTypes = new ArrayList<>();
 		for (Argument arg : args) {
@@ -484,17 +467,17 @@ public class DefaultGrounder implements Grounder {
 	 * Returns each possible combination of constants with the 
 	 * provided order of types.
 	 */
-	private List<List<Constant>> getEligibleArgumentsOfType(List<Type> argTypes) {
+	private List<List<Argument>> getEligibleArgumentsOfType(List<Type> argTypes) {
 		
-		List<List<Constant>> eligibleArguments = new ArrayList<>();
+		List<List<Argument>> eligibleArguments = new ArrayList<>();
 		
 		// For each provided type
 		for (Type argType : argTypes) {
-			List<Constant> eligibleArgumentsAtPos = new ArrayList<>();
+			List<Argument> eligibleArgumentsAtPos = new ArrayList<>();
 			
 			// For all possible constants at the argument position
-			for (Constant c : constants) {
-				if (problem.isConstantOfType(c, argType)) {
+			for (Argument c : constants) {
+				if (problem.isArgumentOfType(c, argType)) {
 					
 					eligibleArgumentsAtPos.add(c);
 				}
@@ -506,13 +489,14 @@ public class DefaultGrounder implements Grounder {
 		return eligibleArguments;
 	}
 	
+	
 	/**
 	 * Given a list of possible constants at each argument index, 
 	 * allows to iterate over all possible combinations.
 	 */
-	private class ArgumentCombinationIterator implements Iterator<List<Constant>> {
+	private class ArgumentCombinationIterator implements Iterator<List<Argument>> {
 
-		private List<List<Constant>> eligibleArgs;
+		private List<List<Argument>> eligibleArgs;
 		private List<Integer> currentArgIndices;
 		private boolean hasNext;
 		
@@ -520,7 +504,7 @@ public class DefaultGrounder implements Grounder {
 		 * @param eligibleArgs At index i, contains a list of all eligible
 		 * constants for the argument position i.
 		 */
-		public ArgumentCombinationIterator(List<List<Constant>> eligibleArgs) {
+		public ArgumentCombinationIterator(List<List<Argument>> eligibleArgs) {
 			
 			this.eligibleArgs = eligibleArgs;
 			// Set current argument indices to zero
@@ -544,10 +528,10 @@ public class DefaultGrounder implements Grounder {
 		 * Get the next combination of constants.
 		 */
 		@Override
-		public List<Constant> next() {
+		public List<Argument> next() {
 			
 			// Create current constant combination
-			List<Constant> args = new ArrayList<>();
+			List<Argument> args = new ArrayList<>();
 			int argPos = 0;
 			for (int argIdx : currentArgIndices) {
 				args.add(eligibleArgs.get(argPos++).get(argIdx));

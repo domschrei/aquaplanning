@@ -1,7 +1,7 @@
 package edu.kit.aquaplanning;
 
-import edu.kit.aquaplanning.grounding.DefaultGrounder;
 import edu.kit.aquaplanning.grounding.Grounder;
+import edu.kit.aquaplanning.grounding.ReachableActionsApproximationGrounder;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
@@ -36,10 +36,10 @@ public class Main {
 			System.out.println(p); // print parsed problem
 			
 			// Step 2: Grounding (to get "flat" sets of actions and atoms)
-			Grounder grounder = new DefaultGrounder();
+			Grounder grounder = new ReachableActionsApproximationGrounder();
 			GroundPlanningProblem planningProblem = grounder.ground(p);
 			// Print ground problem (attention: can be a lot!)
-			//System.out.println(planningProblem);
+			System.out.println(planningProblem);
 			System.out.println("Grounding complete.");
 			System.out.println(planningProblem.getActions().size() 
 					+ " actions resulted from the grounding.");

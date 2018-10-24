@@ -41,6 +41,21 @@ public class Quantification extends AbstractCondition {
 	}
 	
 	@Override
+	public Quantification getConditionBoundToArguments(List<Argument> refArgs, List<Argument> argValues) {
+		
+		Quantification q = new Quantification(quantifier);
+		for (Condition c : conditions) {
+			// TODO bind variable stronger to quantification than to action arguments,
+			// not the other way round
+			q.addCondition(c.getConditionBoundToArguments(refArgs, argValues));
+		}
+		for (Argument arg : variables) {
+			q.addVariable(arg);
+		}
+		return q;
+	}
+	
+	@Override
 	public String toString() {
 		
 		String out = "";

@@ -32,11 +32,9 @@ public class Argument {
 		return name.charAt(0) != '?';
 	}
 	
-	public Constant toConstant() {
-		if (!isConstant()) {
-			return null;
-		}
-		return new Constant(this);
+	public Argument copy() {
+		Argument newArg = new Argument(name, type);
+		return newArg;
 	}
 	
 	@Override

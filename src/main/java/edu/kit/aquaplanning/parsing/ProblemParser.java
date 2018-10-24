@@ -20,7 +20,6 @@ import edu.kit.aquaplanning.model.lifted.AbstractCondition;
 import edu.kit.aquaplanning.model.lifted.Argument;
 import edu.kit.aquaplanning.model.lifted.Condition;
 import edu.kit.aquaplanning.model.lifted.ConsequentialCondition;
-import edu.kit.aquaplanning.model.lifted.Constant;
 import edu.kit.aquaplanning.model.lifted.Operator;
 import edu.kit.aquaplanning.model.lifted.Predicate;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
@@ -65,7 +64,7 @@ public class ProblemParser extends PddlBaseListener {
 	private String problemName;
 	private List<String> requirements;
 	private Map<String, Type> types;
-	private List<Constant> constants; // both from domain and problem
+	private List<Argument> constants; // both from domain and problem
 	private Map<String, Predicate> predicates;
 	private List<Operator> operators;
 	private List<Condition> initialState;
@@ -291,7 +290,7 @@ public class ProblemParser extends PddlBaseListener {
 							|| isInContext(ParseContext.objectDefs)) {
 						// Constant definitions: add constants
 						for (String constantName : elements) {
-							constants.add(new Constant(constantName, type));
+							constants.add(new Argument(constantName, type));
 						}
 					}
 				}		
@@ -699,7 +698,7 @@ public class ProblemParser extends PddlBaseListener {
 				
 				// Check if there is a fitting constant,
 				// and which type it has
-				for (Constant constant : constants) {
+				for (Argument constant : constants) {
 					if (constant.getName().equalsIgnoreCase(termStr)) {
 						type = constant.getType();
 					}
@@ -982,7 +981,7 @@ public class ProblemParser extends PddlBaseListener {
 			Type type = null;
 			
 			// Look up the type of this object
-			for (Constant c : constants) {
+			for (Argument c : constants) {
 				if (c.getName().equalsIgnoreCase(name)) {
 					type = c.getType();
 				}

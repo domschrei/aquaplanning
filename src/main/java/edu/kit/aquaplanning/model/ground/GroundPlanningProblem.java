@@ -39,11 +39,11 @@ public class GroundPlanningProblem {
 		StringBuilder builder = new StringBuilder();
 		builder.append("Initial state: ");
 		builder.append(initialState.toString());
-		builder.append("\nActions: ");
+		builder.append("\nActions (" + actions.size() + "):\n");
 		for (Action action : actions) {
-			System.out.println("  " + action);
+			builder.append("  " + action + "\n");
 		}
-		builder.append("\nGoal: ");
+		builder.append("Goal: ");
 		builder.append(goal.toString());
 		if (hasActionCosts) {			
 			builder.append("\nMetric: minimize (total-cost).");
