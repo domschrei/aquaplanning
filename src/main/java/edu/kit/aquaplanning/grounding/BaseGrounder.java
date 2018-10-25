@@ -18,7 +18,6 @@ import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.model.lifted.Predicate;
 import edu.kit.aquaplanning.model.lifted.Quantification;
 import edu.kit.aquaplanning.model.lifted.AbstractCondition.ConditionType;
-import edu.kit.aquaplanning.model.lifted.Quantification.Quantifier;
 
 /**
  * Abstract base class which all grounders should inherit from.
@@ -119,7 +118,8 @@ public abstract class BaseGrounder implements Grounder {
 				
 				// Resolve quantification and add all resulting atoms
 				// to the processing queue
-				conditionsToProcess.addAll(resolveQuantification((Quantification) c));
+				conditionsToProcess.addAll(
+					ArgumentCombination.resolveQuantification((Quantification) c, problem, constants));
 				
 			} // Conditional effects are not treated here
 		};
@@ -169,200 +169,5 @@ public abstract class BaseGrounder implements Grounder {
 		Action action = new Action(actionName, preconditions, effects, conditionalEffects);
 		action.setCost(liftedAction.getCost());
 		return action;
-	}
-	
-	/**
-	 * Given a state in lifted representation (i.e. a list of true conditions
-	 * where all arguments are replaced by constants), returns all
-	 * actions (in lifted representation) which are applicable in that state.
-	 */
-	protected List<Operator> getLiftedActionsReachableFrom(List<Condition> liftedState) {
-		
-		List<Operator> reachableOperators = new ArrayList<>();
-		
-		// For each operator
-		for (Operator op : problem.getOperators()) {
-					
-			// Get all possible argument combinations
-			List<List<Argument>> arguments = ArgumentCombination.getEligibleArguments(
-					op.getArguments(), problem, constants);
-			List<List<Argument>> argumentCombinations = new ArrayList<>();
-			new ArgumentCombination.Iterator(arguments).forEachRemaining(l -> argumentCombinations.add(l));
-			
-			// Now filter this list by checking each precondition
-			List<AbstractCondition> preconditions = new ArrayList<>();
-			preconditions.addAll(op.getPreconditions());
-			for (int condIdx = 0; condIdx < preconditions.size(); condIdx++) {
-				AbstractCondition cond = preconditions.get(condIdx);
-				
-				if (cond.getConditionType() == ConditionType.atomic) {
-					
-					// Find out which argument choices of the operator 
-					// are valid such that the precondition is satisfied
-					for (int combIdx = 0; combIdx < argumentCombinations.size(); combIdx++) {
-						List<Argument> args = argumentCombinations.get(combIdx);
-						
-						// Does the precondition hold with these arguments?
-						if (!holdsCondition((Condition) cond, op, args, liftedState)) {
-							// -- no; directly remove it
-							argumentCombinations.remove(combIdx--);
-						}
-					}
-					
-				} else if (cond.getConditionType() == ConditionType.quantification) {
-					
-					// Fully instantiate the quantification, producing a set
-					// of atomic conditions which we will check later
-					preconditions.addAll(resolveQuantification((Quantification) cond));
-				}
-			}
-
-			// Create one lifted action for each valid choice of arguments
-			for (List<Argument> validArgs : argumentCombinations) {
-				Operator liftedAction = op.getOperatorWithGroundArguments(validArgs);
-				reachableOperators.add(liftedAction);
-			}
-		}
-		
-		return reachableOperators;
-	}
-	
-	/**
-	 * Given a lifted action executed in some (lifted) state, adds all of 
-	 * its positive effects (including conditional effects) to the state.
-	 */
-	protected void applyPositiveEffects(Operator liftedAction, List<Condition> liftedState) {
-		 
-		List<AbstractCondition> effects = new ArrayList<>();
-
-		// For each effect
-		effects.addAll(liftedAction.getEffects());
-		for (int i = 0; i < effects.size(); i++) {
-			AbstractCondition effect = effects.get(i);
-			
-			if (effect.getConditionType() == ConditionType.atomic) {
-				
-				// -- atomic effect: directly add condition, 
-				// if positive and not already present
-				Condition cond = (Condition) effect;
-				if (!cond.isNegated() && !liftedState.contains(cond)) {
-					liftedState.add(cond);
-				}
-				
-			} else if (effect.getConditionType() == ConditionType.consequential) {
-				
-				// -- conditional effect: check if prerequisites hold
-				ConsequentialCondition cond = (ConsequentialCondition) effect;
-				boolean applyEffects = true;
-				for (Condition prerequisite : cond.getPrerequisites()) {
-					// Does this prerequisite hold?
-					if (!holdsCondition(prerequisite, liftedAction, 
-							liftedAction.getArguments(), liftedState)) {
-						// -- no; dismiss this conditional effect
-						applyEffects = false;
-						break;
-					}
-				}
-				// Are all prerequisites satisfied?
-				if (applyEffects) {
-					// -- yes; add consequences to processing queue
-					for (Condition consequence : cond.getConsequences()) {
-						effects.add(consequence);
-					}
-				}
-				
-			} else if (effect.getConditionType() == ConditionType.quantification) {
-				
-				// -- quantification: resolve into flat atom list,
-				// and add all atoms to processing queue
-				effects.addAll(resolveQuantification((Quantification) effect));
-			}
-		}
-	}
-	
-	/**
-	 * Checks if the provided condition inside the provided operator 
-	 * holds in the given state when the operator arguments are assigned 
-	 * the provided list of arguments.
-	 */
-	private boolean holdsCondition(Condition cond, Operator op, 
-				List<Argument> opArgs, List<Condition> liftedState) {
-		
-		// Set the ground arguments as the arguments of the condition
-		Condition groundCond = cond.getConditionBoundToArguments(op.getArguments(), opArgs);
-		//groundConditionArguments(groundCond, op.getArguments(), opArgs);
-		
-		if (groundCond.getPredicate().getName().equals("=")) {
-			// Equality predicate: just check if the two args are equal
-			if (groundCond.getArguments().get(0).equals(groundCond.getArguments().get(1))) {
-				return !cond.isNegated();
-			}
-		}
-		
-		// Search the provided state for this condition
-		for (Condition stateCond : liftedState) {
-			if (stateCond.equals(groundCond)) {
-				return true;
-			}
-		}
-		
-		// If the condition is negated, then it holds; else, not
-		return cond.isNegated();
-	}
-	
-	/**
-	 * Processes a quantification where all arguments except for the 
-	 * quantified variables are already ground, and returns a flat list
-	 * of atoms providing the same logical information.
-	 */
-	protected List<AbstractCondition> resolveQuantification(Quantification q) {
-		
-		List<AbstractCondition> dequantifiedConds = new ArrayList<>();
-		
-		if (q.getQuantifier() != Quantifier.universal) {
-			System.err.println("Only universal quantifiers are supported.");
-		}
-		
-		// Iterator over all possible combinations of quantified variables' values
-		List<Argument> quantifiedArgs = q.getVariables();
-		List<List<Argument>> eligibleDequantifiedArgs = ArgumentCombination
-				.getEligibleArguments(quantifiedArgs, problem, constants);
-		ArgumentCombination.Iterator dequantifiedArgIterator = 
-				new ArgumentCombination.Iterator(eligibleDequantifiedArgs);
-		
-		dequantifiedArgIterator.forEachRemaining(dequantifiedArgs -> {
-			// dequantifiedArgs : the arguments for the quantified variables
-			
-			// For each quantified condition, create a condition
-			// with all quantified variables replaced
-			for (Condition cond : q.getConditions()) {
-				List<Argument> condArgs = new ArrayList<>();
-				
-				// For each argument of the condition
-				for (int argIdx = 0; argIdx < cond.getNumArgs(); argIdx++) {
-					Argument arg = cond.getArguments().get(argIdx);
-					Argument c = arg.copy();
-					
-					if (!arg.isConstant()) {
-						// arg is a variable
-						// Is this variable bound to the quantifier?
-						int qArgIdx = quantifiedArgs.indexOf(arg);
-						if (qArgIdx >= 0) {
-							// -- yes: assign the corresponding dequantified argument
-							c = dequantifiedArgs.get(qArgIdx);
-						}
-					}
-					// Add created constant to this condition's arguments
-					condArgs.add(c);
-				}
-				
-				// Assemble new condition
-				Condition newCondition = new Condition(cond.getPredicate(), cond.isNegated());
-				for (Argument arg : condArgs) newCondition.addArgument(arg);
-				dequantifiedConds.add(newCondition);
-			}						
-		});
-		
-		return dequantifiedConds;
 	}
 }

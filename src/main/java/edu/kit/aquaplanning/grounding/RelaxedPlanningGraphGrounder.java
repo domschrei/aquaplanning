@@ -40,31 +40,18 @@ public class RelaxedPlanningGraphGrounder extends BaseGrounder {
 		liftedSuperstate.addAll(problem.getInitialState());
 		
 		// Traverse approximated state space
+		RelaxedPlanningGraph graph = new RelaxedPlanningGraph(problem);
 		actions = new ArrayList<>();
 		int iteration = 0;
-		while (iteration < 10000) {
-			
-			// Copy last state
-			List<Condition> oldState = new ArrayList<>();
-			oldState.addAll(liftedSuperstate);
-			
-			// Which actions are applicable in that state?
-			List<Operator> liftedActions = getLiftedActionsReachableFrom(liftedSuperstate);
-			for (Operator op : liftedActions) {
-				
-				// Ground operator
+		while (graph.hasNextLayer()) {
+			graph.computeNextLayer();
+			// Ground new operators
+			for (Operator op : graph.getLiftedActions(iteration)) {
 				Action a = getAction(op);
 				if (!actions.contains(a)) {
 					actions.add(a);
 				}
-				// Apply all positive effects of the action
-				applyPositiveEffects(op, liftedSuperstate);
 			}
-			
-			// If the state did not increase, a fixpoint has been reached
-			if (oldState.size() == liftedSuperstate.size())
-				break;
-			
 			iteration++;
 		}
 		
@@ -95,7 +82,8 @@ public class RelaxedPlanningGraphGrounder extends BaseGrounder {
 		});
 		for (Quantification q : problem.getQuantifiedGoals()) {
 			// Resolve quantifications into flat sets of atoms
-			List<AbstractCondition> conditions = resolveQuantification(q);
+			List<AbstractCondition> conditions = ArgumentCombination.resolveQuantification(
+					q, problem, constants);
 			goalAtoms.addAll(getAtoms(conditions));
 		}
 		Goal goal = new Goal(goalAtoms);

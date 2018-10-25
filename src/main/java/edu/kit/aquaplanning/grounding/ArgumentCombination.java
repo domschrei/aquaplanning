@@ -3,9 +3,13 @@ package edu.kit.aquaplanning.grounding;
 import java.util.ArrayList;
 import java.util.List;
 
+import edu.kit.aquaplanning.model.lifted.AbstractCondition;
 import edu.kit.aquaplanning.model.lifted.Argument;
+import edu.kit.aquaplanning.model.lifted.Condition;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
+import edu.kit.aquaplanning.model.lifted.Quantification;
 import edu.kit.aquaplanning.model.lifted.Type;
+import edu.kit.aquaplanning.model.lifted.Quantification.Quantifier;
 
 public class ArgumentCombination {
 	
@@ -128,6 +132,63 @@ public class ArgumentCombination {
 		}
 		
 		return eligibleArguments;
+	}
+	
+	/**
+	 * Processes a quantification where all arguments except for the 
+	 * quantified variables are already ground, and returns a flat list
+	 * of atoms providing the same logical information.
+	 */
+	public static List<AbstractCondition> resolveQuantification(Quantification q, 
+			PlanningProblem problem, List<Argument> constants) {
+		
+		List<AbstractCondition> dequantifiedConds = new ArrayList<>();
+		
+		if (q.getQuantifier() != Quantifier.universal) {
+			System.err.println("Only universal quantifiers are supported.");
+		}
+		
+		// Iterator over all possible combinations of quantified variables' values
+		List<Argument> quantifiedArgs = q.getVariables();
+		List<List<Argument>> eligibleDequantifiedArgs = ArgumentCombination
+				.getEligibleArguments(quantifiedArgs, problem, constants);
+		ArgumentCombination.Iterator dequantifiedArgIterator = 
+				new ArgumentCombination.Iterator(eligibleDequantifiedArgs);
+		
+		dequantifiedArgIterator.forEachRemaining(dequantifiedArgs -> {
+			// dequantifiedArgs : the arguments for the quantified variables
+			
+			// For each quantified condition, create a condition
+			// with all quantified variables replaced
+			for (Condition cond : q.getConditions()) {
+				List<Argument> condArgs = new ArrayList<>();
+				
+				// For each argument of the condition
+				for (int argIdx = 0; argIdx < cond.getNumArgs(); argIdx++) {
+					Argument arg = cond.getArguments().get(argIdx);
+					Argument c = arg.copy();
+					
+					if (!arg.isConstant()) {
+						// arg is a variable
+						// Is this variable bound to the quantifier?
+						int qArgIdx = quantifiedArgs.indexOf(arg);
+						if (qArgIdx >= 0) {
+							// -- yes: assign the corresponding dequantified argument
+							c = dequantifiedArgs.get(qArgIdx);
+						}
+					}
+					// Add created constant to this condition's arguments
+					condArgs.add(c);
+				}
+				
+				// Assemble new condition
+				Condition newCondition = new Condition(cond.getPredicate(), cond.isNegated());
+				for (Argument arg : condArgs) newCondition.addArgument(arg);
+				dequantifiedConds.add(newCondition);
+			}						
+		});
+		
+		return dequantifiedConds;
 	}
 	
 }

@@ -117,6 +117,16 @@ public class DefaultPlanner implements Planner {
 			}
 			return false;
 		}
+		
+		public int getCost() {
+			
+			int cost = 0;
+			SearchNode node = this;
+			while (node != null) {
+				cost += node.lastAction.getCost()+1;
+				node = node.parent;
+			}
+			return cost;
+		}
 	}
-	
 }
