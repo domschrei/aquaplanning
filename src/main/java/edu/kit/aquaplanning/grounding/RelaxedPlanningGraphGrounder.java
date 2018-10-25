@@ -20,7 +20,7 @@ import edu.kit.aquaplanning.model.lifted.Quantification;
  * Grounder doing a reachability analysis through some 
  * approximated state space until a fixpoint is reached.
  */
-public class ReachableActionsApproximationGrounder extends BaseGrounder {
+public class RelaxedPlanningGraphGrounder extends BaseGrounder {
 	
 	/**
 	 * Grounds the entire problem.

@@ -1,7 +1,7 @@
 package edu.kit.aquaplanning;
 
 import edu.kit.aquaplanning.grounding.Grounder;
-import edu.kit.aquaplanning.grounding.ReachableActionsApproximationGrounder;
+import edu.kit.aquaplanning.grounding.RelaxedPlanningGraphGrounder;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
@@ -13,8 +13,6 @@ import edu.kit.aquaplanning.validate.Validator;
 /**
  * Reads a pair of PDDL files (domain and problem), does grounding,
  * and calls some planner in order to find a solution.
- * 
- * @author Dominik Schreiber
  */
 public class Main {
 
@@ -36,7 +34,7 @@ public class Main {
 			System.out.println(p); // print parsed problem
 			
 			// Step 2: Grounding (to get "flat" sets of actions and atoms)
-			Grounder grounder = new ReachableActionsApproximationGrounder();
+			Grounder grounder = new RelaxedPlanningGraphGrounder();
 			GroundPlanningProblem planningProblem = grounder.ground(p);
 			// Print ground problem (attention: can be a lot!)
 			System.out.println(planningProblem);

@@ -66,9 +66,17 @@ public class DefaultPlanner implements Planner {
 					
 					// Create new node by applying the operator
 					State newState = action.apply(node.state);
-					SearchNode newNode = new SearchNode(node, newState);
-					newNode.lastAction = action;
-					frontier.add(newNode);
+					
+					// Did the new state already occur in some ancestor?
+					if (node.pathContains(newState)) {
+						// yes: Cycle in state space detected -- discard
+						continue;
+					} else {
+						// no: add new node to frontier
+						SearchNode newNode = new SearchNode(node, newState);
+						newNode.lastAction = action;
+						frontier.add(newNode);
+					}
 				}
 			}
 			
@@ -86,13 +94,28 @@ public class DefaultPlanner implements Planner {
 	 */
 	private class SearchNode {
 		
+		public int depth;
 		public SearchNode parent;
 		public State state;
 		public Action lastAction;
 		
 		public SearchNode(SearchNode parent, State state) {
+			if (parent != null)
+				this.depth = parent.depth+1;
 			this.parent = parent;
 			this.state = state;
+		}
+		
+		public boolean pathContains(State previousState) {
+			
+			SearchNode node = this;
+			while (node != null) {
+				if (previousState.equals(node.state)) {
+					return true;
+				}
+				node = node.parent;
+			}
+			return false;
 		}
 	}
 	

@@ -23,7 +23,7 @@ import edu.kit.aquaplanning.model.lifted.Quantification.Quantifier;
  * Naïve grounder doing an exhaustive enumeration 
  * of all combineable atoms and operators.
  */
-public class DefaultGrounder extends BaseGrounder {
+public class FullEnumerationGrounder extends BaseGrounder {
 	
 	/**
 	 * Grounds the entire problem.

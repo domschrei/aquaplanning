@@ -43,8 +43,12 @@ public class State {
 		return atoms.get(atom.getId()).getValue() == atom.getValue();
 	}
 	
-	public List<Atom> getAtoms() {
-		return atoms;
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null)
+			return false;
+		State other = (State) obj;
+		return other.toString().equals(toString());
 	}
 	
 	@Override

@@ -3,7 +3,7 @@ package edu.kit.aquaplanning.aquaplanning;
 import java.io.IOException;
 
 import edu.kit.aquaplanning.grounding.Grounder;
-import edu.kit.aquaplanning.grounding.ReachableActionsApproximationGrounder;
+import edu.kit.aquaplanning.grounding.RelaxedPlanningGraphGrounder;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
@@ -26,7 +26,7 @@ public class TestPlanners extends TestCase {
 	
 	private void testPlannerOnProblem(Planner planner, PlanningProblem problem) {
 		
-		Grounder grounder = new ReachableActionsApproximationGrounder();
+		Grounder grounder = new RelaxedPlanningGraphGrounder();
 		GroundPlanningProblem planningProblem = grounder.ground(problem);
 		Plan plan = planner.findPlan(planningProblem);
 		System.out.println(plan);
