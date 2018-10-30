@@ -171,9 +171,16 @@ public class ArgumentCombination {
 					if (!arg.isConstant()) {
 						// arg is a variable
 						// Is this variable bound to the quantifier?
-						int qArgIdx = quantifiedArgs.indexOf(arg);
-						if (qArgIdx >= 0) {
-							// -- yes: assign the corresponding dequantified argument
+						
+						int qArgIdx = 0;
+						// Search for argument equality by name only
+						while (qArgIdx < quantifiedArgs.size() && 
+								!quantifiedArgs.get(qArgIdx).getName().equals(arg.getName()))
+							qArgIdx++;
+						
+						if (qArgIdx < quantifiedArgs.size()) {
+							// -- yes, bound to quantifier: 
+							// assign the corresponding dequantified argument
 							c = dequantifiedArgs.get(qArgIdx);
 						}
 					}

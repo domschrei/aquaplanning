@@ -60,10 +60,7 @@ public class DefaultPlanner implements Planner {
 				
 				// Can this operator be applied to this state?
 				if (action.isApplicable(node.state)) {
-					
-					// (At this point, you could do pruning, 
-					// i.e. directly discard unpromising nodes)
-					
+										
 					// Create new node by applying the operator
 					State newState = action.apply(node.state);
 					
@@ -73,6 +70,8 @@ public class DefaultPlanner implements Planner {
 						continue;
 					} else {
 						// no: add new node to frontier
+						// (At this point, you could do additional pruning, 
+						// i.e. directly discard unpromising nodes)
 						SearchNode newNode = new SearchNode(node, newState);
 						newNode.lastAction = action;
 						frontier.add(newNode);
@@ -106,6 +105,10 @@ public class DefaultPlanner implements Planner {
 			this.state = state;
 		}
 		
+		/**
+		 * Checks whether the specified state has already been
+		 * visited inside the path this node is a leaf of.
+		 */
 		public boolean pathContains(State previousState) {
 			
 			SearchNode node = this;
@@ -118,6 +121,11 @@ public class DefaultPlanner implements Planner {
 			return false;
 		}
 		
+		/**
+		 * Returns the action cost of the sequence of actions
+		 * up until this node. Currently considers each action
+		 * to have a cost of 1 plus any specified action cost.
+		 */
 		public int getCost() {
 			
 			int cost = 0;

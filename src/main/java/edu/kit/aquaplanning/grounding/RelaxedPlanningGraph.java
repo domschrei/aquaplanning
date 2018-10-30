@@ -83,6 +83,12 @@ public class RelaxedPlanningGraph {
 	protected List<Operator> getLiftedActionsReachableFrom(List<Condition> liftedState) {
 		
 		List<Operator> reachableOperators = new ArrayList<>();
+
+		/*
+		 * TODO This is inefficient. The possible argument combinations per operator should be 
+		 * directly inferred from the current lifted state instead of producing all possible 
+		 * operator arguments and only then checking them against the state.
+		 */
 		
 		// For each operator
 		for (Operator op : problem.getOperators()) {
@@ -117,8 +123,9 @@ public class RelaxedPlanningGraph {
 					
 					// Fully instantiate the quantification, producing a set
 					// of atomic conditions which we will check later
-					preconditions.addAll(ArgumentCombination.resolveQuantification(
-							(Quantification) cond, problem, constants));
+					List<AbstractCondition> conds = ArgumentCombination.resolveQuantification(
+							(Quantification) cond, problem, constants);
+					preconditions.addAll(conds);
 				}
 			}
 
