@@ -142,6 +142,10 @@ public class PlanningProblem {
 		for (Quantification q : quantifiedGoals) {
 			str.append("  " + q + "\n");
 		}
-		return str.toString();
+		String out = str.toString();
+		if (out.endsWith("\n")) {
+			out = out.substring(0, out.length()-2);
+		}
+		return out;
 	}
 }

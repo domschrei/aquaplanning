@@ -29,21 +29,22 @@ public class Main {
 		try {
 			
 			// Step 1: Parsing of domain and problem files
+			System.out.println("Parsing ...");
 			PlanningProblem p = new ProblemParser().parse(args[0], args[1]);
-			System.out.println("Parsing complete.");
 			System.out.println(p); // print parsed problem
+			System.out.println("Parsing complete.\n");
 			
 			// Step 2: Grounding (to get "flat" sets of actions and atoms)
+			System.out.println("Grounding ...");
 			Grounder grounder = new RelaxedPlanningGraphGrounder();
 			GroundPlanningProblem planningProblem = grounder.ground(p);
 			// Print ground problem (attention: can be a lot!)
 			System.out.println(planningProblem);
-			System.out.println("Grounding complete.");
-			System.out.println(planningProblem.getActions().size() 
-					+ " actions resulted from the grounding.");
+			System.out.println("Grounding complete. " + planningProblem.getActions().size() 
+					+ " actions resulted from the grounding.\n");
 			
 			// Step 3: Planning
-			System.out.println("Starting planner ...");
+			System.out.println("Planning ...");
 			Planner planner = new DefaultPlanner();
 			Plan plan = planner.findPlan(planningProblem);
 			
