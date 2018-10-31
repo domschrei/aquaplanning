@@ -144,7 +144,7 @@ public class PlanningProblem {
 		}
 		String out = str.toString();
 		if (out.endsWith("\n")) {
-			out = out.substring(0, out.length()-2);
+			out = out.substring(0, out.length()-1);
 		}
 		return out;
 	}
