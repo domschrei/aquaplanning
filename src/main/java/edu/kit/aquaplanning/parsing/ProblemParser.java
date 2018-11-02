@@ -766,9 +766,9 @@ public class ProblemParser extends PddlBaseListener {
 		if (ctx.children.size() == 5) {
 			// Conditional effect:
 			// ( when <goalDesc> <condEffect> )
-	
+			
 			// Create new cond. effect object
-			if (isTopContext(ParseContext.quantification)) {
+			if (isInContext(ParseContext.quantification)) {
 				currentQuantification().addCondition(new ConsequentialCondition());
 			} else {				
 				currentOperator().addConditionalEffect(new ConsequentialCondition());
@@ -1263,7 +1263,7 @@ public class ProblemParser extends PddlBaseListener {
 		} else if (isInContext(ParseContext.actionPre)) {			
 			return (Quantification) currentOperator().getPreconditions().get(
 					currentOperator().getPreconditions().size()-1);
-		} else if (isInContext(ParseContext.actionEff)) {			
+		} else if (isInContext(ParseContext.actionEff)) {
 			return (Quantification) currentOperator().getEffects().get(
 					currentOperator().getEffects().size()-1);
 		} else if (isInContext(ParseContext.goalDef)) {
