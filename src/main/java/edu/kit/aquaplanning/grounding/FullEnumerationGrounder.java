@@ -37,7 +37,7 @@ public class FullEnumerationGrounder extends BaseGrounder {
 		constants = new ArrayList<>();
 		constants.addAll(problem.getConstants());
 		constants.sort((c1, c2) -> c1.getName().compareTo(c2.getName()));
-				
+			
 		// Instantiate actions
 		groundOperators();
 		
@@ -47,7 +47,9 @@ public class FullEnumerationGrounder extends BaseGrounder {
 		// Extract goal
 		List<Atom> goalAtomList = getAtoms(problem.getGoals());
 		for (Quantification q : problem.getQuantifiedGoals()) {
-			goalAtomList.addAll(groundQuantification(q, constants, new ArrayList<>()));
+			// Problem's constants; no operator arguments; 
+			// store resulting atoms in goalAtomList; no cond. effects
+			groundQuantification(q, constants, new ArrayList<>(), goalAtomList, new ArrayList<>());
 		}
 		Goal goal = new Goal(goalAtomList);
 		
@@ -96,37 +98,17 @@ public class FullEnumerationGrounder extends BaseGrounder {
 		// Ground preconditions
 		List<Atom> preconditions = new ArrayList<>();
 		for (AbstractCondition cond : operator.getPreconditions()) {
-			if (cond.getConditionType() == ConditionType.atomic) {				
-				Atom atom = getAtomOfActionCondition(operator, (Condition) cond, arguments);
-				preconditions.add(atom);
-			} else if (cond.getConditionType() == ConditionType.quantification) {
-				preconditions.addAll(groundQuantification((Quantification) cond, 
-						arguments, operator.getArguments()));
-			}
+			groundCondition(operator, arguments, cond, preconditions, new ArrayList<>());
 		}
 		
 		// Ground effects
 		List<Atom> effects = new ArrayList<>();
 		List<ConditionalEffect> conditionalEffects = new ArrayList<>();
-		for (AbstractCondition cond : operator.getEffects()) {
-			if (cond.getConditionType() == ConditionType.atomic) {	
-				Atom atom = getAtomOfActionCondition(operator, (Condition) cond, arguments);
-				effects.add(atom);
-			} else if (cond.getConditionType() == ConditionType.quantification) {
-				effects.addAll(groundQuantification((Quantification) cond, 
-						arguments, operator.getArguments()));
-			} else if (cond.getConditionType() == ConditionType.consequential) {
-				ConsequentialCondition condEffect = (ConsequentialCondition) cond;
-				List<Atom> conditions = new ArrayList<>();
-				List<Atom> consequences = new ArrayList<>();
-				for (Condition c : condEffect.getPrerequisites()) {
-					conditions.add(getAtomOfActionCondition(operator, c, arguments));
-				}
-				for (Condition c : condEffect.getConsequences()) {
-					consequences.add(getAtomOfActionCondition(operator, c, arguments));
-				}
-				conditionalEffects.add(new ConditionalEffect(conditions, consequences));
-			}
+		List<AbstractCondition> effectConds = new ArrayList<>();
+		effectConds.addAll(operator.getEffects());
+		for (int condIdx = 0; condIdx < effectConds.size(); condIdx++) {
+			AbstractCondition cond = effectConds.get(condIdx);
+			groundCondition(operator, arguments, cond, effects, conditionalEffects);
 		}
 		
 		// Assemble action and simplify the action's conditions
@@ -134,6 +116,34 @@ public class FullEnumerationGrounder extends BaseGrounder {
 		String actionName = getActionName(operator, arguments);
 		return Simplification.getSimplifiedAction(actionName, preconditions, effects, 
 				conditionalEffects, operator.getCost());
+	}
+	
+	private void groundCondition(Operator operator, List<Argument> arguments, AbstractCondition cond, 
+			List<Atom> outAtoms, List<ConditionalEffect> outCondEffects) {
+		
+		if (cond.getConditionType() == ConditionType.atomic) {	
+			
+			Atom atom = getAtomOfActionCondition(operator, (Condition) cond, arguments);
+			outAtoms.add(atom);
+			
+		} else if (cond.getConditionType() == ConditionType.quantification) {
+			
+			groundQuantification((Quantification) cond, 
+					arguments, operator.getArguments(), outAtoms, outCondEffects);
+			
+		} else if (cond.getConditionType() == ConditionType.consequential) {
+			
+			ConsequentialCondition condEffect = (ConsequentialCondition) cond;
+			List<Atom> conditions = new ArrayList<>();
+			List<Atom> consequences = new ArrayList<>();
+			for (AbstractCondition c : condEffect.getPrerequisites()) {
+				groundCondition(operator, arguments, c, conditions, new ArrayList<>());
+			}
+			for (AbstractCondition c : condEffect.getConsequences()) {
+				groundCondition(operator, arguments, c, consequences, new ArrayList<>());
+			}
+			outCondEffects.add(new ConditionalEffect(conditions, consequences));
+		}
 	}
 	
 	/**
@@ -147,11 +157,9 @@ public class FullEnumerationGrounder extends BaseGrounder {
 	 * The result is a flat list of atoms corresponding to each possible 
 	 * combination of the quantified variables.
 	 */
-	private List<Atom> groundQuantification(Quantification q, List<Argument> arguments,
-			List<Argument> operatorArguments) {
-		
-		List<Atom> dequantifiedConds = new ArrayList<>();
-		
+	private void groundQuantification(Quantification q, List<Argument> arguments,
+			List<Argument> operatorArguments, List<Atom> outAtoms, List<ConditionalEffect> outCondEffects) {
+				
 		if (q.getQuantifier() != Quantifier.universal) {
 			System.err.println("Only universal quantifiers are supported.");
 		}
@@ -169,49 +177,34 @@ public class FullEnumerationGrounder extends BaseGrounder {
 			// * dequantifiedArgs : the arguments for the quantified variables
 			
 			// For each quantified precondition, find the right constants
-			for (Condition cond : q.getConditions()) {
-				List<Argument> condArgs = new ArrayList<>();
+			for (AbstractCondition abstractCond : q.getConditions()) {
 				
-				// For each argument of the condition
-				for (int argIdx = 0; argIdx < cond.getNumArgs(); argIdx++) {
-					Argument arg = cond.getArguments().get(argIdx);
-					Argument c = null;
+				AbstractCondition newCond = ArgumentCombination.dequantifyCondition(abstractCond, quantifiedArgs, dequantifiedArgs);
+				if (newCond.getConditionType() == ConditionType.atomic) {
 					
-					if (arg.isConstant()) {
-						// Easy: arg is already a constant
-						c = arg;
-					} else {
-						// arg is a variable
-						// Is this variable bound to the quantifier?
-						int qArgIdx = quantifiedArgs.indexOf(arg);
-						if (qArgIdx >= 0) {
-							// -- yes: assign the corresponding dequantified argument
-							c = dequantifiedArgs.get(qArgIdx);
-						} else {
-							// -- no: assign the fitting action argument
-							// (by simple name matching)
-							int opArgIdx = 0;
-							for (Argument opArg : operatorArguments) {
-								if (opArg.getName().equals(arg.getName())) {
-									c = arguments.get(opArgIdx);
-									break;
-								}
-								opArgIdx++;
-							}
-						}
+					Condition cond = (Condition) newCond;
+					Atom atom = atom(cond.getPredicate(), cond.getArguments(), cond.isNegated());
+					atom.set(!cond.isNegated());
+					outAtoms.add(atom);
+					
+				} else if (newCond.getConditionType() == ConditionType.consequential) {
+					
+					ConsequentialCondition cond = (ConsequentialCondition) newCond;
+					
+					List<Atom> conditions = new ArrayList<>();
+					List<Atom> effects = new ArrayList<>();
+					for (AbstractCondition c : cond.getPrerequisites()) {
+						Condition pre = (Condition) c;
+						conditions.add(atom(pre.getPredicate(), pre.getArguments(), pre.isNegated()));
 					}
-					// Add created constant to this condition's arguments
-					condArgs.add(c);
+					for (AbstractCondition c : cond.getConsequences()) {
+						Condition cons = (Condition) c;
+						effects.add(atom(cons.getPredicate(), cons.getArguments(), cons.isNegated()));
+					}
+					outCondEffects.add(new ConditionalEffect(conditions, effects));
 				}
-				
-				// Assemble atom
-				Atom atom = atom(cond.getPredicate(), condArgs);
-				atom.set(!cond.isNegated());
-				dequantifiedConds.add(atom);
 			}						
 		});
-		
-		return dequantifiedConds;
 	}
 	
 	/**

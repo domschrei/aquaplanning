@@ -166,7 +166,7 @@ public class RelaxedPlanningGraph {
 				// -- conditional effect: check if prerequisites hold
 				ConsequentialCondition cond = (ConsequentialCondition) effect;
 				boolean applyEffects = true;
-				for (Condition prerequisite : cond.getPrerequisites()) {
+				for (AbstractCondition prerequisite : cond.getPrerequisites()) {
 					// Does this prerequisite hold?
 					if (!holdsCondition(prerequisite, liftedAction, 
 							liftedAction.getArguments(), liftedState)) {
@@ -178,7 +178,7 @@ public class RelaxedPlanningGraph {
 				// Are all prerequisites satisfied?
 				if (applyEffects) {
 					// -- yes; add consequences to processing queue
-					for (Condition consequence : cond.getConsequences()) {
+					for (AbstractCondition consequence : cond.getConsequences()) {
 						effects.add(consequence);
 					}
 				}
@@ -198,28 +198,51 @@ public class RelaxedPlanningGraph {
 	 * holds in the given state when the operator arguments are assigned 
 	 * the provided list of arguments.
 	 */
-	private boolean holdsCondition(Condition cond, Operator op, 
+	private boolean holdsCondition(AbstractCondition abstractCond, Operator op, 
 				List<Argument> opArgs, List<Condition> liftedState) {
 		
-		// Set the ground arguments as the arguments of the condition
-		Condition groundCond = cond.getConditionBoundToArguments(op.getArguments(), opArgs);
-		//groundConditionArguments(groundCond, op.getArguments(), opArgs);
+		List<AbstractCondition> conditions = new ArrayList<>();
+		conditions.add(abstractCond);
 		
-		if (groundCond.getPredicate().getName().equals("=")) {
-			// Equality predicate: just check if the two args are equal
-			if (groundCond.getArguments().get(0).equals(groundCond.getArguments().get(1))) {
-				return !cond.isNegated();
+		for (int condIdx = 0; condIdx < conditions.size(); condIdx++) {
+			AbstractCondition c = conditions.get(condIdx);
+			
+			if (c.getConditionType() == ConditionType.atomic) {
+				
+				Condition cond = (Condition) c;
+				// Set the ground arguments as the arguments of the condition
+				Condition groundCond = cond.getConditionBoundToArguments(op.getArguments(), opArgs);
+				//groundConditionArguments(groundCond, op.getArguments(), opArgs);
+				
+				if (groundCond.getPredicate().getName().equals("=")) {
+					// Equality predicate: just check if the two args are equal
+					if (groundCond.getArguments().get(0).equals(groundCond.getArguments().get(1))) {
+						if (cond.isNegated())
+							return false;
+					}
+				}
+				
+				// Search the provided state for this condition
+				boolean holds = false;
+				for (Condition stateCond : liftedState) {
+					if (stateCond.equals(groundCond)) {
+						holds = true;
+					}
+				}
+				
+				if (!holds) {
+					// Condition not contained in the state; 
+					// if the condition is negated, then it holds; else, not
+					if (!cond.isNegated())
+						return false;
+				}
+				
+			} else if (c.getConditionType() == ConditionType.quantification) {
+				
+				conditions.addAll(ArgumentCombination.resolveQuantification((Quantification) c, problem, constants));
 			}
 		}
 		
-		// Search the provided state for this condition
-		for (Condition stateCond : liftedState) {
-			if (stateCond.equals(groundCond)) {
-				return true;
-			}
-		}
-		
-		// If the condition is negated, then it holds; else, not
-		return cond.isNegated();
+		return true;
 	}
 }

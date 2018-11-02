@@ -10,7 +10,7 @@ public class Quantification extends AbstractCondition {
 	}
 	private Quantifier quantifier;
 	private List<Argument> variables;
-	private List<Condition> conditions;
+	private List<AbstractCondition> conditions;
 	
 	public Quantification(Quantifier q) {
 
@@ -24,7 +24,7 @@ public class Quantification extends AbstractCondition {
 		variables.add(arg);
 	}
 	
-	public void addCondition(Condition condition) {
+	public void addCondition(AbstractCondition condition) {
 		conditions.add(condition);
 	}
 	
@@ -36,7 +36,7 @@ public class Quantification extends AbstractCondition {
 		return variables;
 	}
 	
-	public List<Condition> getConditions() {
+	public List<AbstractCondition> getConditions() {
 		return conditions;
 	}
 	
@@ -44,7 +44,7 @@ public class Quantification extends AbstractCondition {
 	public Quantification getConditionBoundToArguments(List<Argument> refArgs, List<Argument> argValues) {
 		
 		Quantification q = new Quantification(quantifier);
-		for (Condition c : conditions) {
+		for (AbstractCondition c : conditions) {
 			// TODO bind variable stronger to quantification than to action arguments,
 			// not the other way round
 			q.addCondition(c.getConditionBoundToArguments(refArgs, argValues));
@@ -63,7 +63,7 @@ public class Quantification extends AbstractCondition {
 			out += (quantifier == Quantifier.existential ? "∃" : "∀") + var + " ";
 		}
 		out += ": { ";
-		for (Condition cond : conditions) {
+		for (AbstractCondition cond : conditions) {
 			out += cond + " ";
 		}
 		out += "}";

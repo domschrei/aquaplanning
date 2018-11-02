@@ -4,8 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import edu.kit.aquaplanning.model.lifted.AbstractCondition;
+import edu.kit.aquaplanning.model.lifted.AbstractCondition.ConditionType;
 import edu.kit.aquaplanning.model.lifted.Argument;
 import edu.kit.aquaplanning.model.lifted.Condition;
+import edu.kit.aquaplanning.model.lifted.ConsequentialCondition;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.model.lifted.Quantification;
 import edu.kit.aquaplanning.model.lifted.Type;
@@ -30,13 +32,16 @@ public class ArgumentCombination {
 		public Iterator(List<List<Argument>> eligibleArgs) {
 			
 			this.eligibleArgs = eligibleArgs;
+
 			// Set current argument indices to zero
 			// (first argument combination)
 			currentArgIndices = new ArrayList<>();
+			hasNext = true;
 			for (int i = 0; i < eligibleArgs.size(); i++) {
+				if (eligibleArgs.get(i).isEmpty())
+					hasNext = false;
 				currentArgIndices.add(0);
 			}
-			hasNext = true;
 		}
 		
 		/**
@@ -160,42 +165,86 @@ public class ArgumentCombination {
 			
 			// For each quantified condition, create a condition
 			// with all quantified variables replaced
-			for (Condition cond : q.getConditions()) {
-				List<Argument> condArgs = new ArrayList<>();
+			List<AbstractCondition> conditions = q.getConditions();
+			for (int condIdx = 0; condIdx < conditions.size(); condIdx++) {
+				AbstractCondition abstractCond = conditions.get(condIdx);
 				
-				// For each argument of the condition
-				for (int argIdx = 0; argIdx < cond.getNumArgs(); argIdx++) {
-					Argument arg = cond.getArguments().get(argIdx);
-					Argument c = arg.copy();
+				if (abstractCond.getConditionType() == ConditionType.atomic) {
 					
-					if (!arg.isConstant()) {
-						// arg is a variable
-						// Is this variable bound to the quantifier?
-						
-						int qArgIdx = 0;
-						// Search for argument equality by name only
-						while (qArgIdx < quantifiedArgs.size() && 
-								!quantifiedArgs.get(qArgIdx).getName().equals(arg.getName()))
-							qArgIdx++;
-						
-						if (qArgIdx < quantifiedArgs.size()) {
-							// -- yes, bound to quantifier: 
-							// assign the corresponding dequantified argument
-							c = dequantifiedArgs.get(qArgIdx);
-						}
+					Condition cond = (Condition) abstractCond;
+					dequantifiedConds.add(dequantifyCondition(cond, quantifiedArgs, dequantifiedArgs));
+					
+				} else if (abstractCond.getConditionType() == ConditionType.consequential) {
+					
+					ConsequentialCondition cond = (ConsequentialCondition) abstractCond;
+					ConsequentialCondition newCond = new ConsequentialCondition();
+					for (AbstractCondition c : cond.getPrerequisites()) {
+						newCond.addPrerequisite(dequantifyCondition(c, quantifiedArgs, dequantifiedArgs));
 					}
-					// Add created constant to this condition's arguments
-					condArgs.add(c);
+					for (AbstractCondition c : cond.getConsequences()) {
+						newCond.addConsequence(dequantifyCondition(c, quantifiedArgs, dequantifiedArgs));
+					}
+					dequantifiedConds.add(newCond);
 				}
-				
-				// Assemble new condition
-				Condition newCondition = new Condition(cond.getPredicate(), cond.isNegated());
-				for (Argument arg : condArgs) newCondition.addArgument(arg);
-				dequantifiedConds.add(newCondition);
 			}						
 		});
 		
 		return dequantifiedConds;
+	}
+	
+	public static AbstractCondition dequantifyCondition(AbstractCondition abstractCond, 
+			List<Argument> quantifiedArgs, List<Argument> dequantifiedArgs) {
+		
+		if (abstractCond.getConditionType() == ConditionType.atomic) {
+			
+			Condition cond = (Condition) abstractCond;
+			List<Argument> condArgs = new ArrayList<>();
+			
+			// For each argument of the condition
+			for (int argIdx = 0; argIdx < cond.getNumArgs(); argIdx++) {
+				Argument arg = cond.getArguments().get(argIdx);
+				Argument c = arg.copy();
+				
+				if (!arg.isConstant()) {
+					// arg is a variable
+					// Is this variable bound to the quantifier?
+					
+					int qArgIdx = 0;
+					// Search for argument equality by name only
+					while (qArgIdx < quantifiedArgs.size() && 
+							!quantifiedArgs.get(qArgIdx).getName().equals(arg.getName()))
+						qArgIdx++;
+					
+					if (qArgIdx < quantifiedArgs.size()) {
+						// -- yes, bound to quantifier: 
+						// assign the corresponding dequantified argument
+						c = dequantifiedArgs.get(qArgIdx);
+					}
+				}
+				// Add created constant to this condition's arguments
+				condArgs.add(c);
+			}
+			
+			// Assemble new condition
+			Condition newCondition = new Condition(cond.getPredicate(), cond.isNegated());
+			for (Argument arg : condArgs) newCondition.addArgument(arg);
+			return newCondition;
+			
+		} else if (abstractCond.getConditionType() == ConditionType.consequential) {
+			
+			ConsequentialCondition cond = (ConsequentialCondition) abstractCond;
+			List<AbstractCondition> pre = new ArrayList<>();
+			List<AbstractCondition> cons = new ArrayList<>();
+			for (AbstractCondition c : cond.getPrerequisites()) {
+				pre.add(dequantifyCondition(c, quantifiedArgs, dequantifiedArgs));
+			}
+			for (AbstractCondition c : cond.getConsequences()) {
+				cons.add(dequantifyCondition(c, quantifiedArgs, dequantifiedArgs));
+			}
+			return new ConsequentialCondition(pre, cons);
+		}
+		
+		return null;
 	}
 	
 }

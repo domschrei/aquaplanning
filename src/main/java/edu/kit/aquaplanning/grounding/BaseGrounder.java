@@ -55,6 +55,13 @@ public abstract class BaseGrounder implements Grounder {
 		return atoms.get(atomName).copy();
 	}
 	
+	protected Atom atom(Predicate p, List<Argument> constants, boolean negated) {
+		
+		Atom atom = atom(p, constants);
+		atom.set(!negated);
+		return atom;
+	}
+	
 	/**
 	 * Assembles the name of an atom with a given predicate and a list
 	 * of constant arguments.
@@ -134,7 +141,13 @@ public abstract class BaseGrounder implements Grounder {
 	protected List<ConditionalEffect> getConditionalEffects(List<AbstractCondition> conditions) {
 		
 		List<ConditionalEffect> effects = new ArrayList<>();
-		conditions.forEach(c -> {
+		List<AbstractCondition> conditionsToProcess = new ArrayList<>();
+		
+		// As long as conditions are left to process ...
+		conditionsToProcess.addAll(conditions);
+		for (int i = 0; i < conditionsToProcess.size(); i++) {
+			
+			AbstractCondition c = conditionsToProcess.get(i);
 			if (c.getConditionType() == ConditionType.consequential) {
 				
 				// Ground prerequisites and consequences
@@ -142,8 +155,17 @@ public abstract class BaseGrounder implements Grounder {
 				List<Atom> pre = getAtoms(cond.getPrerequisites());
 				List<Atom> eff = getAtoms(cond.getConsequences());
 				effects.add(new ConditionalEffect(pre, eff));
+				
+			} else if (c.getConditionType() == ConditionType.quantification) {
+
+				// Resolve quantification and add all resulting atoms
+				// to the processing queue
+				conditionsToProcess.addAll(
+					ArgumentCombination.resolveQuantification(
+							(Quantification) c, problem, constants));
 			}
-		});
+		}
+		
 		return effects;
 	}
 	
