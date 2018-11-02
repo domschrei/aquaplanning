@@ -11,7 +11,6 @@ Aquaplanning supports PDDL (Planning Domain Description Language) files as an in
 * Equality (as a universal predicate `(= obj1 obj2)`)
 * Conditional effects (`when (...) (...)`)
 * Universal quantifications (inside preconditions, effects, initial state and goal)
-    - Conditional effects and quantifications cannot be used in a nested way right now.
 * Action costs (in its basic form `(:function total-cost - number)`, with constant positive cost per operator)
 
 These features (minus any mentioned restrictions) are more or less equivalent with the following [PDDL 3.1](https://helios.hud.ac.uk/scommv/IPC-14/repository/kovacs-pddl-3.1-2011.pdf) requirements:
@@ -32,6 +31,6 @@ The framework is built using Maven. E.g. using Eclipse, the project can be direc
 
 Aquaplanning can be used as an off-the-shelf planner; you can specify a domain file and a problem file as arguments (in that order), and it will attempt to parse, ground, and solve the problem. You can try the files provided in the `testfiles/` directory.
 
-When you want to use your own planner, implement the Planner interface and take a look at the DefaultPlanner class as a point of reference. Same holds for custom grounding procedures (Grounder, DefaultGrounder).
+When you want to use your own planner, implement the Planner interface and take a look at the DefaultPlanner class as a point of reference.
 
 If you find any bugs or you consider something to be missing, please let us know. We appreciate receiving issues and/or pull requests!
