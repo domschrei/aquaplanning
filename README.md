@@ -25,7 +25,9 @@ A trivial forward search is provided as a planner. (Better algorithms will be ad
 
 ## Building and installing
 
-The framework is built using Maven. E.g. using Eclipse, the project can be directly imported as a Maven project and then built and/or installed. The framework is written from scratch and only depends on antlr4 (for the parsing of PDDL files) and JUnit for tests. Maven should take care of these dependencies.
+The framework is written from scratch and only depends on antlr4 (for the parsing of PDDL files) and JUnit for tests. We use [Maven](https://maven.apache.org/) as a build system to resolve these dependencies (package `maven` in Debian-based Linux distributions). In the base directory, run `mvn package` which will run the included JUnit tests and create a runnable jar file in `target/aquaplanning-<version>.jar-with-dependencies.jar`. You can launch the application with `java -jar <runnable-jar> <domain-file> <problem-file>`.
+
+Using the Eclipse IDE, the project can be directly imported as a Maven project and then built and/or installed.
 
 ## Usage
 
