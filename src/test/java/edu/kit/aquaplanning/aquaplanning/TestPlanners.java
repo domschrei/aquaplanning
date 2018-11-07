@@ -12,7 +12,9 @@ import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.parsing.ProblemParser;
-import edu.kit.aquaplanning.planners.DefaultPlanner;
+import edu.kit.aquaplanning.planners.ForwardSearchPlanner;
+import edu.kit.aquaplanning.planners.Planner;
+import edu.kit.aquaplanning.planners.SearchStrategy;
 import edu.kit.aquaplanning.validate.Validator;
 import junit.framework.TestCase;
 
@@ -56,7 +58,8 @@ public class TestPlanners extends TestCase {
 			GroundPlanningProblem gpp = grounder.ground(pp);
 			
 			System.out.println("Planning ...");
-			Plan plan = new DefaultPlanner().findPlan(gpp);
+			Planner planner = new ForwardSearchPlanner(SearchStrategy.breadthFirst);
+			Plan plan = planner.findPlan(gpp);
 			
 			assertTrue(plan != null && plan.getLength() > 0);
 			assertTrue(Validator.planIsValid(gpp, plan));
