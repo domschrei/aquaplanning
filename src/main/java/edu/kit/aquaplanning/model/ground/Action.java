@@ -28,6 +28,15 @@ public class Action {
 		return true;
 	}
 	
+	public boolean isApplicableRelaxed(State state) {
+		for (Atom precondition : preconditions) {
+			if (precondition.getValue() && !state.holds(precondition)) {
+				return false;
+			}
+		}
+		return true;
+	}
+	
 	public State apply(State state) {
 		
 		// Apply basic effects
@@ -51,6 +60,38 @@ public class Action {
 				// -- yes: apply the consequences
 				for (Atom consequence : condEffect.getEffects()) {
 					newState.set(consequence);
+				}
+			}
+		}
+		return newState;
+	}
+	
+	public State applyRelaxed(State state) {
+		
+		// Apply basic effects
+		State newState = new State(state);
+		for (Atom effect : effects) {
+			if (effect.getValue()) // only positive effects!
+				newState.set(effect);
+		}
+		
+		// Apply conditional effects, if applicable
+		for (ConditionalEffect condEffect : conditionalEffects) {
+			
+			// Are all conditions satisfied?
+			boolean isActive = true;
+			for (Atom condition : condEffect.getConditions()) {
+				// only check positive conditions
+				if (condition.getValue() && !state.holds(condition)) {
+					isActive = false;
+					break;
+				}
+			}
+			if (isActive) {
+				// -- yes: apply the positive consequences
+				for (Atom consequence : condEffect.getEffects()) {
+					if (consequence.getValue())
+						newState.set(consequence);
 				}
 			}
 		}

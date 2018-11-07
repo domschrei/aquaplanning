@@ -6,8 +6,11 @@ import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.parsing.ProblemParser;
-import edu.kit.aquaplanning.planners.DefaultPlanner;
+import edu.kit.aquaplanning.planners.ForwardSearchPlanner;
 import edu.kit.aquaplanning.planners.Planner;
+import edu.kit.aquaplanning.planners.SearchStrategy;
+import edu.kit.aquaplanning.planners.heuristic.Heuristic;
+import edu.kit.aquaplanning.planners.heuristic.RelaxedPathLengthHeuristic;
 import edu.kit.aquaplanning.validate.Validator;
 
 /**
@@ -45,7 +48,10 @@ public class Main {
 			
 			// Step 3: Planning
 			System.out.println("Planning ...");
-			Planner planner = new DefaultPlanner();
+			// TODO enter search strategy and heuristic here
+			SearchStrategy strategy = SearchStrategy.bestFirst;
+			Heuristic h = new RelaxedPathLengthHeuristic(planningProblem);
+			Planner planner = new ForwardSearchPlanner(strategy, h);
 			Plan plan = planner.findPlan(planningProblem);
 			
 			// Solution found?
