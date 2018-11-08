@@ -39,7 +39,8 @@ public class ArgumentCombination {
 			hasNext = true;
 			for (int i = 0; i < eligibleArgs.size(); i++) {
 				if (eligibleArgs.get(i).isEmpty())
-					hasNext = false;
+					// no arguments at position i to choose from
+					hasNext = false; 
 				currentArgIndices.add(0);
 			}
 		}

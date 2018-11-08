@@ -769,15 +769,17 @@ public class ProblemParser extends PddlBaseListener {
 			
 			// Create new cond. effect object
 			if (isInContext(ParseContext.quantification)) {
+				// Conditional effect inside quantification
 				currentQuantification().addCondition(new ConsequentialCondition());
-			} else {				
+			} else {
+				// Conditional effect as one of the operator effects
 				currentOperator().addConditionalEffect(new ConsequentialCondition());
 			}
 			context.push(ParseContext.actionCondEff);
 		
 		} else if (ctx.children.size() == 7 
 				&& ctx.children.get(1).getText().equalsIgnoreCase("forall")) {
-			// Quantification
+			// Quantification as one of the operator effects
 			
 			// Create new quantification object
 			context.push(ParseContext.quantification);
