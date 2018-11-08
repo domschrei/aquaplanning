@@ -58,7 +58,9 @@ public class TestPlanners extends TestCase {
 			GroundPlanningProblem gpp = grounder.ground(pp);
 			
 			System.out.println("Planning ...");
-			Planner planner = new ForwardSearchPlanner(SearchStrategy.breadthFirst);
+			Planner planner = new ForwardSearchPlanner(
+					new SearchStrategy(SearchStrategy.BREADTH_FIRST)
+			);
 			Plan plan = planner.findPlan(gpp);
 			
 			assertTrue(plan != null && plan.getLength() > 0);
