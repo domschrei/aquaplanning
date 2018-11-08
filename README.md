@@ -21,7 +21,7 @@ For planning problems using these features (or any subset), a full representatio
 
 Currently, Aquaplanning features two grounding procedures: a naïve full enumeration of atoms and actions, and the result of traversing the problem's (delete-)relaxed planning graph.
 
-A generic state space forward search is provided as a planner. As of now, a few common search strategies (BFS, DFS, A\*, Best-first, random choice) are implemented, as well as a couple of simple heuristics to guide the A\* and Best-first searches.  
+A generic state space forward search is provided as a planner. As of now, a few common search strategies (BFS, DFS, A\*, Weighted A\*, Best-first, random choice) are implemented, as well as a couple of simple heuristics to guide the A\* and Best-first searches.  
 
 At the end of the pipeline, a tiny plan validator can be employed to ensure the planner's correctness.
 
