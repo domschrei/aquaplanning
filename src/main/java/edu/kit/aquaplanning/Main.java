@@ -49,7 +49,7 @@ public class Main {
 			// Step 3: Planning
 			System.out.println("Planning ...");
 			// TODO enter search strategy and heuristic here
-			SearchStrategy strategy = SearchStrategy.bestFirst;
+			SearchStrategy strategy = new SearchStrategy(SearchStrategy.BEST_FIRST);
 			Heuristic h = new RelaxedPathLengthHeuristic(planningProblem);
 			Planner planner = new ForwardSearchPlanner(strategy, h);
 			Plan plan = planner.findPlan(planningProblem);

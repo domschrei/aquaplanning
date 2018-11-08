@@ -37,7 +37,7 @@ public class SearchQueue {
 	 */
 	public SearchQueue(SearchStrategy s) {
 		this.strategy = s;
-		if (s == SearchStrategy.bestFirst || s == SearchStrategy.aStar) {
+		if (s.isHeuristical()) {
 			throw new IllegalArgumentException(
 					"A heuristic must be provided in the constructor.");
 		}
@@ -56,26 +56,34 @@ public class SearchQueue {
 	
 	private void initFrontier() {
 		
-		switch (strategy) {
-		case breadthFirst:
+		switch (strategy.getMode()) {
+		case SearchStrategy.BREADTH_FIRST:
 			queue = new ArrayDeque<>();
 			break;
-		case depthFirst:
+		case SearchStrategy.DEPTH_FIRST:
 			stack = new Stack<>();
 			break;
-		case bestFirst:
+		case SearchStrategy.BEST_FIRST:
 			queue = new PriorityQueue<SearchNode>((n1, n2) ->
 					// Compare heuristic scores
 					n1.heuristicValue - n2.heuristicValue
 			);
 			break;
-		case aStar:
+		case SearchStrategy.A_STAR:
 			queue = new PriorityQueue<SearchNode>((n1, n2) ->
 					// Compare (cost so far + heuristic scores)
 					n1.depth + n1.heuristicValue - (n2.depth + n2.heuristicValue)
 			);
 			break;
-		case randomChoice:
+		case SearchStrategy.WEIGHTED_A_STAR:
+			int heuristicWeight = strategy.getHeuristicWeight();
+			queue = new PriorityQueue<SearchNode>((n1, n2) ->
+					// Compare (cost so far + heuristic scores)
+					n1.depth + heuristicWeight * n1.heuristicValue 
+					- (n2.depth + heuristicWeight * n2.heuristicValue)
+			);
+			break;
+		case SearchStrategy.RANDOM_CHOICE:
 			list = new ArrayList<>();
 			random = new Random(1337); // <-- seed
 		}
@@ -106,15 +114,15 @@ public class SearchQueue {
 		if (canBePruned(node))
 			return;
 		
-		if (strategy == SearchStrategy.bestFirst || strategy == SearchStrategy.aStar) {
+		if (strategy.isHeuristical()) {
 			// Compute heuristic value for the node
 			node.heuristicValue = h.value(node);
 			queue.add(node);
-		} else if (strategy == SearchStrategy.breadthFirst) {
+		} else if (strategy.getMode() == SearchStrategy.BREADTH_FIRST) {
 			queue.add(node);
-		} else if (strategy == SearchStrategy.depthFirst) {
+		} else if (strategy.getMode() == SearchStrategy.DEPTH_FIRST) {
 			stack.push(node);
-		} else if (strategy == SearchStrategy.randomChoice) {
+		} else if (strategy.getMode() == SearchStrategy.RANDOM_CHOICE) {
 			list.add(node);
 		}
 	}
@@ -125,9 +133,9 @@ public class SearchQueue {
 	public SearchNode get() {
 		
 		SearchNode node;
-		if (strategy == SearchStrategy.depthFirst) {
+		if (strategy.getMode() == SearchStrategy.DEPTH_FIRST) {
 			node = stack.pop();
-		} else if (strategy == SearchStrategy.randomChoice) {
+		} else if (strategy.getMode() == SearchStrategy.RANDOM_CHOICE) {
 			node = list.remove(random.nextInt(list.size()));
 		} else {
 			node = queue.poll();
@@ -144,9 +152,9 @@ public class SearchQueue {
 	 */
 	public boolean isEmpty() {
 		
-		if (strategy == SearchStrategy.depthFirst) {
+		if (strategy.getMode() == SearchStrategy.DEPTH_FIRST) {
 			return stack.isEmpty();
-		} else if (strategy == SearchStrategy.randomChoice) {
+		} else if (strategy.getMode() == SearchStrategy.RANDOM_CHOICE) {
 			return list.isEmpty();
 		} else {
 			return queue.isEmpty();

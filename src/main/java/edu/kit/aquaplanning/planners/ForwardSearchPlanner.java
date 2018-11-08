@@ -27,11 +27,17 @@ public class ForwardSearchPlanner implements Planner {
 	
 	public ForwardSearchPlanner(SearchStrategy strategy) {
 		this.strategy = strategy;
+		if (strategy.isHeuristical()) {
+			throw new IllegalArgumentException("Heuristic needed, but not provided.");
+		}
 	}
 	
 	public ForwardSearchPlanner(SearchStrategy strategy, Heuristic heuristic) {
 		this.strategy = strategy;
 		this.heuristic = heuristic;
+		if (!strategy.isHeuristical()) {
+			System.out.println("Warning: Heuristic not needed, but provided.");
+		}
 	}
 	
 	@Override
@@ -44,10 +50,10 @@ public class ForwardSearchPlanner implements Planner {
 		
 		// Initialize forward search
 		SearchQueue frontier;
-		if (heuristic == null) {
-			frontier = new SearchQueue(strategy);
-		} else {
+		if (strategy.isHeuristical()) {
 			frontier = new SearchQueue(strategy, heuristic);
+		} else {
+			frontier = new SearchQueue(strategy);
 		}
 		frontier.add(new SearchNode(null, initState));
 		
