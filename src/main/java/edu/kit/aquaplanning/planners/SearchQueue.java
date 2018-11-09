@@ -117,7 +117,10 @@ public class SearchQueue {
 		if (strategy.isHeuristical()) {
 			// Compute heuristic value for the node
 			node.heuristicValue = h.value(node);
-			queue.add(node);
+			if (node.heuristicValue < Integer.MAX_VALUE) {
+				// Only add node if heuristic does not return infinity
+				queue.add(node);
+			}
 		} else if (strategy.getMode() == SearchStrategy.BREADTH_FIRST) {
 			queue.add(node);
 		} else if (strategy.getMode() == SearchStrategy.DEPTH_FIRST) {
