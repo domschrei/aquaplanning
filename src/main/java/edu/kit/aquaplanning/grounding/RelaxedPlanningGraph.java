@@ -18,13 +18,13 @@ public class RelaxedPlanningGraph {
 	private List<Argument> constants;
 	private List<List<Condition>> liftedStates;
 	private List<List<Operator>> liftedActions;
-	
+		
 	public RelaxedPlanningGraph(PlanningProblem problem) {
 
 		this.problem = problem;
 		this.liftedActions = new ArrayList<>();
 		this.liftedStates = new ArrayList<>();
-		
+				
 		constants = new ArrayList<>();
 		constants.addAll(problem.getConstants());
 		
@@ -50,6 +50,8 @@ public class RelaxedPlanningGraph {
 		// Add all actions which are applicable
 		List<Operator> newActions = getLiftedActionsReachableFrom(state);
 		liftedActions.add(newActions);
+		System.out.println("Layer " + getCurrentLayer() + ": " 
+							+ newActions.size() + " actions reachable");
 		
 		// Apply actions into new state
 		List<Condition> newState = new ArrayList<>();
@@ -83,57 +85,53 @@ public class RelaxedPlanningGraph {
 	protected List<Operator> getLiftedActionsReachableFrom(List<Condition> liftedState) {
 		
 		List<Operator> reachableOperators = new ArrayList<>();
-
-		/*
-		 * TODO This is inefficient. The possible argument combinations per operator should be 
-		 * directly inferred from the current lifted state instead of producing all possible 
-		 * operator arguments and only then checking them against the state.
-		 */
 		
 		// For each operator
-		for (Operator op : problem.getOperators()) {
-					
-			// Get all possible argument combinations
-			List<List<Argument>> arguments = ArgumentCombination.getEligibleArguments(
-					op.getArguments(), problem, constants);
-			List<List<Argument>> argumentCombinations = new ArrayList<>();
-			new ArgumentCombination.Iterator(arguments).forEachRemaining(l -> argumentCombinations.add(l));
+		for (int i = 0; i < problem.getOperators().size(); i++) {
+			final int opIdx = i;
+			Operator op = problem.getOperators().get(opIdx);
 			
-			// Now filter this list by checking each precondition
+			// Expand quantifications into flat conditions
 			List<AbstractCondition> preconditions = new ArrayList<>();
 			preconditions.addAll(op.getPreconditions());
 			for (int condIdx = 0; condIdx < preconditions.size(); condIdx++) {
 				AbstractCondition cond = preconditions.get(condIdx);
 				
-				if (cond.getConditionType() == ConditionType.atomic) {
+				if (cond.getConditionType() == ConditionType.quantification) {
 					
-					// Find out which argument choices of the operator 
-					// are valid such that the precondition is satisfied
-					for (int combIdx = 0; combIdx < argumentCombinations.size(); combIdx++) {
-						List<Argument> args = argumentCombinations.get(combIdx);
-						
-						// Does the precondition hold with these arguments?
-						if (!holdsCondition((Condition) cond, op, args, liftedState)) {
-							// -- no; directly remove it
-							argumentCombinations.remove(combIdx--);
-						}
-					}
-					
-				} else if (cond.getConditionType() == ConditionType.quantification) {
-					
-					// Fully instantiate the quantification, producing a set
-					// of atomic conditions which we will check later
+					// Instantiate the quantification
 					List<AbstractCondition> conds = ArgumentCombination.resolveQuantification(
 							(Quantification) cond, problem, constants);
 					preconditions.addAll(conds);
 				}
 			}
-
-			// Create one lifted action for each valid choice of arguments
-			for (List<Argument> validArgs : argumentCombinations) {
-				Operator liftedAction = op.getOperatorWithGroundArguments(validArgs);
-				reachableOperators.add(liftedAction);
-			}
+			
+			// Iterate over all possible argument combinations
+			List<List<Argument>> arguments = ArgumentCombination.getEligibleArguments(
+					op.getArguments(), problem, constants);
+			new ArgumentCombination.Iterator(arguments).forEachRemaining(args -> {
+				
+				// For each (flat) condition:
+				boolean addArguments = true;
+				for (AbstractCondition abstractCond : preconditions) {
+					if (abstractCond.getConditionType() == ConditionType.atomic) {						
+						Condition cond = (Condition) abstractCond;
+						
+						// Does the precondition hold with these arguments?
+						if (!holdsCondition((Condition) cond, op, args, liftedState)) {
+							// -- no
+							addArguments = false;
+							break;
+						}
+					}
+				}
+				
+				// Add lifted action, if reachable
+				if (addArguments) {
+					Operator liftedAction = op.getOperatorWithGroundArguments(args);
+					reachableOperators.add(liftedAction);
+				}
+			});
 		}
 		
 		return reachableOperators;
@@ -212,12 +210,12 @@ public class RelaxedPlanningGraph {
 				Condition cond = (Condition) c;
 				// Set the ground arguments as the arguments of the condition
 				Condition groundCond = cond.getConditionBoundToArguments(op.getArguments(), opArgs);
-				//groundConditionArguments(groundCond, op.getArguments(), opArgs);
 				
 				if (groundCond.getPredicate().getName().equals("=")) {
 					// Equality predicate: just check if the two args are equal
 					if (groundCond.getArguments().get(0).equals(groundCond.getArguments().get(1))) {
 						if (cond.isNegated())
+							// -- Inequality condition is false 
 							return false;
 					}
 				}
@@ -239,7 +237,8 @@ public class RelaxedPlanningGraph {
 				
 			} else if (c.getConditionType() == ConditionType.quantification) {
 				
-				conditions.addAll(ArgumentCombination.resolveQuantification((Quantification) c, problem, constants));
+				conditions.addAll(ArgumentCombination.resolveQuantification(
+						(Quantification) c, problem, constants));
 			}
 		}
 		
