@@ -269,6 +269,11 @@ public class RelaxedPlanningGraph {
 					// if the condition is negated, then it holds; else, not
 					if (!cond.isNegated())
 						return false;
+				} else {
+					// Condition is contained in the state;
+					// if the condition is negated, the entire thing does not hold
+					if (cond.isNegated())
+						return false;
 				}
 				
 			} else if (c.getConditionType() == ConditionType.quantification) {

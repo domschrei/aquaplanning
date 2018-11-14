@@ -55,7 +55,7 @@ public class FullEnumerationGrounder extends BaseGrounder {
 		
 		// Assemble finished problem
 		GroundPlanningProblem planningProblem = new GroundPlanningProblem(initialState, actions, 
-				goal, problem.hasActionCosts());
+				goal, problem.hasActionCosts(), extractAtomNames());
 		return planningProblem;
 	}
 	

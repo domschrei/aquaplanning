@@ -5,34 +5,44 @@ import java.util.List;
 
 public class State {
 
-	private List<Atom> atoms;
+	private List<Boolean> atoms;
 	
 	public State(List<Atom> atomList) {
 		
-		this.atoms = new ArrayList<>();
+		this.atoms = new ArrayList<>(atomList.size());
 		for (Atom atom : atomList) {
 			while (atoms.size() <= atom.getId()) {
-				atoms.add(new Atom(atoms.size(), "[auto]", false));
+				atoms.add(false);
 			}
-			atoms.set(atom.getId(), atom);
+			atoms.set(atom.getId(), atom.getValue());
 		}
 	}
-		
+	
 	public State(State other) {
 		
 		atoms = new ArrayList<>();
-		
-		for (Atom atom : other.atoms) {
-			atoms.add(atom.getId(), atom.copy());
-		}
+		atoms.addAll(other.atoms);
 	}
 	
 	public void set(Atom atom) {
 		
 		while (atoms.size() <= atom.getId()) {
-			atoms.add(new Atom(atoms.size(), "[auto]", false));
+			atoms.add(false);
 		}
-		atoms.set(atom.getId(), atom.copy());
+		atoms.set(atom.getId(), atom.getValue());
+	}
+	
+	public void setAllTrueAtomsFrom(State other) {
+		
+		for (int i = 0; i < other.atoms.size(); i++) {
+			boolean atom = other.atoms.get(i);
+			if (atom) {
+				while (atoms.size() <= i) {
+					atoms.add(false);
+				}
+				atoms.set(i, true);
+			}
+		}
 	}
 	
 	public boolean holds(Atom atom) {
@@ -40,10 +50,10 @@ public class State {
 		if (atoms.size() <= atom.getId())
 			return !atom.getValue();
 		
-		return atoms.get(atom.getId()).getValue() == atom.getValue();
+		return atoms.get(atom.getId()) == atom.getValue();
 	}
 	
-	public List<Atom> getAtoms() {
+	public List<Boolean> getAtoms() {
 		return atoms;
 	}
 	
@@ -52,8 +62,8 @@ public class State {
 	 */
 	public int size() {
 		int size = 0;
-		for (Atom atom : atoms) {
-			if (atom.getValue())
+		for (Boolean atom : atoms) {
+			if (atom)
 				size++;
 		}
 		return size;
@@ -67,7 +77,7 @@ public class State {
 		if (other.atoms.size() != atoms.size())
 			return false;
 		for (int i = 0; i < atoms.size(); i++) {
-			if (atoms.get(i).getValue() != other.atoms.get(i).getValue()) {
+			if (atoms.get(i) != other.atoms.get(i)) {
 				return false;
 			}
 		}
@@ -78,19 +88,21 @@ public class State {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		for (Atom atom : atoms) {
-			result = prime * result + (atom.getValue() ? 1 : 0);
+		for (Boolean atom : atoms) {
+			result = prime * result + (atom ? 1 : 0);
 		}
 		return result;
 	}
 	
+	/**
+	 * Only outputs raw booleans! 
+	 * Use groundPlanningProblem.stateToString(state) instead.
+	 */
 	@Override
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
-		for (Atom atom : atoms) {
-			if (atom.getValue()) {
-				builder.append(atom.toString() + " ");
-			}
+		for (Boolean atom : atoms) {
+			builder.append(atom.toString() + " ");
 		}
 		return builder.toString();
 	}

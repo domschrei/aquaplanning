@@ -3,7 +3,6 @@ package edu.kit.aquaplanning.planners;
 import java.util.List;
 
 import edu.kit.aquaplanning.model.ground.Action;
-import edu.kit.aquaplanning.model.ground.Atom;
 import edu.kit.aquaplanning.model.ground.State;
 
 public class GroundRelaxedPlanningGraph {
@@ -29,10 +28,7 @@ public class GroundRelaxedPlanningGraph {
 		for (Action action : actions) {
 			if (action.isApplicableRelaxed(state)) {
 				State result = action.applyRelaxed(state);
-				for (Atom atom : result.getAtoms()) {
-					if (atom.getValue())
-						newState.set(atom);
-				}
+				newState.setAllTrueAtomsFrom(result);
 			}
 		}
 		if (state.size() == newState.size()) {

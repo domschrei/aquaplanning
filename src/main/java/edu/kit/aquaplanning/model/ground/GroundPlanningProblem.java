@@ -8,14 +8,16 @@ public class GroundPlanningProblem {
 	private List<Action> actions;
 	private Goal goal;
 	private boolean hasActionCosts;
+	private List<String> atomNames;
 	
 	public GroundPlanningProblem(State initState, List<Action> actions, 
-			Goal goal, boolean hasActionCosts) {
+			Goal goal, boolean hasActionCosts, List<String> atomNames) {
 		
 		this.initialState = initState;
 		this.actions = actions;
 		this.goal = goal;
 		this.hasActionCosts = hasActionCosts;
+		this.atomNames = atomNames;
 	}
 	
 	public State getInitialState() {
@@ -34,11 +36,23 @@ public class GroundPlanningProblem {
 		return hasActionCosts;
 	}
 	
+	public String stateToString(State state) {
+		
+		String out = "{ ";
+		List<Boolean> atoms = state.getAtoms();
+		for (int i = 0; i < atoms.size(); i++) {
+			if (atoms.get(i)) {
+				out += atomNames.get(i) + " ";
+			}
+		}
+		return out + "}";
+	}
+	
 	@Override
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
 		builder.append("Initial state: ");
-		builder.append(initialState.toString());
+		builder.append(stateToString(initialState));
 		builder.append("\nActions (" + actions.size() + "):\n");
 		for (Action action : actions) {
 			builder.append("  " + action + "\n");

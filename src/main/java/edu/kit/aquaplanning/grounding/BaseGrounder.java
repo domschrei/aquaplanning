@@ -31,6 +31,7 @@ public abstract class BaseGrounder implements Grounder {
 	
 	protected List<Argument> constants;
 	protected Map<String, Atom> atoms;
+	protected Map<Integer, String> atomNames;
 	protected List<Action> actions;
 	
 	/**
@@ -43,13 +44,16 @@ public abstract class BaseGrounder implements Grounder {
 		// Create data structure for atoms, if necessary
 		if (atoms == null) {
 			atoms = new HashMap<>();
+			atomNames = new HashMap<>();
 		}
 		// Key: name of atom
 		String atomName = getAtomName(p, constants);
 		// Does the action already exists?
 		if (!atoms.containsKey(atomName)) {
 			// -- no: create new atom
-			atoms.put(atomName, new Atom(atoms.size(), atomName, true));
+			int atomId = atoms.size();
+			atoms.put(atomName, new Atom(atomId, atomName, true));
+			atomNames.put(atomId, atomName);
 		}
 		// Return copy of atom
 		return atoms.get(atomName).copy();
@@ -191,5 +195,14 @@ public abstract class BaseGrounder implements Grounder {
 		Action action = new Action(actionName, preconditions, effects, conditionalEffects);
 		action.setCost(liftedAction.getCost());
 		return action;
+	}
+	
+	public List<String> extractAtomNames() {
+		
+		List<String> atomNames = new ArrayList<>();
+		for (int i = 0; i < atoms.size(); i++) {
+			atomNames.add(this.atomNames.get(i));
+		}
+		return atomNames;
 	}
 }
