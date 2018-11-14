@@ -63,4 +63,35 @@ public class ConsequentialCondition extends AbstractCondition {
 		out += "}";
 		return out;
 	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((consequences == null) ? 0 : consequences.hashCode());
+		result = prime * result + ((prerequisites == null) ? 0 : prerequisites.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		ConsequentialCondition other = (ConsequentialCondition) obj;
+		if (consequences == null) {
+			if (other.consequences != null)
+				return false;
+		} else if (!consequences.equals(other.consequences))
+			return false;
+		if (prerequisites == null) {
+			if (other.prerequisites != null)
+				return false;
+		} else if (!prerequisites.equals(other.prerequisites))
+			return false;
+		return true;
+	}
 }

@@ -63,7 +63,9 @@ public class TestPlanners extends TestCase {
 			);
 			Plan plan = planner.findPlan(gpp);
 			
-			assertTrue(plan != null && plan.getLength() > 0);
+			System.out.println(plan);
+			assertTrue(plan != null);
+			assertTrue(plan.getLength() > 0);
 			assertTrue(Validator.planIsValid(gpp, plan));
 			
 			System.out.println("Done.");
