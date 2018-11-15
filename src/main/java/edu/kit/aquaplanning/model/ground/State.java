@@ -1,48 +1,34 @@
 package edu.kit.aquaplanning.model.ground;
 
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.List;
 
 public class State {
 
-	private List<Boolean> atoms;
+	private BitSet atoms;
 	
 	public State(List<Atom> atomList) {
 		
-		this.atoms = new ArrayList<>(atomList.size());
+		this.atoms = new BitSet(atomList.size());
 		for (Atom atom : atomList) {
-			while (atoms.size() <= atom.getId()) {
-				atoms.add(false);
-			}
 			atoms.set(atom.getId(), atom.getValue());
 		}
 	}
 	
 	public State(State other) {
 		
-		atoms = new ArrayList<>();
-		atoms.addAll(other.atoms);
+		atoms = (BitSet) other.atoms.clone();
 	}
 	
 	public void set(Atom atom) {
 		
-		while (atoms.size() <= atom.getId()) {
-			atoms.add(false);
-		}
 		atoms.set(atom.getId(), atom.getValue());
 	}
 	
 	public void setAllTrueAtomsFrom(State other) {
 		
-		for (int i = 0; i < other.atoms.size(); i++) {
-			boolean atom = other.atoms.get(i);
-			if (atom) {
-				while (atoms.size() <= i) {
-					atoms.add(false);
-				}
-				atoms.set(i, true);
-			}
-		}
+		atoms.or(other.atoms);
 	}
 	
 	public boolean holds(Atom atom) {
@@ -54,6 +40,11 @@ public class State {
 	}
 	
 	public List<Boolean> getAtoms() {
+		
+		List<Boolean> atoms = new ArrayList<>(this.atoms.size());
+		for (int i = 0; i < this.atoms.size(); i++) {
+			atoms.add(this.atoms.get(i));
+		}
 		return atoms;
 	}
 	
@@ -61,12 +52,7 @@ public class State {
 	 * Returns the amount of _true_ atoms in the state.
 	 */
 	public int size() {
-		int size = 0;
-		for (Boolean atom : atoms) {
-			if (atom)
-				size++;
-		}
-		return size;
+		return atoms.cardinality();
 	}
 	
 	@Override
@@ -74,13 +60,8 @@ public class State {
 		if (obj == null)
 			return false;
 		State other = (State) obj;
-		if (other.atoms.size() != atoms.size())
+		if (!other.atoms.equals(atoms))
 			return false;
-		for (int i = 0; i < atoms.size(); i++) {
-			if (atoms.get(i) != other.atoms.get(i)) {
-				return false;
-			}
-		}
 		return true;
 	}
 	
@@ -88,7 +69,8 @@ public class State {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		for (Boolean atom : atoms) {
+		for (int i = 0; i < atoms.size(); i++) {
+			boolean atom = atoms.get(i);
 			result = prime * result + (atom ? 1 : 0);
 		}
 		return result;
@@ -101,8 +83,9 @@ public class State {
 	@Override
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
-		for (Boolean atom : atoms) {
-			builder.append(atom.toString() + " ");
+		for (int i = 0; i < atoms.size(); i++) {
+			boolean atom = atoms.get(i);
+			builder.append((atom ? "1" : "0") + " ");
 		}
 		return builder.toString();
 	}
