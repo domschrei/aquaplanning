@@ -1,44 +1,101 @@
 package edu.kit.aquaplanning.model.ground;
 
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.List;
 
+/**
+ * Represents a world state as a set of atoms which are currently true.
+ */
 public class State {
 
-	private BitSet atoms;
+	/**
+	 * Internal AtomSet of all true atoms.
+	 */
+	private AtomSet atoms;
 	
+	/**
+	 * Creates a state containing exactly all TRUE atoms in the provided list.
+	 */
 	public State(List<Atom> atomList) {
 		
-		this.atoms = new BitSet(atomList.size());
-		for (Atom atom : atomList) {
-			atoms.set(atom.getId(), atom.getValue());
-		}
+		this.atoms = new AtomSet(atomList);
 	}
 	
+	/**
+	 * Copies the provided state into a new object.
+	 */
 	public State(State other) {
 		
-		atoms = (BitSet) other.atoms.clone();
+		atoms = (AtomSet) other.atoms.clone();
 	}
 	
+	/**
+	 * Sets the provided atom. If the atom has negative value,
+	 * it is removed from the state; else, it is added to the state.
+	 */
 	public void set(Atom atom) {
 		
-		atoms.set(atom.getId(), atom.getValue());
+		atoms.set(atom);
 	}
 	
-	public void setAllTrueAtomsFrom(State other) {
+	/**
+	 * Extends this state by all atoms contained in the provided
+	 * other state.
+	 */
+	public void addAllTrueAtomsFrom(State other) {
 		
-		atoms.or(other.atoms);
+		atoms.applyTrueAtoms(other.atoms);
 	}
 	
+	/**
+	 * True, if the given atom holds in this state (i.e.
+	 * (the atom is true AND the atom is in the state) OR
+	 * (the atom is false AND the atom is not in the state)).
+	 */
 	public boolean holds(Atom atom) {
 		
-		if (atoms.size() <= atom.getId())
-			return !atom.getValue();
-		
-		return atoms.get(atom.getId()) == atom.getValue();
+		return atoms.get(atom);
 	}
 	
+	/**
+	 * True, if all atoms in the provided AtomSet are contained
+	 * in the state.
+	 */
+	public boolean holdsAll(AtomSet atoms) {
+		
+		return this.atoms.all(atoms);
+	}
+	
+	/**
+	 * True, if none of the atoms in the provided AtomSet are
+	 * contained in the state.
+	 */
+	public boolean holdsNone(AtomSet atoms) {
+		
+		return this.atoms.none(atoms);
+	}
+	
+	/**
+	 * Adds all atoms in the provided AtomSet to the state.
+	 */
+	public void addAll(AtomSet atoms) {
+		
+		this.atoms.applyTrueAtoms(atoms);
+	}
+	
+	/**
+	 * Removes all atoms in the provided AtomSet from the state.
+	 */
+	public void removeAll(AtomSet atoms) {
+		
+		this.atoms.applyTrueAtomsAsFalse(atoms);
+	}
+	
+	/**
+	 * Returns a list of booleans representing the atoms
+	 * of the respective ID at each index. Warning: non-trivial
+	 * runtime.
+	 */
 	public List<Boolean> getAtoms() {
 		
 		List<Boolean> atoms = new ArrayList<>(this.atoms.size());
@@ -49,10 +106,10 @@ public class State {
 	}
 	
 	/**
-	 * Returns the amount of _true_ atoms in the state.
+	 * Returns the amount of atoms contained in the state.
 	 */
 	public int size() {
-		return atoms.cardinality();
+		return atoms.numAtoms();
 	}
 	
 	@Override

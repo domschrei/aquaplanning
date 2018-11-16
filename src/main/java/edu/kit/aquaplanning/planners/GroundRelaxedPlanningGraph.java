@@ -28,7 +28,7 @@ public class GroundRelaxedPlanningGraph {
 		for (Action action : actions) {
 			if (action.isApplicableRelaxed(state)) {
 				State result = action.applyRelaxed(state);
-				newState.setAllTrueAtomsFrom(result);
+				newState.addAllTrueAtomsFrom(result);
 			}
 		}
 		if (state.size() == newState.size()) {

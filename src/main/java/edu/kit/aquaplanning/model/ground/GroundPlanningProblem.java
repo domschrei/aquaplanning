@@ -2,6 +2,10 @@ package edu.kit.aquaplanning.model.ground;
 
 import java.util.List;
 
+/**
+ * Represents a planning problem in ground form, i.e. all atoms
+ * and actions are flat lists/sets without any parameters.
+ */
 public class GroundPlanningProblem {
 
 	private State initialState;
@@ -36,6 +40,27 @@ public class GroundPlanningProblem {
 		return hasActionCosts;
 	}
 	
+	public int getNumAtoms() {
+		return atomNames.size();
+	}
+	
+	/**
+	 * Returns the provided AtomSet in human-readable form.
+	 */
+	public String atomSetToString(AtomSet atoms) {
+		
+		String out = "{ ";
+		for (int i = 0; i < this.atomNames.size(); i++) {
+			if (atoms.get(i)) {
+				out += atomNames.get(i) + " ";
+			}
+		}
+		return out + "}";
+	}
+	
+	/**
+	 * Returns the provided State in human-readable form.
+	 */
 	public String stateToString(State state) {
 		
 		String out = "{ ";
@@ -50,12 +75,13 @@ public class GroundPlanningProblem {
 	
 	@Override
 	public String toString() {
+		
 		StringBuilder builder = new StringBuilder();
 		builder.append("Initial state: ");
 		builder.append(stateToString(initialState));
 		builder.append("\nActions (" + actions.size() + "):\n");
 		for (Action action : actions) {
-			builder.append("  " + action + "\n");
+			builder.append("  " + action.toString(atomSet -> atomSetToString(atomSet)) + "\n");
 		}
 		builder.append("Goal: ");
 		builder.append(goal.toString());

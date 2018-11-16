@@ -96,8 +96,10 @@ public class SearchQueue {
 	 */
 	public boolean canBePruned(SearchNode node) {
 		
+		// If revisiting states is forbidden:
 		// Has the state already been visited?
-		if (visitedStates.contains(node.state.hashCode())) {
+		if (!strategy.canRevisitStates() && 
+				visitedStates.contains(node.state.hashCode())) {
 			return true;
 		}
 		return false;
@@ -144,8 +146,11 @@ public class SearchQueue {
 			node = queue.poll();
 		}
 		
-		// Add the state's hash code to the visited states
-		visitedStates.add(node.state.hashCode());
+		// If revisiting states during the search is forbidden:
+		if (!strategy.canRevisitStates()) {			
+			// Add the state's hash code to the visited states
+			visitedStates.add(node.state.hashCode());
+		}
 		
 		return node;
 	}

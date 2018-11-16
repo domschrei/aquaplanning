@@ -99,9 +99,11 @@ public class ForwardSearchPlanner implements Planner {
 			
 			iteration++;
 			
-			// Print amount of visited nodes
+			// Print amount of visited nodes and search speed
 			if ((iteration << visitedNodesPrintInterval) == 0) {
-				System.out.println("Visited " + iteration + " nodes.");
+				double elapsedMillis = ((System.nanoTime() - timeStart) * 0.001 * 0.001);
+				int nodesPerSecond = (int) (iteration / (0.001 * elapsedMillis));
+				System.out.println("Visited " + iteration + " nodes. (" + nodesPerSecond + " nodes/s)");
 				visitedNodesPrintInterval--;
 			}
 		}

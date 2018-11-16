@@ -29,6 +29,13 @@ public class Main {
 			System.exit(0);
 		}
 		
+//		try {
+//			Thread.sleep(10000);
+//		} catch (InterruptedException e1) {
+//			// TODO Auto-generated catch block
+//			e1.printStackTrace();
+//		}
+		
 		try {
 			
 			// Step 1: Parsing of domain and problem files
@@ -50,6 +57,7 @@ public class Main {
 			System.out.println("Planning ...");
 			// TODO enter search strategy and heuristic here
 			SearchStrategy strategy = new SearchStrategy(SearchStrategy.BEST_FIRST);
+			strategy.setRevisitStates(false);
 			Heuristic h = new RelaxedPathLengthHeuristic(planningProblem);
 			Planner planner = new ForwardSearchPlanner(strategy, h);
 			Plan plan = planner.findPlan(planningProblem);

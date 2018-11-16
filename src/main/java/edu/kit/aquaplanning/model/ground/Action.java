@@ -1,121 +1,138 @@
 package edu.kit.aquaplanning.model.ground;
 
 import java.util.List;
+import java.util.function.Function;
 
+/**
+ * Represents an action of a ground planning problem with certain
+ * preconditions and effects.
+ */
 public class Action {
 
 	private String name;
 
-	private List<Atom> preconditions;
-	private List<Atom> effects;
+	private AtomSet preconditionsPos;
+	private AtomSet preconditionsNeg;
+	private AtomSet effectsPos;
+	private AtomSet effectsNeg;
 	private List<ConditionalEffect> conditionalEffects;
 	private int cost;
 	
+	/**
+	 * Creates an action with the provided properties.
+	 */
 	public Action(String name, List<Atom> preconditions, List<Atom> effects, 
 			List<ConditionalEffect> conditionalEffects) {
+		
 		this.name = name;
-		this.preconditions = preconditions;
-		this.effects = effects;
+		this.preconditionsPos = new AtomSet(preconditions, true);
+		this.preconditionsNeg = new AtomSet(preconditions, false);
+		this.effectsPos = new AtomSet(effects, true);
+		this.effectsNeg = new AtomSet(effects, false);
 		this.conditionalEffects = conditionalEffects;
 	}
 
+	/**
+	 * True iff this action is applicable in the provided state.
+	 */
 	public boolean isApplicable(State state) {
-		for (Atom precondition : preconditions) {
-			if (!state.holds(precondition)) {
-				return false;
-			}
-		}
+		
+		if (!state.holdsAll(preconditionsPos))
+			return false;
+		if (!state.holdsNone(preconditionsNeg))
+			return false;
+		
 		return true;
 	}
 	
+	/**
+	 * True iff this action is applicable in the provided state
+	 * in a delete-relaxed sense.
+	 */
 	public boolean isApplicableRelaxed(State state) {
-		for (Atom precondition : preconditions) {
-			if (precondition.getValue() && !state.holds(precondition)) {
-				return false;
-			}
-		}
+		
+		if (!state.holdsAll(preconditionsPos))
+			return false;
 		return true;
 	}
 	
+	/**
+	 * Returns the result of applying this action to the provided
+	 * state. Attention: This method does not check whether the
+	 * action is applicable in this state! Check this beforehand with
+	 * isApplicable(state).
+	 */
 	public State apply(State state) {
 		
 		// Apply basic effects
 		State newState = new State(state);
-		for (Atom effect : effects) {
-			newState.set(effect);
-		}
-		
+		newState.addAll(effectsPos);
+		newState.removeAll(effectsNeg);
+
 		// Apply conditional effects, if applicable
 		for (ConditionalEffect condEffect : conditionalEffects) {
 			
 			// Are all conditions satisfied?
-			boolean isActive = true;
-			for (Atom condition : condEffect.getConditions()) {
-				if (!state.holds(condition)) {
-					isActive = false;
-					break;
-				}
-			}
+			boolean isActive = state.holdsAll(condEffect.getConditionsPos());
+			isActive &= state.holdsNone(condEffect.getConditionsNeg());
+
 			if (isActive) {
 				// -- yes: apply the consequences
-				for (Atom consequence : condEffect.getEffects()) {
-					newState.set(consequence);
-				}
+				newState.addAll(condEffect.getEffectsPos());
+				newState.removeAll(condEffect.getEffectsNeg());
 			}
 		}
+		
 		return newState;
 	}
 	
+	/**
+	 * Returns the result of applying this action to the provided
+	 * state, in a delete-relaxed sense. 
+	 * Attention: This method does not check whether the action is 
+	 * applicable in this state! Check this beforehand with
+	 * isApplicableRelaxed(state).
+	 */
 	public State applyRelaxed(State state) {
 		
-		// Apply basic effects
+		// Apply basic positive effects
 		State newState = new State(state);
-		for (Atom effect : effects) {
-			if (effect.getValue()) // only positive effects!
-				newState.set(effect);
-		}
+		newState.addAll(effectsPos);
 		
-		// Apply conditional effects, if applicable
+		// Apply positive conditional effects, if applicable
 		for (ConditionalEffect condEffect : conditionalEffects) {
 			
-			// Are all conditions satisfied?
-			boolean isActive = true;
-			for (Atom condition : condEffect.getConditions()) {
-				// only check positive conditions
-				if (condition.getValue() && !state.holds(condition)) {
-					isActive = false;
-					break;
-				}
-			}
+			// Are all POSITIVE conditions satisfied?
+			boolean isActive = state.holdsAll(condEffect.getConditionsPos());
+
 			if (isActive) {
-				// -- yes: apply the positive consequences
-				for (Atom consequence : condEffect.getEffects()) {
-					if (consequence.getValue())
-						newState.set(consequence);
-				}
+				// -- yes: apply the POSITIVE consequences
+				newState.addAll(condEffect.getEffectsPos());
 			}
 		}
+				
 		return newState;
 	}
 	
 	@Override
 	public String toString() {
 		
+		return toString((atomSet -> atomSet.toString()));
+	}
+	
+	public String toString(Function<AtomSet, String> atomSetToString) {
+		
 		String out = "";
 		out += name;
 		if (cost != 0) {			
 			out += "[cost:" + cost + "]";
 		}
-		out += " PRE: { ";
-		for (Atom a : preconditions) {
-			out += a + " ";
-		}
-		out += "} POST: { ";
-		for (Atom a : effects) {
-			out += a + " ";
-		}
+		out += " PRE: { " + atomSetToString.apply(preconditionsPos) 
+						+ " ; NOT " + atomSetToString.apply(preconditionsNeg);
+		out += "} POST: { " + atomSetToString.apply(effectsPos) 
+						+ " ; NOT " + atomSetToString.apply(effectsNeg) + " ; ";
 		for (ConditionalEffect eff : conditionalEffects) {
-			out += eff + " ";
+			out += eff.toString(atomSetToString) + " ";
 		}
 		out += "}";
 		return out;
@@ -156,14 +173,6 @@ public class Action {
 	
 	public int getCost() {
 		return cost;
-	}
-
-	public List<Atom> getPreconditions() {
-		return preconditions;
-	}
-
-	public List<Atom> getEffects() {
-		return effects;
 	}
 
 	public List<ConditionalEffect> getConditionalEffects() {
