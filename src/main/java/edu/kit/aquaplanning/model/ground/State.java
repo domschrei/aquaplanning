@@ -37,7 +37,14 @@ public class State {
 		
 		atoms.set(atom);
 	}
-	
+
+ /**
+  * True, if all true atoms of the other state hold in this state.
+  */
+ public boolean holdsAllTrueAtomsFrom(State other) {
+   return holdsAll(other.atoms);
+ }
+
 	/**
 	 * Extends this state by all atoms contained in the provided
 	 * other state.

@@ -166,7 +166,15 @@ public class Action {
 	public String getName() {
 		return name;
 	}
-	
+
+  public AtomSet getPreconditionsPos() {
+    return preconditionsPos;
+  }
+
+  public AtomSet getEffectsPos() {
+    return effectsPos;
+  }
+
 	public void setCost(int cost) {
 		this.cost = cost;
 	}
