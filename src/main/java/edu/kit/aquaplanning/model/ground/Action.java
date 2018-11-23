@@ -178,4 +178,20 @@ public class Action {
 	public List<ConditionalEffect> getConditionalEffects() {
 		return conditionalEffects;
 	}
+
+	public AtomSet getPreconditionsPos() {
+		return preconditionsPos;
+	}
+
+	public AtomSet getPreconditionsNeg() {
+		return preconditionsNeg;
+	}
+
+	public AtomSet getEffectsPos() {
+		return effectsPos;
+	}
+
+	public AtomSet getEffectsNeg() {
+		return effectsNeg;
+	}
 }

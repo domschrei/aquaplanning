@@ -76,6 +76,16 @@ public class State {
 	}
 	
 	/**
+	 * True, if this state is a superset of the provided state, 
+	 * i.e. all atoms in the provided state are also contained
+	 * in this state.
+	 */
+	public boolean isSupersetOf(State other) {
+		
+		return holdsAll(other.atoms);
+	}
+	
+	/**
 	 * Adds all atoms in the provided AtomSet to the state.
 	 */
 	public void addAll(AtomSet atoms) {
