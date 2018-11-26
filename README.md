@@ -19,7 +19,7 @@ These features (minus any mentioned restrictions) are more or less equivalent wi
 
 For planning problems using these features (or any subset), a full representation of the read problem is available in the form of Java objects after parsing, as well as a separate representation after grounding the problem.
 
-Currently, Aquaplanning features two grounding procedures: a naïve full enumeration of atoms and actions, and the result of traversing the problem's (delete-)relaxed planning graph.
+For grounding purposes, Aquaplanning traverses the problem's (delete-)relaxed planning graph, resulting in a reasonable amount of atoms and actions in most cases.
 
 A generic state space forward search is provided as a planner. As of now, a few common search strategies (BFS, DFS, A\*, Weighted A\*, Best-first, random choice) are implemented, as well as a couple of simple heuristics to guide the A\* and Best-first searches.  
 

@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import edu.kit.aquaplanning.grounding.FullEnumerationGrounder;
 import edu.kit.aquaplanning.grounding.Grounder;
 import edu.kit.aquaplanning.grounding.RelaxedPlanningGraphGrounder;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
@@ -45,7 +44,6 @@ public class TestPlanners extends TestCase {
 		System.out.println("Testing domain \"" + domainFile + "\", problem \"" + problemFile + "\".");
 		
 		List<Grounder> grounders = new ArrayList<>();
-		grounders.add(new FullEnumerationGrounder());
 		grounders.add(new RelaxedPlanningGraphGrounder());
 				
 		System.out.println("Parsing ...");
@@ -63,7 +61,9 @@ public class TestPlanners extends TestCase {
 			);
 			Plan plan = planner.findPlan(gpp);
 			
-			assertTrue(plan != null && plan.getLength() > 0);
+			System.out.println(plan);
+			assertTrue(plan != null);
+			assertTrue(plan.getLength() > 0);
 			assertTrue(Validator.planIsValid(gpp, plan));
 			
 			System.out.println("Done.");

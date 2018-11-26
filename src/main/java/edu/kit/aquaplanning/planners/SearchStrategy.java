@@ -39,6 +39,14 @@ public class SearchStrategy {
 	private int heuristicWeight = 10;
 	
 	/**
+	 * Denotes whether a state can be visited multiple times during a search
+	 * (true) or it is visited only once and then memorized as "finished" 
+	 * (false). Forbidding to revisit states can have an impact on optimality,
+	 * but not on completeness.
+	 */
+	private boolean revisitStates = false;
+	
+	/**
 	 * Initializes a search strategy of the provided mode
 	 * (one of SearchStrategy.BREADTH_FIRST, SearchStrategy.DEPTH_FIRST, ...).
 	 * Do not use this constructor with modes requiring a weight.
@@ -57,6 +65,16 @@ public class SearchStrategy {
 		this.heuristicWeight = weight;
 	}
 	
+	/**
+	 * Decides whether a state can be visited multiple times during a search
+	 * (true) or it is visited only once and then memorized as "finished" 
+	 * (false). Forbidding to revisit states can have an impact on optimality,
+	 * but not on completeness.
+	 */
+	public void setRevisitStates(boolean revisitStates) {
+		this.revisitStates = revisitStates;
+	}
+	
 	public boolean isHeuristical() {
 		if (mode == A_STAR || mode == WEIGHTED_A_STAR || mode == BEST_FIRST) {
 			return true;
@@ -69,6 +87,10 @@ public class SearchStrategy {
 			return true;
 		}
 		return false;
+	}
+	
+	public boolean canRevisitStates() {
+		return revisitStates;
 	}
 	
 	public int getMode() {
