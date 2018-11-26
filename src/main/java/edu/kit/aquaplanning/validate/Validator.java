@@ -21,6 +21,7 @@ public class Validator {
 		State state = problem.getInitialState();
 		int step = 1;
 		
+        System.out.println("Initial state: " + state);
 		for (Action action : plan) {
 			
 			if (!action.isApplicable(state)) {
@@ -30,6 +31,7 @@ public class Validator {
 			}
 			
 			state = action.apply(state);
+            System.out.println("Step " + step + ": " + state);
 			step++;
 		}
 		
