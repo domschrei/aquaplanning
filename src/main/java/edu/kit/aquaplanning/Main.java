@@ -10,7 +10,7 @@ import edu.kit.aquaplanning.planners.ForwardSearchPlanner;
 import edu.kit.aquaplanning.planners.Planner;
 import edu.kit.aquaplanning.planners.SearchStrategy;
 import edu.kit.aquaplanning.planners.heuristic.Heuristic;
-import edu.kit.aquaplanning.planners.heuristic.MyFirstHeuristic;
+import edu.kit.aquaplanning.planners.heuristic.WilliamsHeuristic;
 import edu.kit.aquaplanning.planners.heuristic.RelaxedPathLengthHeuristic;
 import edu.kit.aquaplanning.validate.Validator;
 
@@ -60,7 +60,7 @@ public class Main {
 			SearchStrategy strategy = new SearchStrategy(SearchStrategy.BEST_FIRST);
 			strategy.setRevisitStates(false);
 			// Heuristic h = new RelaxedPathLengthHeuristic(planningProblem);
-			Heuristic h = new MyFirstHeuristic(planningProblem, p);
+			Heuristic h = new WilliamsHeuristic(planningProblem, p);
 			Planner planner = new ForwardSearchPlanner(strategy, h);
 			Plan plan = planner.findPlan(planningProblem);
 			
@@ -93,3 +93,4 @@ public class Main {
 	}
 	
 }
+
