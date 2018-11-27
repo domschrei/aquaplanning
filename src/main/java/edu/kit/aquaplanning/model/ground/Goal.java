@@ -1,13 +1,22 @@
 package edu.kit.aquaplanning.model.ground;
 
 import java.util.List;
+import java.util.LinkedList;
 
 public class Goal {
 	
 	private List<Atom> atoms;
+	private List<Atom> positiveAtoms;
 	
 	public Goal(List<Atom> atoms) {
 		this.atoms = atoms;
+		
+		this.positiveAtoms = new LinkedList<>();
+		for (Atom atom : atoms) {
+			if (atom.getValue()) {
+				positiveAtoms.add(atom);
+			}
+		}
 	}
 	
 	/**
@@ -42,6 +51,10 @@ public class Goal {
 	
 	public List<Atom> getAtoms() {
 		return atoms;
+	}
+	
+	public List<Atom> getPositiveAtoms() {
+		return positiveAtoms;
 	}
 
 	@Override
