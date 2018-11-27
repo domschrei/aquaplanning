@@ -36,4 +36,14 @@ public class Atom {
 	public Atom copy() {
 		return new Atom(id, name, value);
 	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null)
+			return false;
+		Atom other = (Atom) obj;
+		if (other.id != id || !other.name.equals(name) || other.value != value)
+			return false;
+		return true;
+	}
 }
