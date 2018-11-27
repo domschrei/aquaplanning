@@ -46,11 +46,6 @@ public class Atom {
 		if (getClass() != obj.getClass())
 			return false;
 		Atom other = (Atom) obj;
-		if (name == null) {
-			if (other.name != null)
-				return false;
-		} else if (!name.equals(other.name))
-			return false;
 		if (other.id != id || other.value != value)
 			return false;
 		return true;
