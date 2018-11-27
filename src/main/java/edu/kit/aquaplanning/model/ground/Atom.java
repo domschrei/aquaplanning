@@ -39,10 +39,19 @@ public class Atom {
 	
 	@Override
 	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
 		if (obj == null)
 			return false;
+		if (getClass() != obj.getClass())
+			return false;
 		Atom other = (Atom) obj;
-		if (other.id != id || !other.name.equals(name) || other.value != value)
+		if (name == null) {
+			if (other.name != null)
+				return false;
+		} else if (!name.equals(other.name))
+			return false;
+		if (other.id != id || other.value != value)
 			return false;
 		return true;
 	}
