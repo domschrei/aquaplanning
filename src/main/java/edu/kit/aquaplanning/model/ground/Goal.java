@@ -40,9 +40,9 @@ public class Goal {
 	 */
 	public boolean isSatisfiedRelaxed(State state) {
 		
-		for (Atom atom : atoms) {
-			// Only check positive atoms
-			if (atom.getValue() && !state.holds(atom)) {
+		// Only check positive atoms
+		for (Atom atom : positiveAtoms) {
+			if (!state.holds(atom)) {
 				return false;
 			}
 		}
