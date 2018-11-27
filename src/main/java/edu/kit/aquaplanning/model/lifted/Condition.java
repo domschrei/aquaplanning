@@ -90,9 +90,13 @@ public class Condition extends AbstractCondition {
 	@Override
 	public String toString() {
 		String out = "";
-		if (negated)
-			out += "¬";
-		out += predicate.getName() + "( ";
+		if (negated && predicate.getName().equals("=")) {
+			out += "≠( ";
+		} else {			
+			if (negated)
+				out += "¬";
+			out += predicate.getName() + "( ";
+		}
 		for (Argument arg : arguments) {
 			out += arg.getName() + " ";
 		}

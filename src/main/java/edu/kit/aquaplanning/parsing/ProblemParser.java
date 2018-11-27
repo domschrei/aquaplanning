@@ -558,8 +558,14 @@ public class ProblemParser extends PddlBaseListener {
 				
 				// Create quantification, add to currently parsed object
 				Quantification q = new Quantification(Quantifier.universal);
-				if (isInContext(ParseContext.actionDef)) {						
-					currentOperator().addQuantifiedPrecondition(q);
+				if (isInContext(ParseContext.actionDef)) {
+					if (isInContext(ParseContext.actionCondEffPre)) {
+						currentConditionalEffect().addPrerequisite(q);
+					} else if (isInContext(ParseContext.actionCondEffCons)) {
+						currentConditionalEffect().addConsequence(q);
+					} else {	
+						currentOperator().addQuantifiedPrecondition(q);
+					}
 				} else if (isInContext(ParseContext.goalDef)) {
 					quantifiedGoals.add(new Quantification(Quantifier.universal));
 				}
@@ -719,7 +725,7 @@ public class ProblemParser extends PddlBaseListener {
 			// We need to infer the types of bound variables
 			Quantification q = currentQuantification();
 			inferQuantifiedTypes(q, cond);
-			q.addCondition(cond);
+			addToCurrentObject(cond);
 		} else {
 			addToCurrentObject(cond);
 		}
@@ -760,14 +766,20 @@ public class ProblemParser extends PddlBaseListener {
 		if (ctx.children.size() == 5) {
 			// Conditional effect:
 			// ( when <goalDesc> <condEffect> )
-	
+			
 			// Create new cond. effect object
+			if (isInContext(ParseContext.quantification)) {
+				// Conditional effect inside quantification
+				currentQuantification().addCondition(new ConsequentialCondition());
+			} else {
+				// Conditional effect as one of the operator effects
+				currentOperator().addConditionalEffect(new ConsequentialCondition());
+			}
 			context.push(ParseContext.actionCondEff);
-			currentOperator().addConditionalEffect(new ConsequentialCondition());
 		
 		} else if (ctx.children.size() == 7 
 				&& ctx.children.get(1).getText().equalsIgnoreCase("forall")) {
-			// Quantification
+			// Quantification as one of the operator effects
 			
 			// Create new quantification object
 			context.push(ParseContext.quantification);
@@ -1160,6 +1172,18 @@ public class ProblemParser extends PddlBaseListener {
 		return this.context.contains(context);
 	}
 	
+	private boolean isContextHigherThan(ParseContext higher, ParseContext lower) {
+		boolean reachedHigherEl = false;
+		for (int i = context.size()-1; i >= 0; i--) {
+			ParseContext ctx = context.get(i);
+			if (ctx == higher)
+				reachedHigherEl = true;
+			if (ctx == lower)
+				return reachedHigherEl;
+		}
+		return false;
+	}
+	
 	private void assertTopContext(ParseContext context) {
 		if (context != this.context.peek()) {
 			new Exception("Context mismatch. Expected: " + context 
@@ -1177,7 +1201,24 @@ public class ProblemParser extends PddlBaseListener {
 		
 		if (isInContext(ParseContext.actionDef)) {
 			if (isInContext(ParseContext.quantification)) {
-				currentQuantification().addCondition(cond);
+				
+				if (isInContext(ParseContext.actionCondEff) 
+						&& isContextHigherThan(ParseContext.actionCondEff, ParseContext.quantification)) {
+					
+					// Conditional effect inside a quantification
+					if (isInContext(ParseContext.actionCondEffPre)) {
+						List<AbstractCondition> conds = currentQuantification().getConditions();
+						ConsequentialCondition c = (ConsequentialCondition) conds.get(conds.size()-1);
+						c.addPrerequisite(cond);
+					} else if (isInContext(ParseContext.actionCondEffCons)) {
+						List<AbstractCondition> conds = currentQuantification().getConditions();
+						ConsequentialCondition c = (ConsequentialCondition) conds.get(conds.size()-1);
+						c.addConsequence(cond);
+					}
+				} else {					
+					currentQuantification().addCondition(cond);
+				}
+				
 			} else if (isInContext(ParseContext.actionCondEffPre)) {
 				currentConditionalEffect().addPrerequisite(cond);
 			} else if (isInContext(ParseContext.actionCondEffCons)) {
@@ -1188,7 +1229,11 @@ public class ProblemParser extends PddlBaseListener {
 				currentOperator().addPrecondition(cond);
 			}
 		} else if (isInContext(ParseContext.goalDef)) {
-			goals.add(cond);
+			if (isInContext(ParseContext.quantification)) {
+				currentQuantification().addCondition(cond);
+			} else {				
+				goals.add(cond);
+			}
 		}
 	}
 	
@@ -1204,10 +1249,23 @@ public class ProblemParser extends PddlBaseListener {
 	 */
 	private Quantification currentQuantification() {
 		
-		if (isInContext(ParseContext.actionPre)) {			
+		if (isInContext(ParseContext.actionCondEff) && 
+				isContextHigherThan(ParseContext.quantification, ParseContext.actionCondEff)) {
+			
+			// Quantification inside a conditional effect
+			ConsequentialCondition c = (ConsequentialCondition) currentOperator().getEffects()
+					.get(currentOperator().getEffects().size()-1);
+			if (isInContext(ParseContext.actionCondEffPre)) {
+				return (Quantification) c.getPrerequisites().get(c.getPrerequisites().size()-1);
+			}
+			if (isInContext(ParseContext.actionCondEffCons)) {
+				return (Quantification) c.getConsequences().get(c.getConsequences().size()-1);
+			}
+			
+		} else if (isInContext(ParseContext.actionPre)) {			
 			return (Quantification) currentOperator().getPreconditions().get(
 					currentOperator().getPreconditions().size()-1);
-		} else if (isInContext(ParseContext.actionEff)) {			
+		} else if (isInContext(ParseContext.actionEff)) {
 			return (Quantification) currentOperator().getEffects().get(
 					currentOperator().getEffects().size()-1);
 		} else if (isInContext(ParseContext.goalDef)) {

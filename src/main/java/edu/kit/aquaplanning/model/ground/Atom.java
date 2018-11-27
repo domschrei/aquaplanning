@@ -22,7 +22,11 @@ public class Atom {
 	
 	@Override
 	public String toString() {
-		return value ? name : "¬" + name;
+		if (!value && name.startsWith("=")) {
+			return "≠" + name.substring(1);
+		} else {
+			return value ? name : "¬" + name;
+		}
 	}
 	
 	public int getId() {

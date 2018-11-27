@@ -31,6 +31,7 @@ public abstract class BaseGrounder implements Grounder {
 	
 	protected List<Argument> constants;
 	protected Map<String, Atom> atoms;
+	protected Map<Integer, String> atomNames;
 	protected List<Action> actions;
 	
 	/**
@@ -43,16 +44,26 @@ public abstract class BaseGrounder implements Grounder {
 		// Create data structure for atoms, if necessary
 		if (atoms == null) {
 			atoms = new HashMap<>();
+			atomNames = new HashMap<>();
 		}
 		// Key: name of atom
 		String atomName = getAtomName(p, constants);
 		// Does the action already exists?
 		if (!atoms.containsKey(atomName)) {
 			// -- no: create new atom
-			atoms.put(atomName, new Atom(atoms.size(), atomName, true));
+			int atomId = atoms.size();
+			atoms.put(atomName, new Atom(atomId, atomName, true));
+			atomNames.put(atomId, atomName);
 		}
 		// Return copy of atom
 		return atoms.get(atomName).copy();
+	}
+	
+	protected Atom atom(Predicate p, List<Argument> constants, boolean negated) {
+		
+		Atom atom = atom(p, constants);
+		atom.set(!negated);
+		return atom;
 	}
 	
 	/**
@@ -134,7 +145,13 @@ public abstract class BaseGrounder implements Grounder {
 	protected List<ConditionalEffect> getConditionalEffects(List<AbstractCondition> conditions) {
 		
 		List<ConditionalEffect> effects = new ArrayList<>();
-		conditions.forEach(c -> {
+		List<AbstractCondition> conditionsToProcess = new ArrayList<>();
+		
+		// As long as conditions are left to process ...
+		conditionsToProcess.addAll(conditions);
+		for (int i = 0; i < conditionsToProcess.size(); i++) {
+			
+			AbstractCondition c = conditionsToProcess.get(i);
 			if (c.getConditionType() == ConditionType.consequential) {
 				
 				// Ground prerequisites and consequences
@@ -142,8 +159,17 @@ public abstract class BaseGrounder implements Grounder {
 				List<Atom> pre = getAtoms(cond.getPrerequisites());
 				List<Atom> eff = getAtoms(cond.getConsequences());
 				effects.add(new ConditionalEffect(pre, eff));
+				
+			} else if (c.getConditionType() == ConditionType.quantification) {
+
+				// Resolve quantification and add all resulting atoms
+				// to the processing queue
+				conditionsToProcess.addAll(
+					ArgumentCombination.resolveQuantification(
+							(Quantification) c, problem, constants));
 			}
-		});
+		}
+		
 		return effects;
 	}
 	
@@ -169,5 +195,14 @@ public abstract class BaseGrounder implements Grounder {
 		Action action = new Action(actionName, preconditions, effects, conditionalEffects);
 		action.setCost(liftedAction.getCost());
 		return action;
+	}
+	
+	public List<String> extractAtomNames() {
+		
+		List<String> atomNames = new ArrayList<>();
+		for (int i = 0; i < atoms.size(); i++) {
+			atomNames.add(this.atomNames.get(i));
+		}
+		return atomNames;
 	}
 }

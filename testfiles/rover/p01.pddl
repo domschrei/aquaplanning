@@ -59,7 +59,7 @@
 (:goal
         (and 
                 (communicated_soil_data waypoint0)
-                (communicated_rock_data waypoint0)
+                ;(communicated_rock_data waypoint0)
                 (communicated_image_data objective1 low_res)
             )
         )

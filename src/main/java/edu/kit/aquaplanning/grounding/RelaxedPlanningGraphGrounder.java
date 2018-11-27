@@ -9,10 +9,7 @@ import edu.kit.aquaplanning.model.ground.Goal;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.State;
 import edu.kit.aquaplanning.model.lifted.AbstractCondition;
-import edu.kit.aquaplanning.model.lifted.Argument;
-import edu.kit.aquaplanning.model.lifted.Condition;
 import edu.kit.aquaplanning.model.lifted.Operator;
-import edu.kit.aquaplanning.model.lifted.Predicate;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.model.lifted.Quantification;
 
@@ -34,12 +31,8 @@ public class RelaxedPlanningGraphGrounder extends BaseGrounder {
 		constants = new ArrayList<>();
 		constants.addAll(problem.getConstants());
 		constants.sort((c1, c2) -> c1.getName().compareTo(c2.getName()));
-		
-		// Lifted state, initialized with initial state
-		List<Condition> liftedSuperstate = new ArrayList<>();
-		liftedSuperstate.addAll(problem.getInitialState());
-		
-		// Traverse approximated state space
+				
+		// Traverse delete-relaxed state space
 		RelaxedPlanningGraph graph = new RelaxedPlanningGraph(problem);
 		actions = new ArrayList<>();
 		int iteration = 0;
@@ -47,7 +40,7 @@ public class RelaxedPlanningGraphGrounder extends BaseGrounder {
 			graph.computeNextLayer();
 			// Ground new operators
 			for (Operator op : graph.getLiftedActions(iteration)) {
-				Action a = getAction(op);
+				Action a = getAction(op); // actual grounding
 				if (!actions.contains(a)) {
 					actions.add(a);
 				}
@@ -57,20 +50,9 @@ public class RelaxedPlanningGraphGrounder extends BaseGrounder {
 		
 		// Extract initial state
 		List<Atom> initialStateAtoms = new ArrayList<>();
-		problem.getInitialState().forEach(cond -> {
+		graph.getLiftedState(0).forEach(cond -> {
 			initialStateAtoms.add(atom(cond.getPredicate(), cond.getArguments()));
 		});
-		// Add "equals" predicates to initial state
-		Predicate pEquals = problem.getPredicate("=");
-		if (pEquals != null) {	
-			// for all objects c: add the condition (= c c)
-			for (Argument constant : constants) {
-				List<Argument> args = new ArrayList<>();
-				args.add(constant);
-				args.add(constant);
-				initialStateAtoms.add(atom(pEquals, args));
-			}
-		}
 		State initialState = new State(initialStateAtoms);
 		
 		// Extract goal
@@ -90,7 +72,7 @@ public class RelaxedPlanningGraphGrounder extends BaseGrounder {
 		
 		// Assemble finished problem
 		GroundPlanningProblem planningProblem = new GroundPlanningProblem(initialState, actions, 
-				goal, problem.hasActionCosts());
+				goal, problem.hasActionCosts(), extractAtomNames());
 		return planningProblem;
 	}
 }
