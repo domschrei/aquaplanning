@@ -28,6 +28,13 @@ public class State {
 		
 		atoms = (AtomSet) other.atoms.clone();
 	}
+
+	/**
+	 * Creates a state containing all the atoms in the provided set.
+	 */
+	public State(AtomSet atomSet) {
+		this.atoms = atomSet;
+	}
 	
 	/**
 	 * Sets the provided atom. If the atom has negative value,
@@ -114,6 +121,11 @@ public class State {
 		}
 		return atoms;
 	}
+
+	/**
+	 * Returns the set of atoms of this state. (Trivial runtime)
+	 */
+	public AtomSet getAtomSet() { return atoms; }
 	
 	/**
 	 * Returns the amount of atoms contained in the state.

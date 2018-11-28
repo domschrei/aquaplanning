@@ -39,6 +39,8 @@ public class GroundPlanningProblem {
 	public boolean hasActionCosts() {
 		return hasActionCosts;
 	}
+
+	public List<String> getAtomNames() { return atomNames; }
 	
 	public int getNumAtoms() {
 		return atomNames.size();
