@@ -71,6 +71,19 @@ public class AtomSet {
 		}
 		return true;
 	}
+
+	/**
+	 * Calculates the logical AND of this AtomSet with another AtomSets and returns the result.
+	 * @param other
+	 * 		The other AtomSet
+	 * @return
+	 * 		The logical AND of this and the other AtomSet
+	 */
+	public AtomSet and(AtomSet other) {
+		AtomSet b = (AtomSet) this.clone();
+		b.atoms.and(other.atoms);
+		return b;
+	}
 	
 	/**
 	 * Sets the provided atom as contained in this set.
@@ -101,7 +114,7 @@ public class AtomSet {
 	public int numAtoms() {
 		return atoms.cardinality();
 	}
-	
+
 	/**
 	 * The internal size of the allocated set.
 	 */

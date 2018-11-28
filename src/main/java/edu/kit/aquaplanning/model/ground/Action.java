@@ -33,10 +33,28 @@ public class Action {
 	}
 
 	/**
+	 * Creates an action with the provided properties (alternative constructor)
+	 * @param name
+	 * @param preconditionsPos
+	 * @param preconditionsNeg
+	 * @param effectsPos
+	 * @param effectsNeg
+	 * @param conditionalEffects
+	 */
+	public Action(String name, AtomSet preconditionsPos, AtomSet preconditionsNeg,
+				  AtomSet effectsPos, AtomSet effectsNeg, List<ConditionalEffect> conditionalEffects) {
+		this.name = name;
+		this.preconditionsPos = preconditionsPos;
+		this.preconditionsNeg = preconditionsNeg;
+		this.effectsPos = effectsPos;
+		this.effectsNeg = effectsNeg;
+		this.conditionalEffects = conditionalEffects;
+	}
+
+	/**
 	 * True iff this action is applicable in the provided state.
 	 */
 	public boolean isApplicable(State state) {
-		
 		if (!state.holdsAll(preconditionsPos))
 			return false;
 		if (!state.holdsNone(preconditionsNeg))
@@ -50,7 +68,6 @@ public class Action {
 	 * in a delete-relaxed sense.
 	 */
 	public boolean isApplicableRelaxed(State state) {
-		
 		if (!state.holdsAll(preconditionsPos))
 			return false;
 		return true;
