@@ -393,7 +393,7 @@ public class ProblemParser extends PddlBaseListener {
 	public void enterSingleTypeVarList(SingleTypeVarListContext ctx) {
 		
 		// Extract type
-		String typeName = ctx.children.get(ctx.children.size()-1).getText();
+		String typeName = ctx.children.get(ctx.children.size()-1).getText().toLowerCase();
 		Type type = types.get(typeName);
 		if (type == null) {
 			error("Usage of undefined type \"" + typeName + "\".");
@@ -408,13 +408,13 @@ public class ProblemParser extends PddlBaseListener {
 				
 			} else if (isInContext(ParseContext.quantification)) {
 				// Add argument to quantification
-				String argName = ctx.children.get(childIdx).getText();
+				String argName = ctx.children.get(childIdx).getText().toLowerCase();
 				Quantification q = currentQuantification();
 				q.addVariable(new Argument(argName, type));
 
 			} else if (isInContext(ParseContext.actionDef)) {
 				// Add argument to current operator
-				String argName = ctx.children.get(childIdx).getText();
+				String argName = ctx.children.get(childIdx).getText().toLowerCase();
 				currentOperator().addArgument(new Argument(argName, type));
 			}
 		}
