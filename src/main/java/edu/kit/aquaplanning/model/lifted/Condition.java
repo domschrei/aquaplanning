@@ -49,6 +49,10 @@ public class Condition extends AbstractCondition {
 		return c;
 	}
 	
+	public void setNegated(boolean negated) {
+		this.negated = negated;
+	}
+	
 	@Override
 	public Condition getConditionBoundToArguments(List<Argument> refArgs, List<Argument> argValues) {
 		

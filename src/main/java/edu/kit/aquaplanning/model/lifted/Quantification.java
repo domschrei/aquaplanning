@@ -10,22 +10,21 @@ public class Quantification extends AbstractCondition {
 	}
 	private Quantifier quantifier;
 	private List<Argument> variables;
-	private List<AbstractCondition> conditions;
+	private AbstractCondition condition;
 	
 	public Quantification(Quantifier q) {
 
 		super(ConditionType.quantification);
 		this.quantifier = q;
 		this.variables = new ArrayList<>();
-		this.conditions = new ArrayList<>();
 	}
 	
 	public void addVariable(Argument arg) {
 		variables.add(arg);
 	}
 	
-	public void addCondition(AbstractCondition condition) {
-		conditions.add(condition);
+	public void setCondition(AbstractCondition condition) {
+		this.condition = condition;
 	}
 	
 	public Quantifier getQuantifier() {
@@ -36,19 +35,15 @@ public class Quantification extends AbstractCondition {
 		return variables;
 	}
 	
-	public List<AbstractCondition> getConditions() {
-		return conditions;
+	public AbstractCondition getCondition() {
+		return condition;
 	}
 	
 	@Override
 	public Quantification getConditionBoundToArguments(List<Argument> refArgs, List<Argument> argValues) {
 		
 		Quantification q = new Quantification(quantifier);
-		for (AbstractCondition c : conditions) {
-			// TODO bind variable stronger to quantification than to action arguments,
-			// not the other way round
-			q.addCondition(c.getConditionBoundToArguments(refArgs, argValues));
-		}
+		q.setCondition(condition.getConditionBoundToArguments(refArgs, argValues));
 		for (Argument arg : variables) {
 			q.addVariable(arg);
 		}
@@ -63,9 +58,7 @@ public class Quantification extends AbstractCondition {
 			out += (quantifier == Quantifier.existential ? "∃" : "∀") + var + " ";
 		}
 		out += ": { ";
-		for (AbstractCondition cond : conditions) {
-			out += cond + " ";
-		}
+		out += condition + " ";
 		out += "}";
 		return out;
 	}
@@ -74,7 +67,7 @@ public class Quantification extends AbstractCondition {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((conditions == null) ? 0 : conditions.hashCode());
+		result = prime * result + ((condition == null) ? 0 : condition.hashCode());
 		result = prime * result + ((quantifier == null) ? 0 : quantifier.hashCode());
 		result = prime * result + ((variables == null) ? 0 : variables.hashCode());
 		return result;
@@ -89,10 +82,10 @@ public class Quantification extends AbstractCondition {
 		if (getClass() != obj.getClass())
 			return false;
 		Quantification other = (Quantification) obj;
-		if (conditions == null) {
-			if (other.conditions != null)
+		if (condition == null) {
+			if (other.condition != null)
 				return false;
-		} else if (!conditions.equals(other.conditions))
+		} else if (!condition.equals(other.condition))
 			return false;
 		if (quantifier != other.quantifier)
 			return false;

@@ -26,6 +26,12 @@ public class TestPlanners extends TestCase {
 		fullTest("testfiles/quantifications/domain.pddl", "testfiles/quantifications/p2.pddl");
 	}
 	
+	public void testAdlFeatures() throws FileNotFoundException, IOException {
+
+		fullTest("testfiles/adl/domain1.pddl", "testfiles/adl/p1.pddl");
+		fullTest("testfiles/adl/domain2.pddl", "testfiles/adl/p2.pddl");
+	}
+	
 	public void testDefaultDomains() throws FileNotFoundException, IOException {
 		
 		String[] domains = {"rover", "childsnack", "gripper"};
@@ -49,6 +55,8 @@ public class TestPlanners extends TestCase {
 		Planner planner = new SimpleSatPlanner();
 		Plan plan = planner.findPlan(gpp);
 		System.out.println(plan);
+		assertTrue(plan != null);
+		assertTrue(plan.getLength() > 0);
 		assertTrue(Validator.planIsValid(gpp, plan));	
 	}
 

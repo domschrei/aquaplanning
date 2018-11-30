@@ -12,8 +12,9 @@ Aquaplanning supports PDDL (Planning Domain Description Language) files as an in
 * Conditional effects (`when (...) (...)`)
 * Universal quantifications (inside preconditions, effects, initial state and goal)
 * Action costs (in its basic form `(:function total-cost - number)`, with constant positive cost per operator)
+* (EXPERIMENTAL) All ADL features, i.e. disjunctive preconditions with `or`/`not`/`imply` and existential quantifications (not inside the goal)
 
-These features (minus any mentioned restrictions) are more or less equivalent with the following [PDDL 3.1](https://helios.hud.ac.uk/scommv/IPC-14/repository/kovacs-pddl-3.1-2011.pdf) requirements:
+The stable features are more or less equivalent with the following [PDDL 3.1](https://helios.hud.ac.uk/scommv/IPC-14/repository/kovacs-pddl-3.1-2011.pdf) requirements:
 	
 	:strips :typing :negative-preconditions :conditional-effects :equality :universal-preconditions :action-cost
 

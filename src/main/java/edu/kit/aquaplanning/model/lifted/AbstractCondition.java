@@ -5,10 +5,10 @@ import java.util.List;
 public abstract class AbstractCondition {
 
 	public enum ConditionType {
-		atomic, consequential, quantification;
+		atomic, consequential, quantification, conjunction, disjunction, negation, implication;
 	}
 	
-	private ConditionType conditionType;
+	protected ConditionType conditionType;
 	
 	public AbstractCondition(ConditionType conditionType) {
 		this.conditionType = conditionType;
