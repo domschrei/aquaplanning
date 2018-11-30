@@ -14,6 +14,7 @@ import edu.kit.aquaplanning.parsing.ProblemParser;
 import edu.kit.aquaplanning.planners.ForwardSearchPlanner;
 import edu.kit.aquaplanning.planners.Planner;
 import edu.kit.aquaplanning.planners.SearchStrategy;
+import edu.kit.aquaplanning.planners.SimpleSatPlanner;
 import edu.kit.aquaplanning.validate.Validator;
 import junit.framework.TestCase;
 
@@ -33,6 +34,25 @@ public class TestPlanners extends TestCase {
 		}
 	}
 	
+	public void testSatPlan() throws FileNotFoundException, IOException {
+		String[] domains = {"rover", "childsnack", "gripper"};
+		Grounder grounder = new RelaxedPlanningGraphGrounder();
+		for (String domain : domains) {
+			PlanningProblem pp = new ProblemParser().parse("testfiles/" + domain + "/domain.pddl", 
+					"testfiles/" + domain + "/p01.pddl");
+			GroundPlanningProblem gpp = grounder.ground(pp);
+			testSatPlan(gpp);
+		}
+	}
+	
+	private void testSatPlan(GroundPlanningProblem gpp) {
+		Planner planner = new SimpleSatPlanner();
+		Plan plan = planner.findPlan(gpp);
+		System.out.println(plan);
+		assertTrue(Validator.planIsValid(gpp, plan));	
+	}
+
+
 	public void testCustomDomains() throws FileNotFoundException, IOException {
 
 		fullTest("testfiles/RPG/domain.pddl", "testfiles/RPG/p01.pddl");
