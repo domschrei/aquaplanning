@@ -131,13 +131,6 @@ public class ProblemParser extends PddlBaseListener {
         walker.walk(this, ctx);
         
         // Create object to return
-        System.out.println(types);
-        System.out.println(constants);
-        System.out.println(predicates);
-        System.out.println(operators);
-        System.out.println(initialState);
-        System.out.println(goals);
-        
         PlanningProblem problem = new PlanningProblem(domainName, problemName, 
         		types, constants, predicates, operators, 
         		initialState, goals, hasActionCosts);
@@ -289,7 +282,10 @@ public class ProblemParser extends PddlBaseListener {
 							|| context == ParseContext.objectDefs) {
 						// Constant definitions: add constants
 						for (String constantName : elements) {
-							constants.add(new Argument(constantName, type));
+							Argument constant = new Argument(constantName, type);
+							if (!constants.contains(constant)) {								
+								constants.add(constant);
+							}
 						}
 					}
 				}		
@@ -406,7 +402,26 @@ public class ProblemParser extends PddlBaseListener {
 	@Override
 	public void enterTypedVariableList(TypedVariableListContext ctx) {
 		
-		if (isInQuantification()) {
+		if (context == ParseContext.predicateDefs) {	
+			// Predicate definition
+			
+			// Read variables from right to left until a SingleTypeVarList is hit
+			if (ctx.children == null) {
+				// Empty variable list
+			} else {				
+				for (int childIdx = ctx.children.size()-1; childIdx >= 0; childIdx--) {
+					if (ctx.children.get(childIdx).getChildCount() > 1) {
+						// Typed definition
+						break;
+					}
+					
+					// We don't know the type of this argument, 
+					// so we assume the supertype
+					predicate.addArgumentType(supertype);
+				}
+			}
+			
+		} else if (isInQuantification()) {
 			// Quantified variables
 			
 			// Read variables from left to right until a SingleTypeVarList is hit
@@ -619,6 +634,12 @@ public class ProblemParser extends PddlBaseListener {
 					if (constant.getName().equalsIgnoreCase(termStr)) {
 						type = constant.getType();
 					}
+				}
+				
+				if (type == null) {
+					// New constant is created; infer type from predicate
+					type = predicate.getArgumentTypes().get(childIdx-2);
+					constants.add(new Argument(termStr, type));
 				}
 			}
 			
