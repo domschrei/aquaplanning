@@ -82,11 +82,11 @@ public abstract class BaseGrounder implements Grounder {
 	 */
 	protected String getAtomName(Predicate p, List<Argument> args) {
 		
-		String atomName = p.getName() + "( ";
+		String atomName = "(" + p.getName() + " ";
 		for (Argument c : args) {
 			atomName += c.getName() + " ";
 		}
-		atomName += ")";
+		atomName = atomName.substring(0, atomName.length()-1) + ")";
 		return atomName;
 	}
 	
@@ -96,12 +96,12 @@ public abstract class BaseGrounder implements Grounder {
 	 */
 	protected String getActionName(Operator op, List<Argument> args) {
 		
-		String name = op.getName() + "( ";
+		String atomName = "(" + op.getName() + " ";
 		for (Argument c : args) {
-			name += c.getName() + " ";
+			atomName += c.getName() + " ";
 		}
-		name += ")";
-		return name;
+		atomName = atomName.substring(0, atomName.length()-1) + ")";
+		return atomName;
 	}
 	
 	/**
@@ -305,11 +305,7 @@ public abstract class BaseGrounder implements Grounder {
 		Action action = null;
 		
 		// Assemble action name
-		String actionName = liftedAction.getName() + "( ";
-		for (Argument arg : liftedAction.getArguments()) {
-			actionName += arg.getName() + " ";
-		}
-		actionName += ")";
+		String actionName = getActionName(liftedAction, liftedAction.getArguments());
 		
 		if (isConditionConjunctive(liftedAction.getPrecondition(), false, false) &&
 				isConditionConjunctive(liftedAction.getEffect(), false, false)) {

@@ -124,7 +124,7 @@ private void apply(State oldState, State newState) {
 			out += getSingleChild().toString() + " }";
 			return out;
 		case conjunction:
-			out = "AND { ";
+			out = "{ AND ";
 			for (Effect e : children) {
 				out += e.toString() + " ";
 			}

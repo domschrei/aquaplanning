@@ -116,7 +116,7 @@ public class Precondition {
 			return "¬" + getSingleChild().toString();
 		case conjunction:
 		case disjunction:
-			String out = (type == PreconditionType.conjunction ? "AND" : "OR") + " { ";
+			String out = "{ " + (type == PreconditionType.conjunction ? "AND" : "OR") + " ";
 			for (Precondition pre : children) {
 				out += pre.toString() + " ";
 			}

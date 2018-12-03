@@ -41,9 +41,9 @@ public class Plan implements Iterable<Action> {
 	public String toString() {
 		
 		StringBuilder builder = new StringBuilder();
-		int step = 1;
+		int step = 0;
 		for (Action action : actions) {
-			builder.append(step + ":\t" + action.getName() + "\n");
+			builder.append(step + " : " + action.getName() + "\n");
 			step++;
 		}
 		return builder.toString();
