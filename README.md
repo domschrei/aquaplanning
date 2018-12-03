@@ -28,13 +28,15 @@ At the end of the pipeline, a tiny plan validator can be employed to ensure the 
 
 ## Building and installing
 
-The framework is written from scratch and only depends on antlr4 (for the parsing of PDDL files) and JUnit for tests. We use [Maven](https://maven.apache.org/) as a build system to resolve these dependencies (package `maven` in Debian-based Linux distributions). In the base directory, run `mvn package` which will run the included JUnit tests and create a runnable jar file in `target/aquaplanning-<version>.jar-with-dependencies.jar`. You can launch the application with `java -jar <runnable-jar> <domain-file> <problem-file>`.
+The framework is written from scratch and thus does not rely on any Planning-related frameworks. It does depend on antlr4 (for the parsing of PDDL files), Picocli for argument parsing, and sat4j as a SAT solver backend. We use [Maven](https://maven.apache.org/) as a build system to resolve these dependencies (package `maven` in Debian-based Linux distributions). 
+In the base directory, run `mvn package` which will run the included JUnit tests and create a runnable jar file in `target/aquaplanning-<version>-jar-with-dependencies.jar`. You can launch the application with `java -jar <runnable-jar> <domain-file> <problem-file>`.
 
 Using the Eclipse IDE, the project can be directly imported as a Maven project and then built and/or installed.
 
 ## Usage
 
-Aquaplanning can be used as an off-the-shelf planner; you can specify a domain file and a problem file as arguments (in that order), and it will attempt to parse, ground, and solve the problem. You can try the files provided in the `testfiles/` directory.
+Aquaplanning can be used as an off-the-shelf planner; you can specify a domain file and a problem file as arguments (in that order), and it will attempt to parse, ground, and solve the problem. You can try the files provided in the `testfiles/` directory. 
+All available options will be displayed when running the .jar without any arguments.
 
 When you want to use your own planner, implement the Planner interface and take a look at the DefaultPlanner class as a point of reference.
 

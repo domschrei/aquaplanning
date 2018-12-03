@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.grounding.Grounder;
 import edu.kit.aquaplanning.grounding.RelaxedPlanningGraphGrounder;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
@@ -13,7 +14,7 @@ import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.parsing.ProblemParser;
 import edu.kit.aquaplanning.planners.ForwardSearchPlanner;
 import edu.kit.aquaplanning.planners.Planner;
-import edu.kit.aquaplanning.planners.SearchStrategy;
+import edu.kit.aquaplanning.planners.SearchStrategy.Mode;
 import edu.kit.aquaplanning.planners.SimpleSatPlanner;
 import edu.kit.aquaplanning.validate.Validator;
 import junit.framework.TestCase;
@@ -52,7 +53,7 @@ public class TestPlanners extends TestCase {
 	}
 	
 	private void testSatPlan(GroundPlanningProblem gpp) {
-		Planner planner = new SimpleSatPlanner();
+		Planner planner = new SimpleSatPlanner(new Configuration());
 		Plan plan = planner.findPlan(gpp);
 		System.out.println(plan);
 		assertTrue(plan != null);
@@ -84,9 +85,9 @@ public class TestPlanners extends TestCase {
 			GroundPlanningProblem gpp = grounder.ground(pp);
 			
 			System.out.println("Planning ...");
-			Planner planner = new ForwardSearchPlanner(
-					new SearchStrategy(SearchStrategy.BREADTH_FIRST)
-			);
+			Configuration c = new Configuration();
+			c.searchStrategy = Mode.breadthFirst;
+			Planner planner = new ForwardSearchPlanner(c);
 			Plan plan = planner.findPlan(gpp);
 			
 			System.out.println(plan);

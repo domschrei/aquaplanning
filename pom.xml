@@ -31,6 +31,11 @@
     	<artifactId>org.sat4j.core</artifactId>
     	<version>2.3.1</version>
     </dependency>
+    <dependency>
+    	<groupId>info.picocli</groupId>
+    	<artifactId>picocli</artifactId>
+    	<version>3.8.0</version>
+    </dependency>
   </dependencies>
   
   <build>

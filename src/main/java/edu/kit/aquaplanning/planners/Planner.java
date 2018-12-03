@@ -1,5 +1,6 @@
 package edu.kit.aquaplanning.planners;
 
+import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
 
@@ -8,11 +9,49 @@ import edu.kit.aquaplanning.model.ground.Plan;
  * 
  * @author Dominik Schreiber
  */
-public interface Planner {
+public abstract class Planner {
+	
+	protected Configuration config;
+	
+	public Planner(Configuration config) {
+		this.config = config;
+	}
+	
+	protected boolean withinComputationalBounds(int iterations) {
+		
+		boolean withinIterations = false;
+		boolean withinTime = false;
+
+		if (config.maxIterations <= 0) {
+			withinIterations = true; // no bound specified
+		} else {
+			withinIterations = (iterations <= config.maxIterations);
+		}
+		if (config.maxTimeSeconds <= 0) {
+			withinTime = true; // no bound specified
+		} else {
+			long timeMillis = System.currentTimeMillis();
+			long expired = timeMillis - config.startTimeMillis;
+			withinTime = (expired / 1000 < config.maxTimeSeconds);			
+		}
+
+		return withinIterations && withinTime;
+	}
 	
 	/**
 	 * Attempt to find a solution plan for the provided problem.
 	 */
-	public Plan findPlan(GroundPlanningProblem problem);
+	public abstract Plan findPlan(GroundPlanningProblem problem);
 	
+	
+	public static Planner getPlanner(Configuration config) {
+		
+		switch (config.plannerType) {
+		case forwardSSS:
+			return new ForwardSearchPlanner(config);
+		case satBased:
+			return new SimpleSatPlanner(config);
+		}
+		return null;
+	}
 }
