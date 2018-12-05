@@ -17,6 +17,11 @@ public abstract class Planner {
 		this.config = config;
 	}
 	
+	/**
+	 * Checks the used amount of iterations and the elapsed time
+	 * against computational bounds specified in the configuration.
+	 * If false is returned, the planner should stop.
+	 */
 	protected boolean withinComputationalBounds(int iterations) {
 		
 		boolean withinIterations = false;
@@ -43,7 +48,9 @@ public abstract class Planner {
 	 */
 	public abstract Plan findPlan(GroundPlanningProblem problem);
 	
-	
+	/**
+	 * Constructs a planner object fitting the provided configuration.
+	 */
 	public static Planner getPlanner(Configuration config) {
 		
 		switch (config.plannerType) {

@@ -5,6 +5,9 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
+/**
+ * Bundles all options which can be set for this application.
+ */
 @Command(mixinStandardHelpOptions = true, version = "Aquaplanning Version 0.0.1-SNAPSHOT")
 public class Configuration {
 	

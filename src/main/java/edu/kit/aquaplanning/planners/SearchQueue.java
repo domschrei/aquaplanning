@@ -10,6 +10,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.Stack;
 
+import edu.kit.aquaplanning.planners.SearchStrategy.Mode;
 import edu.kit.aquaplanning.planners.heuristic.Heuristic;
 
 /**
@@ -123,11 +124,11 @@ public class SearchQueue {
 				// Only add node if heuristic does not return infinity
 				queue.add(node);
 			}
-		} else if (strategy.getMode() == SearchStrategy.BREADTH_FIRST) {
+		} else if (strategy.getMode() == Mode.breadthFirst) {
 			queue.add(node);
-		} else if (strategy.getMode() == SearchStrategy.DEPTH_FIRST) {
+		} else if (strategy.getMode() == Mode.depthFirst) {
 			stack.push(node);
-		} else if (strategy.getMode() == SearchStrategy.RANDOM_CHOICE) {
+		} else if (strategy.getMode() == Mode.randomChoice) {
 			list.add(node);
 		}
 	}
@@ -138,9 +139,9 @@ public class SearchQueue {
 	public SearchNode get() {
 		
 		SearchNode node;
-		if (strategy.getMode() == SearchStrategy.DEPTH_FIRST) {
+		if (strategy.getMode() == Mode.depthFirst) {
 			node = stack.pop();
-		} else if (strategy.getMode() == SearchStrategy.RANDOM_CHOICE) {
+		} else if (strategy.getMode() == Mode.randomChoice) {
 			node = list.remove(random.nextInt(list.size()));
 		} else {
 			node = queue.poll();
@@ -160,9 +161,9 @@ public class SearchQueue {
 	 */
 	public boolean isEmpty() {
 		
-		if (strategy.getMode() == SearchStrategy.DEPTH_FIRST) {
+		if (strategy.getMode() == Mode.depthFirst) {
 			return stack.isEmpty();
-		} else if (strategy.getMode() == SearchStrategy.RANDOM_CHOICE) {
+		} else if (strategy.getMode() == Mode.randomChoice) {
 			return list.isEmpty();
 		} else {
 			return queue.isEmpty();

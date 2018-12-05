@@ -25,6 +25,11 @@ public class ForwardSearchPlanner extends Planner {
 		super(config);
 	}
 	
+	/**
+	 * Given a ground planning problem, employs a forward 
+	 * state space search procedure according to the configuration
+	 * which was provided to this object's constructor.
+	 */
 	@Override
 	public Plan findPlan(GroundPlanningProblem problem) {
 		

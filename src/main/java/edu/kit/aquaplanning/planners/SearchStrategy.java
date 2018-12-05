@@ -8,39 +8,37 @@ import edu.kit.aquaplanning.Configuration;
 public class SearchStrategy {
 	
 	public enum Mode {
-		breadthFirst, depthFirst, randomChoice, bestFirst, aStar, weightedAStar;
+		/**
+		 * Maintain a queue of nodes, i.e. First come, first served.
+		 */
+		breadthFirst, 
+		/**
+		 * Maintain a stack of nodes, i.e. Last come, first served.
+		 */
+		depthFirst, 
+		/**
+		 * Picks a node uniformly at random.
+		 */
+		randomChoice, 
+		/**
+		 * Using a provided heuristic, always picks the node with the
+		 * best heuristic score.
+		 */
+		bestFirst, 
+		/**
+		 * Using a provided heuristic, always picks the node with the
+		 * lowest value of f(n)+h(n), where f(n) is the node's depth
+		 * (i.e. the path's cost so far) and h(n) is the node's 
+		 * heuristic score.
+		 */
+		aStar, 
+		/**
+		 * Like A*, but weights the heuristic value stronger than the
+		 * cost so far, i.e. the node with the lowest value of
+		 * f(n)+c*h(n) is picked where c is a constant set separately.
+		 */
+		weightedAStar;
 	}	
-	
-	/**
-	 * Maintain a queue of nodes, i.e. First come, first served.
-	 */
-	public static final Mode BREADTH_FIRST = Mode.breadthFirst; 
-	/**
-	 * Maintain a stack of nodes, i.e. Last come, first served.
-	 */
-	public static final Mode DEPTH_FIRST = Mode.depthFirst; 
-	/**
-	 * Picks a node uniformly at random.
-	 */
-	public static final Mode RANDOM_CHOICE = Mode.randomChoice;
-	/**
-	 * Using a provided heuristic, always picks the node with the
-	 * best heuristic score.
-	 */
-	public static final Mode BEST_FIRST = Mode.bestFirst;
-	/**
-	 * Using a provided heuristic, always picks the node with the
-	 * lowest value of f(n)+h(n), where f(n) is the node's depth
-	 * (i.e. the path's cost so far) and h(n) is the node's 
-	 * heuristic score.
-	 */
-	public static final Mode A_STAR = Mode.aStar;
-	/**
-	 * Like A*, but weights the heuristic value stronger than the
-	 * cost so far, i.e. the node with the lowest value of
-	 * f(n)+c*h(n) is picked where c is a constant set separately.
-	 */
-	public static final Mode WEIGHTED_A_STAR = Mode.weightedAStar; 
 	
 	private Mode mode;
 	private int heuristicWeight = 10;
@@ -89,14 +87,14 @@ public class SearchStrategy {
 	}
 	
 	public boolean isHeuristical() {
-		if (mode == A_STAR || mode == WEIGHTED_A_STAR || mode == BEST_FIRST) {
+		if (mode == Mode.aStar || mode == Mode.weightedAStar || mode == Mode.bestFirst) {
 			return true;
 		}
 		return false;
 	}
 	
 	public boolean hasWeight() {
-		if (mode == WEIGHTED_A_STAR) {
+		if (mode == Mode.weightedAStar) {
 			return true;
 		}
 		return false;
