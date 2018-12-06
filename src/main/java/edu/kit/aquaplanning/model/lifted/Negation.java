@@ -26,7 +26,32 @@ public class Negation extends AbstractCondition {
 	}
 	
 	@Override
+	public AbstractCondition simplify(boolean negated) {
+		
+		return condition.simplify(!negated);
+	}
+	
+	@Override
+	public AbstractCondition getDNF() {
+		boolean negated = true;
+		while (condition.getConditionType() == ConditionType.negation) {
+			condition = ((Negation) condition).condition;
+			negated = !negated;
+		}
+		Condition c = (Condition) condition.copy();
+		c.setNegated(negated != c.isNegated());
+		return c;
+	}
+	
+	@Override
 	public String toString() {
 		return "¬" + condition.toString();
+	}
+	
+	@Override
+	public AbstractCondition copy() {
+		Negation n = new Negation();
+		n.setChildCondition(condition.copy());
+		return n;
 	}
 }

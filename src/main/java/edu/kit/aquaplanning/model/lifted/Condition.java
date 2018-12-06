@@ -82,6 +82,18 @@ public class Condition extends AbstractCondition {
 		return newCondition;
 	}
 	
+	@Override
+	public AbstractCondition simplify(boolean negated) {
+		Condition c = this.copy();
+		c.setNegated(this.negated != negated);
+		return c;
+	}
+	
+	@Override
+	public AbstractCondition getDNF() {
+		return this.copy();
+	}
+	
 	public Condition copy() {
 		
 		Condition c = new Condition(predicate);

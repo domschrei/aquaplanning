@@ -78,7 +78,7 @@ public class Main {
 			
 			// Step 2: Grounding (to get "flat" sets of actions and atoms)
 			System.out.println("Grounding ...");
-			Grounder grounder = new RelaxedPlanningGraphGrounder();
+			Grounder grounder = new RelaxedPlanningGraphGrounder(config);
 			GroundPlanningProblem planningProblem = grounder.ground(p);
 			// Print ground problem (attention: can be a lot!)
 			// System.out.println(planningProblem);
@@ -105,6 +105,7 @@ public class Main {
 				// Print found plan
 				System.out.println(plan);
 				if (config.planOutputFile != null) {
+					// Write plan to file
 					FileWriter w = new FileWriter(config.planOutputFile);
 					w.write(plan.toString());
 					w.close();

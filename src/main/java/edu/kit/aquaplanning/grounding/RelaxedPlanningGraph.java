@@ -131,7 +131,6 @@ public class RelaxedPlanningGraph {
 					op.getArguments(), problem, constants);
 			new ArgumentCombination.Iterator(arguments).forEachRemaining(args -> {
 				
-				// For each (flat) condition:
 				boolean addArguments = true;
 						
 				// Does the precondition hold with these arguments in a relaxed sense?
@@ -161,6 +160,7 @@ public class RelaxedPlanningGraph {
 		List<AbstractCondition> effects = new ArrayList<>();
 		effects.add(liftedAction.getEffect());
 		
+		// For each effect to process
 		for (int i = 0; i < effects.size(); i++) {
 			AbstractCondition effect = effects.get(i);
 			
@@ -220,6 +220,11 @@ public class RelaxedPlanningGraph {
 			
 			// Set the ground arguments as the arguments of the condition
 			Condition groundCond = cond.getConditionBoundToArguments(op.getArguments(), opArgs);
+			
+			// If equality condition, check if it holds
+			if (isEqualityCondition(groundCond)) {
+				return groundCond.isNegated() != holdsEqualityCondition(groundCond);
+			}
 			
 			// When delete-relaxed: negation is dismissed, so it "holds"
 			if (deleteRelaxed && groundCond.isNegated()) {
@@ -282,4 +287,22 @@ public class RelaxedPlanningGraph {
 			throw new IllegalArgumentException("Illegal condition type.");
 		}
 	}	
+	
+	private boolean isEqualityCondition(Condition cond) {
+		return cond.getPredicate().getName().equals("=");
+	}
+	
+	private boolean holdsEqualityCondition(Condition cond) {
+		
+		if (!isEqualityCondition(cond)) {
+			throw new IllegalArgumentException("The provided condition does not represent an equality");
+		}
+		
+		if (cond.getNumArgs() == 2) {
+			if (cond.getArguments().get(0).equals(cond.getArguments().get(1))) {
+				return true;
+			}
+		}
+		return false;
+	}
 }

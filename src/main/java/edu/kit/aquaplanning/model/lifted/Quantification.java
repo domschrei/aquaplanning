@@ -51,6 +51,33 @@ public class Quantification extends AbstractCondition {
 	}
 	
 	@Override
+	public AbstractCondition simplify(boolean negated) {
+		
+		Quantifier quantifier = null;
+		if (negated) {
+			quantifier = (this.quantifier == Quantifier.existential ? 
+					Quantifier.universal : Quantifier.existential);
+		} else {
+			quantifier = this.quantifier;
+		}
+		Quantification q = new Quantification(quantifier);
+		for (Argument var : variables)
+			q.addVariable(var.copy());
+		q.setCondition(condition.simplify(negated));
+		return q;
+	}
+	
+	@Override
+	public AbstractCondition getDNF() {
+		
+		Quantification q = new Quantification(quantifier);
+		for (Argument var : variables)
+			q.addVariable(var.copy());
+		q.setCondition(condition.getDNF());
+		return q;
+	}
+	
+	@Override
 	public String toString() {
 		
 		String out = "";
@@ -95,5 +122,13 @@ public class Quantification extends AbstractCondition {
 		} else if (!variables.equals(other.variables))
 			return false;
 		return true;
+	}
+	
+	@Override
+	public Quantification copy() {
+		Quantification q = new Quantification(quantifier);
+		q.condition = condition.copy();
+		q.variables.addAll(variables);
+		return q;
 	}
 }

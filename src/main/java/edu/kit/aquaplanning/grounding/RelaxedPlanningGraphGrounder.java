@@ -4,10 +4,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.model.ground.Action;
 import edu.kit.aquaplanning.model.ground.Atom;
 import edu.kit.aquaplanning.model.ground.Goal;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
+import edu.kit.aquaplanning.model.ground.Precondition;
 import edu.kit.aquaplanning.model.ground.State;
 import edu.kit.aquaplanning.model.lifted.AbstractCondition;
 import edu.kit.aquaplanning.model.lifted.Argument;
@@ -25,6 +27,10 @@ import edu.kit.aquaplanning.model.lifted.ConditionSet;
  */
 public class RelaxedPlanningGraphGrounder extends BaseGrounder {
 	
+	public RelaxedPlanningGraphGrounder(Configuration config) {
+		super(config);
+	}
+	
 	/**
 	 * Grounds the entire problem.
 	 */
@@ -34,23 +40,28 @@ public class RelaxedPlanningGraphGrounder extends BaseGrounder {
 		
 		this.problem = problem;
 		
+		// First, preprocess the problem into a standardized structure
+		new Preprocessor(config).preprocess(problem);
+		
 		// Create a sorted list of constants
 		constants = new ArrayList<>();
 		constants.addAll(problem.getConstants());
 		constants.sort((c1, c2) -> c1.getName().compareTo(c2.getName()));
 		
-		// add equality conditions
-		Predicate pEquals = problem.getPredicate("=");
-		if (pEquals != null) {
-			// for all objects c: add the condition (= c c)
-			for (Argument constant : constants) {
-				List<Argument> args = new ArrayList<>();
-				args.add(constant);
-				args.add(constant);
-				Condition equalsCond = new Condition(pEquals);
-				equalsCond.addArgument(constant);
-				equalsCond.addArgument(constant);
-				problem.getInitialState().add(equalsCond);
+		if (config.keepEqualities) {
+			// add equality conditions
+			Predicate pEquals = problem.getPredicate("=");
+			if (pEquals != null) {
+				// for all objects c: add the condition (= c c)
+				for (Argument constant : constants) {
+					List<Argument> args = new ArrayList<>();
+					args.add(constant);
+					args.add(constant);
+					Condition equalsCond = new Condition(pEquals);
+					equalsCond.addArgument(constant);
+					equalsCond.addArgument(constant);
+					problem.getInitialState().add(equalsCond);
+				}
 			}
 		}
 		
@@ -63,13 +74,12 @@ public class RelaxedPlanningGraphGrounder extends BaseGrounder {
 			// Ground new operators
 			for (Operator op : graph.getLiftedActions(iteration)) {
 				Action a = getAction(op); // actual grounding
-				if (!actions.contains(a)) {
+				if (a != null && !actions.contains(a)) {
 					actions.add(a);
 				}
 			}
 			iteration++;
 		}
-		
 		
 		// Extract initial state
 		List<Atom> initialStateAtoms = new ArrayList<>();
@@ -79,25 +89,48 @@ public class RelaxedPlanningGraphGrounder extends BaseGrounder {
 		State initialState = new State(initialStateAtoms);
 		
 		// Extract goal
+		boolean simpleGoal = true;
 		List<Atom> goalAtoms = new ArrayList<>();
-		problem.getGoals().forEach(cond -> {
-			if (cond.getConditionType() == ConditionType.quantification) {				
-				// Resolve quantifications into flat sets of atoms
-				AbstractCondition condition = ArgumentCombination.resolveQuantification(
-						(Quantification) cond, problem, constants);
-				List<Object> results = getSimpleAtoms(Arrays.asList(condition));
-				goalAtoms.addAll((List<Atom>) results.get(0));
-			} else if (cond.getConditionType() == ConditionType.conjunction) {
-				List<Object> results = getSimpleAtoms(((ConditionSet) cond).getConditions());
-				goalAtoms.addAll((List<Atom>) results.get(0));
+		// For each goal
+		for (AbstractCondition cond : problem.getGoals()) {
+			// Is the condition simple?
+			if (isConditionConjunctive(cond, false, false)) {				
+				if (cond.getConditionType() == ConditionType.quantification) {				
+					// Resolve quantifications into flat sets of atoms
+					AbstractCondition condition = ArgumentCombination.resolveQuantification(
+							(Quantification) cond, problem, constants);
+					List<Object> results = getSimpleAtoms(Arrays.asList(condition));
+					goalAtoms.addAll((List<Atom>) results.get(0));
+				} else if (cond.getConditionType() == ConditionType.conjunction) {
+					// Conjunction
+					List<Object> results = getSimpleAtoms(((ConditionSet) cond).getConditions());
+					goalAtoms.addAll((List<Atom>) results.get(0));
+				} else {
+					// Atom
+					Condition c = (Condition) cond;
+					Atom atom = atom(c.getPredicate(), c.getArguments());
+					atom.set(!c.isNegated());
+					goalAtoms.add(atom);
+				}
 			} else {
-				Condition c = (Condition) cond;
-				Atom atom = atom(c.getPredicate(), c.getArguments());
-				atom.set(!c.isNegated());
-				goalAtoms.add(atom);
+				// Complex condition
+				simpleGoal = false;
+				break;
 			}
-		});
-		Goal goal = new Goal(goalAtoms);
+		}
+		Goal goal;
+		if (simpleGoal) {
+			// Goal with simple list of atoms
+			goal = new Goal(goalAtoms);
+		} else {
+			// Goal with a complex logical expression
+			if (problem.getGoals().size() != 1) {
+				throw new IllegalArgumentException("If the goal is complex, it "
+						+ "must be one single condition after preprocessing.");
+			}
+			Precondition pre = toPrecondition(problem.getGoals().get(0), false);
+			goal = new Goal(pre);
+		}
 		
 		// Assemble finished problem
 		GroundPlanningProblem planningProblem = new GroundPlanningProblem(initialState, actions, 

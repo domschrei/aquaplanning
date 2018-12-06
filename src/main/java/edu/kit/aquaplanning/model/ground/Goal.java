@@ -8,6 +8,9 @@ public class Goal {
 	private List<Atom> atoms;
 	private List<Atom> positiveAtoms;
 	
+	private boolean isComplex = false;
+	private Precondition complexCondition;
+	
 	public Goal(List<Atom> atoms) {
 		this.atoms = atoms;
 		
@@ -19,11 +22,20 @@ public class Goal {
 		}
 	}
 	
+	public Goal(Precondition complexCondition) {
+		isComplex = true;
+		this.complexCondition = complexCondition;
+	}
+	
 	/**
 	 * Returns true iff all goal atoms are satisfied in the
 	 * provided state.
 	 */
 	public boolean isSatisfied(State state) {
+		
+		if (isComplex) {
+			return complexCondition.holds(state);
+		}
 		
 		for (Atom atom : atoms) {
 			if (!state.holds(atom)) {
@@ -40,6 +52,10 @@ public class Goal {
 	 */
 	public boolean isSatisfiedRelaxed(State state) {
 		
+		if (isComplex) {
+			return complexCondition.holdsRelaxed(state);
+		}
+		
 		// Only check positive atoms
 		for (Atom atom : positiveAtoms) {
 			if (!state.holds(atom)) {
@@ -50,15 +66,32 @@ public class Goal {
 	}
 	
 	public List<Atom> getAtoms() {
+		if (isComplex) {
+			throw new IllegalArgumentException("Cannot retrieve flat atom list of a complex goal");
+		}
 		return atoms;
 	}
 	
 	public List<Atom> getPositiveAtoms() {
+		if (isComplex) {
+			throw new IllegalArgumentException("Cannot retrieve flat atom list of a complex goal");
+		}
 		return positiveAtoms;
+	}
+	
+	public Precondition getComplexCondition() {
+		if (!isComplex) {
+			throw new IllegalArgumentException("Cannot retrieve complex condition object of a simple goal");
+		}
+		return complexCondition;
 	}
 
 	@Override
 	public String toString() {
-		return atoms.toString();
+		if (isComplex) {
+			return complexCondition.toString();
+		} else {			
+			return atoms.toString();
+		}
 	}
 }

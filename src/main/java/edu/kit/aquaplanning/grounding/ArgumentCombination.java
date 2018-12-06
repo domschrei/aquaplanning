@@ -150,7 +150,7 @@ public class ArgumentCombination {
 	 */
 	public static AbstractCondition resolveQuantification(Quantification q, 
 			PlanningProblem problem, List<Argument> constants) {
-			
+		
 		ConditionSet dequantifiedCond = new ConditionSet(
 				q.getQuantifier() == Quantifier.universal ? 
 				ConditionType.conjunction : ConditionType.disjunction);

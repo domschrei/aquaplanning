@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import edu.kit.aquaplanning.Configuration;
+import edu.kit.aquaplanning.Configuration.HeuristicType;
 import edu.kit.aquaplanning.grounding.Grounder;
 import edu.kit.aquaplanning.grounding.RelaxedPlanningGraphGrounder;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
@@ -43,7 +44,7 @@ public class TestPlanners extends TestCase {
 	
 	public void testSatPlan() throws FileNotFoundException, IOException {
 		String[] domains = {"rover", "childsnack", "gripper"};
-		Grounder grounder = new RelaxedPlanningGraphGrounder();
+		Grounder grounder = new RelaxedPlanningGraphGrounder(new Configuration());
 		for (String domain : domains) {
 			PlanningProblem pp = new ProblemParser().parse("testfiles/" + domain + "/domain.pddl", 
 					"testfiles/" + domain + "/p01.pddl");
@@ -73,7 +74,7 @@ public class TestPlanners extends TestCase {
 		System.out.println("Testing domain \"" + domainFile + "\", problem \"" + problemFile + "\".");
 		
 		List<Grounder> grounders = new ArrayList<>();
-		grounders.add(new RelaxedPlanningGraphGrounder());
+		grounders.add(new RelaxedPlanningGraphGrounder(new Configuration()));
 				
 		System.out.println("Parsing ...");
 		PlanningProblem pp = new ProblemParser().parse(domainFile, problemFile);
@@ -86,7 +87,8 @@ public class TestPlanners extends TestCase {
 			
 			System.out.println("Planning ...");
 			Configuration c = new Configuration();
-			c.searchStrategy = Mode.breadthFirst;
+			c.searchStrategy = Mode.bestFirst;
+			c.heuristic = HeuristicType.relaxedPathLength;
 			Planner planner = new ForwardSearchPlanner(c);
 			Plan plan = planner.findPlan(gpp);
 			

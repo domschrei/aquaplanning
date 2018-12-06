@@ -43,6 +43,27 @@ public class ConsequentialCondition extends AbstractCondition {
 	}
 	
 	@Override
+	public AbstractCondition simplify(boolean negated) {
+		
+		if (negated) {
+			throw new IllegalArgumentException("Negated conditional effect is not legal.");
+		}
+		ConsequentialCondition c = new ConsequentialCondition();
+		c.setPrerequisite(prerequisite.simplify(false));
+		c.setConsequence(consequence.simplify(false));
+		return c;
+	}
+	
+	@Override
+	public AbstractCondition getDNF() {
+		
+		ConsequentialCondition c = new ConsequentialCondition();
+		c.setPrerequisite(prerequisite.getDNF());
+		c.setConsequence(consequence);
+		return c;
+	}
+	
+	@Override
 	public String toString() {
 		String out = "";
 		out += "{ ";
@@ -82,5 +103,14 @@ public class ConsequentialCondition extends AbstractCondition {
 		} else if (!prerequisite.equals(other.prerequisite))
 			return false;
 		return true;
+	}
+	
+	@Override
+	public ConsequentialCondition copy() {
+		
+		ConsequentialCondition cc = new ConsequentialCondition();
+		cc.setPrerequisite(prerequisite.copy());
+		cc.setConsequence(consequence.copy());
+		return cc;
 	}
 }
