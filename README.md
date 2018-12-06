@@ -4,23 +4,18 @@ This is a Java framework for Automated Planning, developed by Tomáš Balyo and 
 
 ## Features
 
-Aquaplanning supports PDDL (Planning Domain Description Language) files as an input for planning domains and problems. The following features are implemented as of now (i.e. problems with these features can be parsed and grounded):
+Aquaplanning supports PDDL (Planning Domain Description Language) files as an input for planning domains and problems. The following features are implemented as of now (i.e. problems with these features can be parsed, grounded, and solved):
 
 * Basic STRIPS planning with typing
-* Negative goals
+* Negative conditions (preconditions / effects / goals)
 * Equality (as a universal predicate `(= obj1 obj2)`)
-* Conditional effects (`when (...) (...)`)
-* Universal quantifications (inside preconditions, effects, initial state and goal)
+* Conditional effects (`when (condition) (additional-effect)`)
+* Universal and existential quantifications
+* All ADL features, i.e. disjunctive conditions with `or`, `imply`, and non-atomic `not` expressions
 * Action costs (in its basic form `(:function total-cost - number)`, with constant positive cost per operator)
-* (EXPERIMENTAL) All ADL features, i.e. disjunctive preconditions with `or`/`not`/`imply` and existential quantifications (not inside the goal)
-
-These features are more or less equivalent with the following [PDDL 3.1](https://helios.hud.ac.uk/scommv/IPC-14/repository/kovacs-pddl-3.1-2011.pdf) requirements:
-	
-	:strips :typing :negative-preconditions :conditional-effects :equality :universal-preconditions :action-cost :adl
 
 For planning problems using these features (or any subset), a full representation of the read problem is available in the form of Java objects after parsing, as well as a separate representation after grounding the problem.
-
-For grounding purposes, Aquaplanning traverses the problem's (delete-)relaxed planning graph, resulting in a reasonable amount of atoms and actions in most cases. Equality conditions and quantifications are resolved during grounding.
+For grounding purposes, Aquaplanning traverses the problem's (delete-)relaxed planning graph, resulting in a reasonable amount of atoms and actions in most cases.
 
 A generic state space forward search is provided as a planner. As of now, a few common search strategies (BFS, DFS, A\*, Weighted A\*, Best-first, random choice) are implemented, as well as a couple of simple heuristics to guide the A\* and Best-first searches.  
 
