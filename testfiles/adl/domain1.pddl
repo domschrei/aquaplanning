@@ -112,10 +112,8 @@
 	:effect (and
 		(when
 			(or
+				(is ?t)
 				(exists (?th - thing) (and
-					(is ?th)
-				))
-				(forall (?th - thing) (and
 					(is ?th)
 				))
 			)

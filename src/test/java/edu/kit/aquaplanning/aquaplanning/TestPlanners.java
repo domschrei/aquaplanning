@@ -2,8 +2,6 @@ package edu.kit.aquaplanning.aquaplanning;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.Configuration.HeuristicType;
@@ -21,7 +19,16 @@ import edu.kit.aquaplanning.validate.Validator;
 import junit.framework.TestCase;
 
 public class TestPlanners extends TestCase {
-		
+	
+	public static final String[] DEFAULT_TEST_DOMAINS = {"barman", "rover", "childsnack", 
+			"gripper", "zenotravel", "nurikabe", "petrinetalignment", "settlers"};
+	public static final String[] SAT_TEST_DOMAINS = {"barman", "rover", "childsnack", 
+			"gripper", "zenotravel", "nurikabe"};
+	public static final String[] ADL_TEST_DOMAINS = {"openstacks"};
+	
+	private PlanningProblem pp;
+	private GroundPlanningProblem gpp;
+	
 	public void testQuantifications() throws FileNotFoundException, IOException {
 
 		fullTest("testfiles/quantifications/domain.pddl", "testfiles/quantifications/p1.pddl");
@@ -30,25 +37,36 @@ public class TestPlanners extends TestCase {
 	
 	public void testAdlFeatures() throws FileNotFoundException, IOException {
 
-		fullTest("testfiles/adl/domain1.pddl", "testfiles/adl/p1.pddl");
+		Configuration config = new Configuration();
+		config.keepDisjunctions = true;
+		fullTest("testfiles/adl/domain1.pddl", "testfiles/adl/p1.pddl", config);
+		config.keepDisjunctions = false;
+		config.keepEqualities = true;
+		fullTest("testfiles/adl/domain1.pddl", "testfiles/adl/p1.pddl", config);
+		config.keepDisjunctions = true;
+		fullTest("testfiles/adl/domain1.pddl", "testfiles/adl/p1.pddl", config);
+		
 		fullTest("testfiles/adl/domain2.pddl", "testfiles/adl/p2.pddl");
 	}
 	
 	public void testDefaultDomains() throws FileNotFoundException, IOException {
-		
-		String[] domains = {"rover", "childsnack", "gripper"};
-		for (String domain : domains) {
+
+		for (String domain : DEFAULT_TEST_DOMAINS) {
+			fullTest("testfiles/" + domain + "/domain.pddl", "testfiles/" + domain + "/p01.pddl");
+		}
+		for (String domain : ADL_TEST_DOMAINS) {
 			fullTest("testfiles/" + domain + "/domain.pddl", "testfiles/" + domain + "/p01.pddl");
 		}
 	}
 	
 	public void testSatPlan() throws FileNotFoundException, IOException {
-		String[] domains = {"rover", "childsnack", "gripper"};
+		
 		Grounder grounder = new RelaxedPlanningGraphGrounder(new Configuration());
-		for (String domain : domains) {
-			PlanningProblem pp = new ProblemParser().parse("testfiles/" + domain + "/domain.pddl", 
+		for (String domain : SAT_TEST_DOMAINS) {
+			System.out.println("Testing domain \"" + domain + "\" with SAT.");
+			pp = new ProblemParser().parse("testfiles/" + domain + "/domain.pddl", 
 					"testfiles/" + domain + "/p01.pddl");
-			GroundPlanningProblem gpp = grounder.ground(pp);
+			gpp = grounder.ground(pp);
 			testSatPlan(gpp);
 		}
 	}
@@ -70,37 +88,38 @@ public class TestPlanners extends TestCase {
 	}
 	
 	private void fullTest(String domainFile, String problemFile) throws FileNotFoundException, IOException {
+		fullTest(domainFile, problemFile, new Configuration());
+	}
+	
+	private void fullTest(String domainFile, String problemFile, Configuration config) 
+			throws FileNotFoundException, IOException {
 		
-		System.out.println("Testing domain \"" + domainFile + "\", problem \"" + problemFile + "\".");
-		
-		List<Grounder> grounders = new ArrayList<>();
-		grounders.add(new RelaxedPlanningGraphGrounder(new Configuration()));
-				
+		System.out.println("Testing domain \"" + domainFile 
+				+ "\", problem \"" + problemFile + "\".");
+			
 		System.out.println("Parsing ...");
-		PlanningProblem pp = new ProblemParser().parse(domainFile, problemFile);
+		pp = new ProblemParser().parse(domainFile, problemFile);
+				
+		System.out.println("Grounding ...");
+		Grounder grounder = new RelaxedPlanningGraphGrounder(new Configuration());
+		gpp = grounder.ground(pp);
 		
-		for (Grounder grounder : grounders) {
-			
-			System.out.println("Grounding with " 
-					+ grounder.getClass().getSimpleName() + "...");
-			GroundPlanningProblem gpp = grounder.ground(pp);
-			
-			System.out.println("Planning ...");
-			Configuration c = new Configuration();
-			c.searchStrategy = Mode.bestFirst;
-			c.heuristic = HeuristicType.relaxedPathLength;
-			Planner planner = new ForwardSearchPlanner(c);
-			Plan plan = planner.findPlan(gpp);
-			
-			System.out.println(plan);
-			assertTrue(plan != null);
-			assertTrue(plan.getLength() > 0);
-			assertTrue(Validator.planIsValid(gpp, plan));
-			
-			System.out.println("Done.");
-		}
+		assertTrue("No actions have been produced during grounding.",
+				gpp.getActions().size() > 0);
 		
-		System.out.println();
+		System.out.println("Planning ...");
+		Configuration c = new Configuration();
+		c.searchStrategy = Mode.bestFirst;
+		c.heuristic = HeuristicType.relaxedPathLength;
+		Planner planner = new ForwardSearchPlanner(c);
+		Plan plan = planner.findPlan(gpp);
+		
+		System.out.println(plan);
+		assertTrue("No plan has been found.", plan != null);
+		assertTrue("The produced plan is empty.", plan.getLength() > 0);
+		assertTrue("The produced plan is invalid.", Validator.planIsValid(gpp, plan));
+		
+		System.out.println("Done.\n");
 	}
 
 }
