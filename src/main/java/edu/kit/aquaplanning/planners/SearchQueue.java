@@ -10,6 +10,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.Stack;
 
+import edu.kit.aquaplanning.planners.SearchStrategy.Mode;
 import edu.kit.aquaplanning.planners.heuristic.Heuristic;
 
 /**
@@ -57,25 +58,25 @@ public class SearchQueue {
 	private void initFrontier() {
 		
 		switch (strategy.getMode()) {
-		case SearchStrategy.BREADTH_FIRST:
+		case breadthFirst:
 			queue = new ArrayDeque<>();
 			break;
-		case SearchStrategy.DEPTH_FIRST:
+		case depthFirst:
 			stack = new Stack<>();
 			break;
-		case SearchStrategy.BEST_FIRST:
+		case bestFirst:
 			queue = new PriorityQueue<SearchNode>((n1, n2) ->
 					// Compare heuristic scores
 					n1.heuristicValue - n2.heuristicValue
 			);
 			break;
-		case SearchStrategy.A_STAR:
+		case aStar:
 			queue = new PriorityQueue<SearchNode>((n1, n2) ->
 					// Compare (cost so far + heuristic scores)
 					n1.depth + n1.heuristicValue - (n2.depth + n2.heuristicValue)
 			);
 			break;
-		case SearchStrategy.WEIGHTED_A_STAR:
+		case weightedAStar:
 			int heuristicWeight = strategy.getHeuristicWeight();
 			queue = new PriorityQueue<SearchNode>((n1, n2) ->
 					// Compare (cost so far + heuristic scores)
@@ -83,7 +84,7 @@ public class SearchQueue {
 					- (n2.depth + heuristicWeight * n2.heuristicValue)
 			);
 			break;
-		case SearchStrategy.RANDOM_CHOICE:
+		case randomChoice:
 			list = new ArrayList<>();
 			random = new Random(1337); // <-- seed
 		}
@@ -123,11 +124,11 @@ public class SearchQueue {
 				// Only add node if heuristic does not return infinity
 				queue.add(node);
 			}
-		} else if (strategy.getMode() == SearchStrategy.BREADTH_FIRST) {
+		} else if (strategy.getMode() == Mode.breadthFirst) {
 			queue.add(node);
-		} else if (strategy.getMode() == SearchStrategy.DEPTH_FIRST) {
+		} else if (strategy.getMode() == Mode.depthFirst) {
 			stack.push(node);
-		} else if (strategy.getMode() == SearchStrategy.RANDOM_CHOICE) {
+		} else if (strategy.getMode() == Mode.randomChoice) {
 			list.add(node);
 		}
 	}
@@ -138,9 +139,9 @@ public class SearchQueue {
 	public SearchNode get() {
 		
 		SearchNode node;
-		if (strategy.getMode() == SearchStrategy.DEPTH_FIRST) {
+		if (strategy.getMode() == Mode.depthFirst) {
 			node = stack.pop();
-		} else if (strategy.getMode() == SearchStrategy.RANDOM_CHOICE) {
+		} else if (strategy.getMode() == Mode.randomChoice) {
 			node = list.remove(random.nextInt(list.size()));
 		} else {
 			node = queue.poll();
@@ -160,9 +161,9 @@ public class SearchQueue {
 	 */
 	public boolean isEmpty() {
 		
-		if (strategy.getMode() == SearchStrategy.DEPTH_FIRST) {
+		if (strategy.getMode() == Mode.depthFirst) {
 			return stack.isEmpty();
-		} else if (strategy.getMode() == SearchStrategy.RANDOM_CHOICE) {
+		} else if (strategy.getMode() == Mode.randomChoice) {
 			return list.isEmpty();
 		} else {
 			return queue.isEmpty();

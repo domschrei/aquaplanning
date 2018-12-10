@@ -5,13 +5,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.model.ground.Action;
 import edu.kit.aquaplanning.model.ground.Atom;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
 import edu.kit.aquaplanning.sat.SatSolver;
 
-public class SimpleSatPlanner implements Planner {
+public class SimpleSatPlanner extends Planner {
 	
 	private Map<String, Integer> actionIds;
 	// supporting actions for positive atoms
@@ -19,6 +20,12 @@ public class SimpleSatPlanner implements Planner {
 	// supporting actions for negative atoms
 	private Map<Integer, List<Action> > supportingActionsNegative;
 	private List<Action> empty = new ArrayList<>();
+	
+	
+	public SimpleSatPlanner(Configuration config) {
+		super(config);
+	}
+	
 	
 	private List<Action> getSupportingActions(int atomid, boolean positive) {
 		List<Action> result = positive ? supportingActionsPositive.get(atomid) : supportingActionsNegative.get(atomid); 

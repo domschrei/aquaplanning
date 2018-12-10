@@ -7,7 +7,10 @@ import edu.kit.aquaplanning.model.lifted.AbstractCondition;
 import edu.kit.aquaplanning.model.lifted.AbstractCondition.ConditionType;
 import edu.kit.aquaplanning.model.lifted.Argument;
 import edu.kit.aquaplanning.model.lifted.Condition;
+import edu.kit.aquaplanning.model.lifted.ConditionSet;
 import edu.kit.aquaplanning.model.lifted.ConsequentialCondition;
+import edu.kit.aquaplanning.model.lifted.Implication;
+import edu.kit.aquaplanning.model.lifted.Negation;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.model.lifted.Quantification;
 import edu.kit.aquaplanning.model.lifted.Type;
@@ -145,14 +148,12 @@ public class ArgumentCombination {
 	 * quantified variables are already ground, and returns a flat list
 	 * of atoms providing the same logical information.
 	 */
-	public static List<AbstractCondition> resolveQuantification(Quantification q, 
+	public static AbstractCondition resolveQuantification(Quantification q, 
 			PlanningProblem problem, List<Argument> constants) {
 		
-		List<AbstractCondition> dequantifiedConds = new ArrayList<>();
-		
-		if (q.getQuantifier() != Quantifier.universal) {
-			System.err.println("Only universal quantifiers are supported.");
-		}
+		ConditionSet dequantifiedCond = new ConditionSet(
+				q.getQuantifier() == Quantifier.universal ? 
+				ConditionType.conjunction : ConditionType.disjunction);
 		
 		// Iterator over all possible combinations of quantified variables' values
 		List<Argument> quantifiedArgs = q.getVariables();
@@ -166,38 +167,19 @@ public class ArgumentCombination {
 			
 			// For each quantified condition, create a condition
 			// with all quantified variables replaced
-			List<AbstractCondition> conditions = q.getConditions();
-			for (int condIdx = 0; condIdx < conditions.size(); condIdx++) {
-				AbstractCondition abstractCond = conditions.get(condIdx);
-				
-				if (abstractCond.getConditionType() == ConditionType.atomic) {
-					
-					Condition cond = (Condition) abstractCond;
-					dequantifiedConds.add(dequantifyCondition(cond, quantifiedArgs, dequantifiedArgs));
-					
-				} else if (abstractCond.getConditionType() == ConditionType.consequential) {
-					
-					ConsequentialCondition cond = (ConsequentialCondition) abstractCond;
-					ConsequentialCondition newCond = new ConsequentialCondition();
-					for (AbstractCondition c : cond.getPrerequisites()) {
-						newCond.addPrerequisite(dequantifyCondition(c, quantifiedArgs, dequantifiedArgs));
-					}
-					for (AbstractCondition c : cond.getConsequences()) {
-						newCond.addConsequence(dequantifyCondition(c, quantifiedArgs, dequantifiedArgs));
-					}
-					dequantifiedConds.add(newCond);
-				}
-			}						
+			AbstractCondition cond = dequantifyCondition(q.getCondition(), quantifiedArgs, dequantifiedArgs);
+			dequantifiedCond.add(cond);					
 		});
 		
-		return dequantifiedConds;
+		return dequantifiedCond;
 	}
 	
 	public static AbstractCondition dequantifyCondition(AbstractCondition abstractCond, 
 			List<Argument> quantifiedArgs, List<Argument> dequantifiedArgs) {
 		
-		if (abstractCond.getConditionType() == ConditionType.atomic) {
-			
+		switch (abstractCond.getConditionType()) {
+		
+		case atomic:
 			Condition cond = (Condition) abstractCond;
 			List<Argument> condArgs = new ArrayList<>();
 			
@@ -231,20 +213,48 @@ public class ArgumentCombination {
 			for (Argument arg : condArgs) newCondition.addArgument(arg);
 			return newCondition;
 			
-		} else if (abstractCond.getConditionType() == ConditionType.consequential) {
+		case negation:
+			Negation n = new Negation();
+			n.setChildCondition(dequantifyCondition(
+					((Negation) abstractCond).getChildCondition(), 
+					quantifiedArgs, dequantifiedArgs));
+			return n;
 			
-			ConsequentialCondition cond = (ConsequentialCondition) abstractCond;
-			List<AbstractCondition> pre = new ArrayList<>();
-			List<AbstractCondition> cons = new ArrayList<>();
-			for (AbstractCondition c : cond.getPrerequisites()) {
-				pre.add(dequantifyCondition(c, quantifiedArgs, dequantifiedArgs));
+		case consequential:
+			ConsequentialCondition cc = (ConsequentialCondition) abstractCond;
+			ConsequentialCondition newCond = new ConsequentialCondition();
+			newCond.setPrerequisite(dequantifyCondition(cc.getPrerequisite(), quantifiedArgs, dequantifiedArgs));
+			newCond.setConsequence(dequantifyCondition(cc.getConsequence(), quantifiedArgs, dequantifiedArgs));
+			return newCond;
+
+		case conjunction:
+		case disjunction:
+			ConditionSet conj = (ConditionSet) abstractCond;
+			if (conj.getConditions().size() == 1) {
+				// Only one condition: simplify away this {con,dis}junction node
+				return dequantifyCondition(conj.getConditions().get(0), quantifiedArgs, dequantifiedArgs);
+			} else {				
+				ConditionSet newConj = new ConditionSet(conj.getConditionType());
+				for (AbstractCondition other : conj.getConditions()) {
+					newConj.add(dequantifyCondition(other, quantifiedArgs, dequantifiedArgs));
+				}
+				return newConj;
 			}
-			for (AbstractCondition c : cond.getConsequences()) {
-				cons.add(dequantifyCondition(c, quantifiedArgs, dequantifiedArgs));
-			}
-			return new ConsequentialCondition(pre, cons);
+			
+		case implication:
+			Implication i = (Implication) abstractCond;
+			Implication iNew = new Implication();
+			iNew.setIfCondition(dequantifyCondition(i.getIfCondition(), quantifiedArgs, dequantifiedArgs));
+			iNew.setThenCondition(dequantifyCondition(i.getThenCondition(), quantifiedArgs, dequantifiedArgs));
+			return iNew;
+			
+		case quantification:
+			// nested quantifications: unsupported
+			break;
+			
+		default:
+			break;
 		}
-		
 		return null;
 	}
 	

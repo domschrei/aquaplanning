@@ -2,6 +2,7 @@ package edu.kit.aquaplanning.planners;
 
 import java.util.List;
 
+import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.model.ground.Action;
 import edu.kit.aquaplanning.model.ground.Goal;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
@@ -18,28 +19,17 @@ import edu.kit.aquaplanning.planners.heuristic.Heuristic;
  * 
  * @author Dominik Schreiber
  */
-public class ForwardSearchPlanner implements Planner {
-
-	private final int maxIterations = 1000000;
+public class ForwardSearchPlanner extends Planner {
 	
-	private SearchStrategy strategy;
-	private Heuristic heuristic;
-	
-	public ForwardSearchPlanner(SearchStrategy strategy) {
-		this.strategy = strategy;
-		if (strategy.isHeuristical()) {
-			throw new IllegalArgumentException("Heuristic needed, but not provided.");
-		}
+	public ForwardSearchPlanner(Configuration config) {
+		super(config);
 	}
 	
-	public ForwardSearchPlanner(SearchStrategy strategy, Heuristic heuristic) {
-		this.strategy = strategy;
-		this.heuristic = heuristic;
-		if (!strategy.isHeuristical()) {
-			System.out.println("Warning: Heuristic not needed, but provided.");
-		}
-	}
-	
+	/**
+	 * Given a ground planning problem, employs a forward 
+	 * state space search procedure according to the configuration
+	 * which was provided to this object's constructor.
+	 */
 	@Override
 	public Plan findPlan(GroundPlanningProblem problem) {
 		
@@ -50,7 +40,9 @@ public class ForwardSearchPlanner implements Planner {
 		
 		// Initialize forward search
 		SearchQueue frontier;
+		SearchStrategy strategy = new SearchStrategy(config);
 		if (strategy.isHeuristical()) {
+			Heuristic heuristic = Heuristic.getHeuristic(problem, config);
 			frontier = new SearchQueue(strategy, heuristic);
 		} else {
 			frontier = new SearchQueue(strategy);
@@ -61,7 +53,7 @@ public class ForwardSearchPlanner implements Planner {
 		int visitedNodesPrintInterval = 28;
 		long timeStart = System.nanoTime();
 		
-		while (!frontier.isEmpty() && iteration < maxIterations) {
+		while (withinComputationalBounds(iteration) && !frontier.isEmpty()) {
 			
 			// Visit node (by the heuristic provided to the priority queue)
 			SearchNode node = frontier.get();
@@ -75,9 +67,9 @@ public class ForwardSearchPlanner implements Planner {
 					plan.appendAtFront(node.lastAction);
 					node = node.parent;
 				}
-				System.out.println("Visited " + iteration + " nodes.");
 				long timeStop = System.nanoTime();
-				System.out.println("Search time: " + (timeStop - timeStart)/1000000 + "ms");
+				System.out.println("Visited " + iteration + " nodes in total. "
+						+ "Search time: " + (timeStop - timeStart)/1000000 + "ms");
 				return plan;
 			}
 			
@@ -110,7 +102,14 @@ public class ForwardSearchPlanner implements Planner {
 		
 		// Failure to find a plan within the maximum amount of iterations
 		// (or the problem is unsolvable and search space is exhausted)
-		System.out.println("Visited " + iteration + " nodes.");
+		if (frontier.isEmpty()) {
+			System.out.println("Search space exhausted.");
+		} else {
+			System.out.println("Computational resources exhausted.");
+		}
+		long timeStop = System.nanoTime();
+		System.out.println("Visited " + iteration + " nodes in total. Search time: " 
+				+ (timeStop - timeStart)/1000000 + "ms");
 		return null;
 	}
 }

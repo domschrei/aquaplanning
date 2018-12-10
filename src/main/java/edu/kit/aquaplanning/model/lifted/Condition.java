@@ -49,6 +49,10 @@ public class Condition extends AbstractCondition {
 		return c;
 	}
 	
+	public void setNegated(boolean negated) {
+		this.negated = negated;
+	}
+	
 	@Override
 	public Condition getConditionBoundToArguments(List<Argument> refArgs, List<Argument> argValues) {
 		
@@ -76,6 +80,18 @@ public class Condition extends AbstractCondition {
 			}
 		}
 		return newCondition;
+	}
+	
+	@Override
+	public AbstractCondition simplify(boolean negated) {
+		Condition c = this.copy();
+		c.setNegated(this.negated != negated);
+		return c;
+	}
+	
+	@Override
+	public AbstractCondition getDNF() {
+		return this.copy();
 	}
 	
 	public Condition copy() {

@@ -8,10 +8,12 @@ import java.util.Set;
 import edu.kit.aquaplanning.model.lifted.AbstractCondition;
 import edu.kit.aquaplanning.model.lifted.Argument;
 import edu.kit.aquaplanning.model.lifted.Condition;
+import edu.kit.aquaplanning.model.lifted.ConditionSet;
 import edu.kit.aquaplanning.model.lifted.ConsequentialCondition;
+import edu.kit.aquaplanning.model.lifted.Implication;
+import edu.kit.aquaplanning.model.lifted.Negation;
 import edu.kit.aquaplanning.model.lifted.Operator;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
-import edu.kit.aquaplanning.model.lifted.Predicate;
 import edu.kit.aquaplanning.model.lifted.Quantification;
 import edu.kit.aquaplanning.model.lifted.AbstractCondition.ConditionType;
 
@@ -45,22 +47,6 @@ public class RelaxedPlanningGraph {
 		// initial layer
 		liftedStates.add(new HashSet<>());
 		liftedStates.get(0).addAll(problem.getInitialState());
-		
-		// add equality conditions
-		Set<Condition> initialState = liftedStates.get(0);
-		Predicate pEquals = problem.getPredicate("=");
-		if (pEquals != null) {	
-			// for all objects c: add the condition (= c c)
-			for (Argument constant : constants) {
-				List<Argument> args = new ArrayList<>();
-				args.add(constant);
-				args.add(constant);
-				Condition equalsCond = new Condition(pEquals);
-				equalsCond.addArgument(constant);
-				equalsCond.addArgument(constant);
-				initialState.add(equalsCond);
-			}
-		}
 	}
 	
 	/**
@@ -139,41 +125,19 @@ public class RelaxedPlanningGraph {
 		// For each operator
 		for (int i = 0; i < problem.getOperators().size(); i++) {
 			Operator op = problem.getOperators().get(i);
-			
-			// Expand quantifications into flat conditions
-			List<AbstractCondition> preconditions = new ArrayList<>();
-			preconditions.addAll(op.getPreconditions());
-			for (int condIdx = 0; condIdx < preconditions.size(); condIdx++) {
-				AbstractCondition cond = preconditions.get(condIdx);
-				
-				if (cond.getConditionType() == ConditionType.quantification) {
-					
-					// Instantiate the quantification
-					List<AbstractCondition> conds = ArgumentCombination.resolveQuantification(
-							(Quantification) cond, problem, constants);
-					preconditions.addAll(conds);
-				}
-			}
-			
+						
 			// Iterate over all possible argument combinations
 			List<List<Argument>> arguments = ArgumentCombination.getEligibleArguments(
 					op.getArguments(), problem, constants);
 			new ArgumentCombination.Iterator(arguments).forEachRemaining(args -> {
 				
-				// For each (flat) condition:
 				boolean addArguments = true;
-				for (AbstractCondition abstractCond : preconditions) {
-					if (abstractCond.getConditionType() == ConditionType.atomic) {						
-						Condition cond = (Condition) abstractCond;
 						
-						// Does the precondition hold with these arguments?
-						boolean holds = holdsCondition(cond, op, args, liftedState);												
-						if (!holds) {
-							// -- no
-							addArguments = false;
-							break;
-						}
-					}
+				// Does the precondition hold with these arguments in a relaxed sense?
+				boolean holds = holdsCondition(op.getPrecondition(), op, args, liftedState, true);												
+				if (!holds) {
+					// -- no
+					addArguments = false;
 				}
 				
 				// Add lifted action, if reachable
@@ -192,11 +156,11 @@ public class RelaxedPlanningGraph {
 	 * its positive effects (including conditional effects) to the state.
 	 */
 	protected void applyPositiveEffects(Operator liftedAction, Set<Condition> liftedState) {
-		 
+		
 		List<AbstractCondition> effects = new ArrayList<>();
-
-		// For each effect
-		effects.addAll(liftedAction.getEffects());
+		effects.add(liftedAction.getEffect());
+		
+		// For each effect to process
 		for (int i = 0; i < effects.size(); i++) {
 			AbstractCondition effect = effects.get(i);
 			
@@ -214,29 +178,29 @@ public class RelaxedPlanningGraph {
 				// -- conditional effect: check if prerequisites hold
 				ConsequentialCondition cond = (ConsequentialCondition) effect;
 				boolean applyEffects = true;
-				for (AbstractCondition prerequisite : cond.getPrerequisites()) {
-					// Does this prerequisite hold?
-					if (!holdsCondition(prerequisite, liftedAction, 
-							liftedAction.getArguments(), liftedState)) {
-						// -- no; dismiss this conditional effect
-						applyEffects = false;
-						break;
-					}
+				
+				// Does this prerequisite hold in a relaxed sense?
+				if (!holdsCondition(cond.getPrerequisite(), liftedAction, 
+						liftedAction.getArguments(), liftedState, true)) {
+					// -- no; dismiss this conditional effect
+					applyEffects = false;
 				}
 				// Are all prerequisites satisfied?
 				if (applyEffects) {
 					// -- yes; add consequences to processing queue
-					for (AbstractCondition consequence : cond.getConsequences()) {
-						effects.add(consequence);
-					}
+					effects.add(cond.getConsequence());
 				}
 				
 			} else if (effect.getConditionType() == ConditionType.quantification) {
 				
 				// -- quantification: resolve into flat atom list,
 				// and add all atoms to processing queue
-				effects.addAll(ArgumentCombination.resolveQuantification(
+				effects.add(ArgumentCombination.resolveQuantification(
 						(Quantification) effect, problem, constants));
+				
+			} else if (effect.getConditionType() == ConditionType.conjunction) {
+				
+				effects.addAll(((ConditionSet) effect).getConditions());
 			}
 		}
 	}
@@ -247,43 +211,98 @@ public class RelaxedPlanningGraph {
 	 * the provided list of arguments.
 	 */
 	private boolean holdsCondition(AbstractCondition abstractCond, Operator op, 
-				List<Argument> opArgs, Set<Condition> liftedState) {
+				List<Argument> opArgs, Set<Condition> liftedState, boolean deleteRelaxed) {
 		
-		List<AbstractCondition> conditions = new ArrayList<>();
-		conditions.add(abstractCond);
+		switch (abstractCond.getConditionType()) {
 		
-		// Traverse all ground conditions emerging from the provided condition
-		for (int condIdx = 0; condIdx < conditions.size(); condIdx++) {
-			AbstractCondition c = conditions.get(condIdx);
+		case atomic:
+			Condition cond = (Condition) abstractCond;
 			
-			// Atomic condition
-			if (c.getConditionType() == ConditionType.atomic) {
-				Condition cond = (Condition) c;
-				
-				// Set the ground arguments as the arguments of the condition
-				Condition groundCond = cond.getConditionBoundToArguments(op.getArguments(), opArgs);
-								
-				// Search the provided state for this condition
-				if (!liftedState.contains(groundCond)) {
-					// Condition not contained in the state; 
-					// if the condition is negated, then it holds; else, not
-					if (!cond.isNegated())
-						return false;
-				} else {
-					// Condition is contained in the state;
-					// if the condition is negated, the entire thing does not hold
-					if (cond.isNegated())
-						return false;
-				}
-				
-			} else if (c.getConditionType() == ConditionType.quantification) {
-				
-				// Quantification: add instantiated conditions to the processing queue
-				conditions.addAll(ArgumentCombination.resolveQuantification(
-						(Quantification) c, problem, constants));
+			// Set the ground arguments as the arguments of the condition
+			Condition groundCond = cond.getConditionBoundToArguments(op.getArguments(), opArgs);
+			
+			// If equality condition, check if it holds
+			if (isEqualityCondition(groundCond)) {
+				return groundCond.isNegated() != holdsEqualityCondition(groundCond);
 			}
+			
+			// When delete-relaxed: negation is dismissed, so it "holds"
+			if (deleteRelaxed && groundCond.isNegated()) {
+				return true;
+			}
+			
+			// Search the provided state for this condition
+			if (liftedState.contains(groundCond)) {
+				// Condition is contained in the state;
+				// if the condition is negated, the entire thing does not hold
+				return !cond.isNegated();
+			} else {
+				// Condition not contained in the state; 
+				// if the condition is negated, then it holds; else, not
+				return cond.isNegated();
+			}
+		
+		case negation:
+			if (deleteRelaxed)
+				return true;
+			
+			return !holdsCondition(((Negation) abstractCond).getChildCondition(), 
+					op, opArgs, liftedState, deleteRelaxed);
+			
+		case quantification:
+			AbstractCondition condition = ArgumentCombination.resolveQuantification(
+					(Quantification) abstractCond, problem, constants);
+			if (!holdsCondition(condition, op, opArgs, liftedState, deleteRelaxed)) {
+				return false;
+			}
+			return true;
+			
+		case conjunction:
+			for (AbstractCondition c : ((ConditionSet) abstractCond).getConditions()) {
+				if (!holdsCondition(c, op, opArgs, liftedState, deleteRelaxed)) {
+					return false;
+				}
+			}
+			return true;
+			
+		case disjunction:
+			for (AbstractCondition c : ((ConditionSet) abstractCond).getConditions()) {
+				if (holdsCondition(c, op, opArgs, liftedState, deleteRelaxed)) {
+					return true;
+				}
+			}
+			return false;
+			
+		case implication:
+			if (deleteRelaxed || !holdsCondition(((Implication) abstractCond).getIfCondition(), 
+					op, opArgs, liftedState, deleteRelaxed)) {
+				return true;
+			}
+			if (holdsCondition(((Implication) abstractCond).getThenCondition(), op, opArgs, liftedState, deleteRelaxed)) {
+				return true;
+			}
+			return false;
+		
+		default:
+			throw new IllegalArgumentException("Illegal condition type.");
+		}
+	}	
+	
+	private boolean isEqualityCondition(Condition cond) {
+		return cond.getPredicate().getName().equals("=");
+	}
+	
+	private boolean holdsEqualityCondition(Condition cond) {
+		
+		if (!isEqualityCondition(cond)) {
+			throw new IllegalArgumentException("The provided condition does not represent an equality");
 		}
 		
-		return true;
-	}	
+		if (cond.getNumArgs() == 2) {
+			if (cond.getArguments().get(0).equals(cond.getArguments().get(1))) {
+				return true;
+			}
+		}
+		return false;
+	}
 }
