@@ -36,7 +36,7 @@ public class RelaxedPlanningGraph {
 	 * and computeNextLayer.
 	 */
 	public RelaxedPlanningGraph(PlanningProblem problem) {
-
+		
 		this.problem = problem;
 		this.liftedActions = new ArrayList<>();
 		this.liftedStates = new ArrayList<>();
@@ -125,7 +125,7 @@ public class RelaxedPlanningGraph {
 		// For each operator
 		for (int i = 0; i < problem.getOperators().size(); i++) {
 			Operator op = problem.getOperators().get(i);
-						
+			
 			// Iterate over all possible argument combinations
 			List<List<Argument>> arguments = ArgumentCombination.getEligibleArguments(
 					op.getArguments(), problem, constants);

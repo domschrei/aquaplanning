@@ -7,5 +7,6 @@
   (:init )
   (:goal (and
   	(forall (?t - thing) (is ?t))
+  	(or (not (is t1)) (is t2))
   ))
 )

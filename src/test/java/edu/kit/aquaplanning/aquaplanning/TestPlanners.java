@@ -35,6 +35,11 @@ public class TestPlanners extends TestCase {
 		fullTest("testfiles/quantifications/domain.pddl", "testfiles/quantifications/p2.pddl");
 	}
 	
+	public void testDerivedPredicates() throws FileNotFoundException, IOException {
+
+		fullTest("testfiles/derivedPredicates/domain1.pddl", "testfiles/derivedPredicates/p1.pddl");
+	}
+	
 	public void testAdlFeatures() throws FileNotFoundException, IOException {
 
 		Configuration config = new Configuration();

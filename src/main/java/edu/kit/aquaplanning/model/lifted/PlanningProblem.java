@@ -11,13 +11,15 @@ public class PlanningProblem {
 	private Map<String, Type> types;
 	private List<Argument> constants; // both from domain and problem
 	private Map<String, Predicate> predicates;
+	private Map<String, DerivedPredicate> derivedPredicates;
 	private List<Operator> operators;
 	private List<Condition> initialState;
 	private List<AbstractCondition> goals;
 	private boolean hasActionCosts;
 	
 	public PlanningProblem(String domainName, String problemName, Map<String, Type> types, 
-			List<Argument> constants, Map<String, Predicate> predicates,
+			List<Argument> constants, Map<String, Predicate> predicates, 
+			Map<String, DerivedPredicate> derivedPredicates,
 			List<Operator> operators, List<Condition> initialState, 
 			List<AbstractCondition> goals, boolean hasActionCosts) {
 		super();
@@ -26,6 +28,7 @@ public class PlanningProblem {
 		this.types = types;
 		this.constants = constants;
 		this.predicates = predicates;
+		this.derivedPredicates = derivedPredicates;
 		this.operators = operators;
 		this.initialState = initialState;
 		this.goals = goals;
@@ -84,6 +87,10 @@ public class PlanningProblem {
 		return predicates;
 	}
 	
+	public Map<String, DerivedPredicate> getDerivedPredicates() {
+		return derivedPredicates;
+	}
+	
 	public List<Operator> getOperators() {
 		return operators;
 	}
@@ -120,6 +127,9 @@ public class PlanningProblem {
 			// hide virtual predicates
 			//if (p.toString().charAt(0) != '_' && p.toString().charAt(0) != '=')
 				str.append("  " + p + "\n");
+		}
+		for (DerivedPredicate p : derivedPredicates.values()) {
+			str.append("  " + p + "\n");
 		}
 		str.append("Operators:\n");
 		for (Operator o : operators) {

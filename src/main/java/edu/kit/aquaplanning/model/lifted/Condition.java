@@ -53,6 +53,10 @@ public class Condition extends AbstractCondition {
 		this.negated = negated;
 	}
 	
+	public boolean isDerived() {
+		return predicate instanceof DerivedPredicate;
+	}
+	
 	@Override
 	public Condition getConditionBoundToArguments(List<Argument> refArgs, List<Argument> argValues) {
 		

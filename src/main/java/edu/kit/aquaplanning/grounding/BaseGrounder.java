@@ -363,8 +363,8 @@ public abstract class BaseGrounder implements Grounder {
 	}
 	
 	// Constant conditions
-	private final Condition trueCondition = new Condition(new Predicate("_TRUE"));
-	private final Condition falseCondition = new Condition(new Predicate("_FALSE"));
+	protected final Condition trueCondition = new Condition(new Predicate("_TRUE"));
+	protected final Condition falseCondition = new Condition(new Predicate("_FALSE"));
 	
 	/**
 	 * Given an operator with simplified conditions, resolves all occurring equalities.
@@ -411,7 +411,7 @@ public abstract class BaseGrounder implements Grounder {
 	 * May return <code>trueCondition</code> or <code>falseCondition</code>
 	 * if the condition simplifies to true or false, respectively.
 	 */
-	private AbstractCondition resolveEqualities(AbstractCondition cond) {
+	protected AbstractCondition resolveEqualities(AbstractCondition cond) {
 		
 		switch (cond.getConditionType()) {
 		case atomic:
