@@ -133,6 +133,11 @@ public class ProblemParser extends PddlBaseListener {
         parsedFile = problemFile;
         walker = new ParseTreeWalker();
         walker.walk(this, ctx);
+
+        // In case no derived predicates were entered...
+        if (derivedPredicates == null) {
+            derivedPredicates = new HashMap<>();
+        }
         
         // Create object to return
         PlanningProblem problem = new PlanningProblem(domainName, problemName, 
