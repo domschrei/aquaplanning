@@ -58,7 +58,7 @@ public class Main {
 		return config;
 	}
 	
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 		
 		System.out.println("This is Aquaplanning - QUick Automated Planning.");
 		
@@ -81,7 +81,7 @@ public class Main {
 			Grounder grounder = new RelaxedPlanningGraphGrounder(config);
 			GroundPlanningProblem planningProblem = grounder.ground(p);
 			// Print ground problem (attention: can be a lot!)
-			// System.out.println(planningProblem);
+			System.out.println(planningProblem);
 			System.out.println("Grounding complete. " + planningProblem.getActions().size() 
 					+ " actions resulted from the grounding.\n");
 			
@@ -120,6 +120,7 @@ public class Main {
 			
 		} catch (Exception e) {
 			e.printStackTrace();
+			throw e;
 		}
 	}
 }

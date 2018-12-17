@@ -22,6 +22,7 @@ import edu.kit.aquaplanning.model.lifted.Argument;
 import edu.kit.aquaplanning.model.lifted.Condition;
 import edu.kit.aquaplanning.model.lifted.ConditionSet;
 import edu.kit.aquaplanning.model.lifted.ConsequentialCondition;
+import edu.kit.aquaplanning.model.lifted.DerivedCondition;
 import edu.kit.aquaplanning.model.lifted.DerivedPredicate;
 import edu.kit.aquaplanning.model.lifted.Implication;
 import edu.kit.aquaplanning.model.lifted.Negation;
@@ -611,14 +612,19 @@ public class ProblemParser extends PddlBaseListener {
 	public void enterAtomicTermFormula(AtomicTermFormulaContext ctx) {
 		
 		// Create condition
+		Condition cond = null;
 		String predicateName = ctx.children.get(1).getText().toLowerCase();
 		Predicate predicate = predicates.get(predicateName);
 		if (predicate == null) {
 			predicate = derivedPredicates.get(predicateName);
-			if (predicate == null)
+			if (predicate == null) {
 				error("Predicate \"" + predicateName + "\" is undefined.");
+			} else {
+				cond = new DerivedCondition((DerivedPredicate) predicate);
+			}
+		} else {			
+			cond = new Condition(predicate);
 		}
-		Condition cond = new Condition(predicate);
 		
 		// Add arguments of condition
 		for (int childIdx = 2; childIdx+1 < ctx.children.size(); childIdx++) {
@@ -909,15 +915,19 @@ public class ProblemParser extends PddlBaseListener {
 	public void enterAtomicNameFormula(AtomicNameFormulaContext ctx) {
 		
 		// Predicate
+		Condition condition = null;
 		String predicateName = ctx.children.get(1).getText().toLowerCase();
 		Predicate predicate = predicates.get(predicateName);
 		if (predicate == null) {
 			predicate = derivedPredicates.get(predicateName);
-			if (predicate == null) 
+			if (predicate == null) {
 				error("Predicate \"" + predicateName + "\" is undefined.");
-		}
-		
-		Condition condition = new Condition(predicate);
+			} else {
+				condition = new DerivedCondition((DerivedPredicate) predicate);
+			}
+		} else {
+			condition = new Condition(predicate);
+		}		
 		
 		// Parse condition's arguments
 		for (int childIdx = 2; childIdx+1 < ctx.getChildCount(); childIdx++) {
@@ -985,7 +995,7 @@ public class ProblemParser extends PddlBaseListener {
 		
 		Predicate p = cond.getPredicate();
 		if (p == null) {
-			error("The predicate of a condition is not properly defined.");
+			error("The predicate of condition " + cond + " is not properly defined.");
 		}
 		if (p.getNumArgs() != cond.getNumArgs()) {
 			error("The arity of condition \"" + cond.toString() 
