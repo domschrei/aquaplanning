@@ -49,4 +49,11 @@ public class DerivedPredicate extends Predicate {
 		out += ") := " + condition.toString();
 		return out;
 	}
+	
+	public DerivedPredicate copy() {
+		DerivedPredicate p = new DerivedPredicate(this.name);
+		p.condition = this.condition.copy();
+		p.arguments.addAll(this.arguments);
+		return p;
+	}
 }

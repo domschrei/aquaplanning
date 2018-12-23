@@ -10,6 +10,7 @@ import edu.kit.aquaplanning.model.lifted.Argument;
 import edu.kit.aquaplanning.model.lifted.Condition;
 import edu.kit.aquaplanning.model.lifted.ConditionSet;
 import edu.kit.aquaplanning.model.lifted.ConsequentialCondition;
+import edu.kit.aquaplanning.model.lifted.DerivedCondition;
 import edu.kit.aquaplanning.model.lifted.Implication;
 import edu.kit.aquaplanning.model.lifted.Negation;
 import edu.kit.aquaplanning.model.lifted.Operator;
@@ -224,6 +225,13 @@ public class RelaxedPlanningGraph {
 			// If equality condition, check if it holds
 			if (isEqualityCondition(groundCond)) {
 				return groundCond.isNegated() != holdsEqualityCondition(groundCond);
+			}
+			
+			// If derived condition, check its meaning
+			if (groundCond instanceof DerivedCondition) {
+				return groundCond.isNegated() != holdsCondition(
+						((DerivedCondition) groundCond).getPredicate().getCondition(), 
+						op, opArgs, liftedState, deleteRelaxed);
 			}
 			
 			// When delete-relaxed: negation is dismissed, so it "holds"

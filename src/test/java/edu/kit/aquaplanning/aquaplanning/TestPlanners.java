@@ -104,10 +104,14 @@ public class TestPlanners extends TestCase {
 			
 		System.out.println("Parsing ...");
 		pp = new ProblemParser().parse(domainFile, problemFile);
+		String out = pp.toString();
+		assertTrue("String representation of problem is null", out != null);
 				
 		System.out.println("Grounding ...");
 		Grounder grounder = new RelaxedPlanningGraphGrounder(new Configuration());
 		gpp = grounder.ground(pp);
+		out = gpp.toString();
+		assertTrue("String representation of ground problem is null", out != null);
 		
 		assertTrue("No actions have been produced during grounding.",
 				gpp.getActions().size() > 0);

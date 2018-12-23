@@ -56,6 +56,9 @@ public class Configuration {
 	@Option(names = {"-q", "--keep-equalities"}, description = "Do not resolve equality conditions, "
 			+ "but add them as explicit atoms to the initial state")
 	public boolean keepEqualities;
+	@Option(names = {"-D", "--resolve-derived-predicates"}, description = "Do not keep derived predicates "
+			+ "during grounding and planning, but substitute them with their inner condition")
+	public boolean substituteDerivedPredicates;
 	
 	
 	/* 
@@ -89,7 +92,7 @@ public class Configuration {
 			defaultValue = "bestFirst")
 	public SearchStrategy.Mode searchStrategy;
 	
-	@Option(names = {"r", "--revisit-states"}, description = "Re-enter a search node "
+	@Option(names = {"-r", "--revisit-states"}, description = "Re-enter a search node "
 			+ "even when the state has been reached before")
 	public boolean revisitStates;
 	

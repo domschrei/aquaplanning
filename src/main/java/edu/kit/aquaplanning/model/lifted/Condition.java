@@ -53,10 +53,6 @@ public class Condition extends AbstractCondition {
 		this.negated = negated;
 	}
 	
-	public boolean isDerived() {
-		return predicate instanceof DerivedPredicate;
-	}
-	
 	@Override
 	public Condition getConditionBoundToArguments(List<Argument> refArgs, List<Argument> argValues) {
 		
@@ -130,7 +126,7 @@ public class Condition extends AbstractCondition {
 		int result = 1;
 		result = prime * result + ((arguments == null) ? 0 : arguments.hashCode());
 		result = prime * result + (negated ? 1231 : 1237);
-		result = prime * result + ((predicate == null) ? 0 : predicate.hashCode());
+		result = prime * result + ((getPredicate() == null) ? 0 : getPredicate().hashCode());
 		return result;
 	}
 
@@ -150,10 +146,10 @@ public class Condition extends AbstractCondition {
 			return false;
 		if (negated != other.negated)
 			return false;
-		if (predicate == null) {
-			if (other.predicate != null)
+		if (getPredicate() == null) {
+			if (other.getPredicate() != null)
 				return false;
-		} else if (!predicate.equals(other.predicate))
+		} else if (!getPredicate().equals(other.getPredicate()))
 			return false;
 		return true;
 	}

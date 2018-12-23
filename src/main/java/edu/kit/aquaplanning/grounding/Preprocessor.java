@@ -14,6 +14,7 @@ import edu.kit.aquaplanning.model.lifted.Argument;
 import edu.kit.aquaplanning.model.lifted.Condition;
 import edu.kit.aquaplanning.model.lifted.ConditionSet;
 import edu.kit.aquaplanning.model.lifted.ConsequentialCondition;
+import edu.kit.aquaplanning.model.lifted.DerivedCondition;
 import edu.kit.aquaplanning.model.lifted.DerivedPredicate;
 import edu.kit.aquaplanning.model.lifted.Implication;
 import edu.kit.aquaplanning.model.lifted.Negation;
@@ -45,7 +46,9 @@ public class Preprocessor {
 		this.problem = problem;
 		
 		// Resolve derived predicates
-		resolveDerivedPredicates();
+		if (config.substituteDerivedPredicates) {			
+			resolveDerivedPredicates();
+		}
 		
 		// Eliminate quantifications,
 		// Simplify structure of logical expressions,
@@ -122,6 +125,14 @@ public class Preprocessor {
 		
 		// All cases besides quantification: just propagating down
 		case atomic:
+			if (cond instanceof DerivedCondition) {
+				cond = cond.copy();
+				AbstractCondition inner = ((DerivedCondition) cond).getPredicate().getCondition();
+				((DerivedCondition) cond).getPredicate().setCondition(
+					instantiateQuantifications(inner)
+				);
+				return cond;
+			}
 			return cond.copy();
 		case negation:
 			Negation n = new Negation();
@@ -308,9 +319,9 @@ public class Preprocessor {
 		
 		// All cases besides atomic: just propagating down
 		case atomic:
-			if (((Condition) cond).isDerived()) {
+			if (cond instanceof DerivedCondition) {
 				// Return the condition which is inside the derived predicate
-				DerivedPredicate p = (DerivedPredicate) ((Condition) cond).getPredicate();
+				DerivedPredicate p = ((DerivedCondition) cond).getPredicate();
 				AbstractCondition innerCondition = ((DerivedPredicate) 
 					((Condition) cond).getPredicate()
 				).getCondition();
