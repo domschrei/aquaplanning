@@ -1,4 +1,5 @@
 package edu.kit.aquaplanning.parsing;
+
 // Generated from Pddl.g4 by ANTLR 4.7.1
 import org.antlr.v4.runtime.atn.*;
 import org.antlr.v4.runtime.dfa.DFA;
@@ -2578,8 +2579,8 @@ public class PddlParser extends Parser {
 	}
 
 	public static class DerivedDefContext extends ParserRuleContext {
-		public TypedVariableListContext typedVariableList() {
-			return getRuleContext(TypedVariableListContext.class,0);
+		public AtomicFormulaSkeletonContext atomicFormulaSkeleton() {
+			return getRuleContext(AtomicFormulaSkeletonContext.class,0);
 		}
 		public GoalDescContext goalDesc() {
 			return getRuleContext(GoalDescContext.class,0);
@@ -2609,7 +2610,7 @@ public class PddlParser extends Parser {
 			setState(496);
 			match(T__31);
 			setState(497);
-			typedVariableList();
+			atomicFormulaSkeleton();
 			setState(498);
 			goalDesc();
 			setState(499);
@@ -5369,9 +5370,9 @@ public class PddlParser extends Parser {
 		"\u01e8\5H%\2\u01e8\u01e9\5\64\33\2\u01e9\u01ea\7\5\2\2\u01ea\u01ec\3\2"+
 		"\2\2\u01eb\u01df\3\2\2\2\u01eb\u01e5\3\2\2\2\u01ecE\3\2\2\2\u01ed\u01ee"+
 		"\t\3\2\2\u01eeG\3\2\2\2\u01ef\u01f0\7!\2\2\u01f0I\3\2\2\2\u01f1\u01f2"+
-		"\7\3\2\2\u01f2\u01f3\7\"\2\2\u01f3\u01f4\5&\24\2\u01f4\u01f5\5\64\33\2"+
-		"\u01f5\u01f6\7\5\2\2\u01f6K\3\2\2\2\u01f7\u0205\7p\2\2\u01f8\u01f9\7\3"+
-		"\2\2\u01f9\u01fa\5Z.\2\u01fa\u01fb\5L\'\2\u01fb\u01fc\5N(\2\u01fc\u01fd"+
+		"\7\3\2\2\u01f2\u01f3\7\"\2\2\u01f3\u01f4\5\"\22\2\u01f4\u01f5\5\64\33"+
+		"\2\u01f5\u01f6\7\5\2\2\u01f6K\3\2\2\2\u01f7\u0205\7p\2\2\u01f8\u01f9\7"+
+		"\3\2\2\u01f9\u01fa\5Z.\2\u01fa\u01fb\5L\'\2\u01fb\u01fc\5N(\2\u01fc\u01fd"+
 		"\7\5\2\2\u01fd\u0205\3\2\2\2\u01fe\u01ff\7\3\2\2\u01ff\u0200\7\t\2\2\u0200"+
 		"\u0201\5L\'\2\u0201\u0202\7\5\2\2\u0202\u0205\3\2\2\2\u0203\u0205\5P)"+
 		"\2\u0204\u01f7\3\2\2\2\u0204\u01f8\3\2\2\2\u0204\u01fe\3\2\2\2\u0204\u0203"+

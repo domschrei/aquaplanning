@@ -1,51 +1,65 @@
 package edu.kit.aquaplanning.model.lifted;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class ConsequentialCondition extends AbstractCondition {
 
-	private List<AbstractCondition> prerequisites;
-	private List<AbstractCondition> consequences;
+	private AbstractCondition prerequisite;
+	private AbstractCondition consequence;
 	
-	public ConsequentialCondition(List<AbstractCondition> prerequisites, List<AbstractCondition> consequences) {
+	public ConsequentialCondition(AbstractCondition prerequisite, AbstractCondition consequence) {
 		super(ConditionType.consequential);
-		this.prerequisites = prerequisites;
-		this.consequences = consequences;
+		this.prerequisite = prerequisite;
+		this.consequence = consequence;
 	}
 	
 	public ConsequentialCondition() {
 		super(ConditionType.consequential);
-		this.prerequisites = new ArrayList<>();
-		this.consequences = new ArrayList<>();
 	}
 	
-	public void addPrerequisite(AbstractCondition cond) {
-		this.prerequisites.add(cond);
+	public void setPrerequisite(AbstractCondition cond) {
+		this.prerequisite = cond;
 	}
 	
-	public void addConsequence(AbstractCondition cond) {
-		this.consequences.add(cond);
+	public void setConsequence(AbstractCondition cond) {
+		this.consequence = cond;
 	}
 	
-	public List<AbstractCondition> getPrerequisites() {
-		return prerequisites;
+	public AbstractCondition getPrerequisite() {
+		return prerequisite;
 	}
 	
-	public List<AbstractCondition> getConsequences() {
-		return consequences;
+	public AbstractCondition getConsequence() {
+		return consequence;
 	}
 	
 	@Override
 	public ConsequentialCondition getConditionBoundToArguments(List<Argument> refArgs, List<Argument> argValues) {
 		
 		ConsequentialCondition c = new ConsequentialCondition();
-		for (AbstractCondition cond : prerequisites) {
-			c.addPrerequisite(cond.getConditionBoundToArguments(refArgs, argValues));
+		c.setPrerequisite(prerequisite.getConditionBoundToArguments(refArgs, argValues));
+		c.setConsequence(consequence.getConditionBoundToArguments(refArgs, argValues));
+		return c;
+	}
+	
+	@Override
+	public AbstractCondition simplify(boolean negated) {
+		
+		if (negated) {
+			throw new IllegalArgumentException("Negated conditional effect is not legal.");
 		}
-		for (AbstractCondition cond : consequences) {
-			c.addConsequence(cond.getConditionBoundToArguments(refArgs, argValues));
-		}
+		ConsequentialCondition c = new ConsequentialCondition();
+		c.setPrerequisite(prerequisite.simplify(false));
+		c.setConsequence(consequence.simplify(false));
+		return c;
+	}
+	
+	@Override
+	public AbstractCondition getDNF() {
+		
+		ConsequentialCondition c = new ConsequentialCondition();
+		c.setPrerequisite(prerequisite.getDNF());
+		c.setConsequence(consequence);
 		return c;
 	}
 	
@@ -53,13 +67,9 @@ public class ConsequentialCondition extends AbstractCondition {
 	public String toString() {
 		String out = "";
 		out += "{ ";
-		for (AbstractCondition c : prerequisites) {
-			out += c + " ";
-		}
+		out += prerequisite.toString() + " ";
 		out += "} => { ";
-		for (AbstractCondition c : consequences) {
-			out += c + " ";
-		}
+		out += consequence.toString() + " ";
 		out += "}";
 		return out;
 	}
@@ -68,8 +78,8 @@ public class ConsequentialCondition extends AbstractCondition {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((consequences == null) ? 0 : consequences.hashCode());
-		result = prime * result + ((prerequisites == null) ? 0 : prerequisites.hashCode());
+		result = prime * result + ((consequence == null) ? 0 : consequence.hashCode());
+		result = prime * result + ((prerequisite == null) ? 0 : prerequisite.hashCode());
 		return result;
 	}
 
@@ -82,16 +92,25 @@ public class ConsequentialCondition extends AbstractCondition {
 		if (getClass() != obj.getClass())
 			return false;
 		ConsequentialCondition other = (ConsequentialCondition) obj;
-		if (consequences == null) {
-			if (other.consequences != null)
+		if (consequence == null) {
+			if (other.consequence != null)
 				return false;
-		} else if (!consequences.equals(other.consequences))
+		} else if (!consequence.equals(other.consequence))
 			return false;
-		if (prerequisites == null) {
-			if (other.prerequisites != null)
+		if (prerequisite == null) {
+			if (other.prerequisite != null)
 				return false;
-		} else if (!prerequisites.equals(other.prerequisites))
+		} else if (!prerequisite.equals(other.prerequisite))
 			return false;
 		return true;
+	}
+	
+	@Override
+	public ConsequentialCondition copy() {
+		
+		ConsequentialCondition cc = new ConsequentialCondition();
+		cc.setPrerequisite(prerequisite.copy());
+		cc.setConsequence(consequence.copy());
+		return cc;
 	}
 }

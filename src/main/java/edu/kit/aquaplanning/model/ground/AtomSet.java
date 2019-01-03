@@ -71,6 +71,19 @@ public class AtomSet {
 		}
 		return true;
 	}
+
+	/**
+	 * Calculates the logical AND of this AtomSet with another AtomSets and returns the result.
+	 * @param other
+	 * 		The other AtomSet
+	 * @return
+	 * 		The logical AND of this and the other AtomSet
+	 */
+	public AtomSet and(AtomSet other) {
+		AtomSet b = (AtomSet) this.clone();
+		b.atoms.and(other.atoms);
+		return b;
+	}
 	
 	/**
 	 * Sets the provided atom as contained in this set.
@@ -101,7 +114,7 @@ public class AtomSet {
 	public int numAtoms() {
 		return atoms.cardinality();
 	}
-	
+
 	/**
 	 * The internal size of the allocated set.
 	 */
@@ -120,5 +133,30 @@ public class AtomSet {
 	@Override
 	public String toString() {
 		return atoms.toString();
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((atoms == null) ? 0 : atoms.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		AtomSet other = (AtomSet) obj;
+		if (atoms == null) {
+			if (other.atoms != null)
+				return false;
+		} else if (!atoms.equals(other.atoms))
+			return false;
+		return true;
 	}
 }

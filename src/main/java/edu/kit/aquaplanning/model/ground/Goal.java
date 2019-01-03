@@ -1,13 +1,30 @@
 package edu.kit.aquaplanning.model.ground;
 
 import java.util.List;
+import java.util.LinkedList;
 
 public class Goal {
 	
 	private List<Atom> atoms;
+	private List<Atom> positiveAtoms;
+	
+	private boolean isComplex = false;
+	private Precondition complexCondition;
 	
 	public Goal(List<Atom> atoms) {
 		this.atoms = atoms;
+		
+		this.positiveAtoms = new LinkedList<>();
+		for (Atom atom : atoms) {
+			if (atom.getValue()) {
+				positiveAtoms.add(atom);
+			}
+		}
+	}
+	
+	public Goal(Precondition complexCondition) {
+		isComplex = true;
+		this.complexCondition = complexCondition;
 	}
 	
 	/**
@@ -15,6 +32,10 @@ public class Goal {
 	 * provided state.
 	 */
 	public boolean isSatisfied(State state) {
+		
+		if (isComplex) {
+			return complexCondition.holds(state);
+		}
 		
 		for (Atom atom : atoms) {
 			if (!state.holds(atom)) {
@@ -31,9 +52,13 @@ public class Goal {
 	 */
 	public boolean isSatisfiedRelaxed(State state) {
 		
-		for (Atom atom : atoms) {
-			// Only check positive atoms
-			if (atom.getValue() && !state.holds(atom)) {
+		if (isComplex) {
+			return complexCondition.holdsRelaxed(state);
+		}
+		
+		// Only check positive atoms
+		for (Atom atom : positiveAtoms) {
+			if (!state.holds(atom)) {
 				return false;
 			}
 		}
@@ -41,11 +66,32 @@ public class Goal {
 	}
 	
 	public List<Atom> getAtoms() {
+		if (isComplex) {
+			throw new IllegalArgumentException("Cannot retrieve flat atom list of a complex goal");
+		}
 		return atoms;
+	}
+	
+	public List<Atom> getPositiveAtoms() {
+		if (isComplex) {
+			throw new IllegalArgumentException("Cannot retrieve flat atom list of a complex goal");
+		}
+		return positiveAtoms;
+	}
+	
+	public Precondition getComplexCondition() {
+		if (!isComplex) {
+			throw new IllegalArgumentException("Cannot retrieve complex condition object of a simple goal");
+		}
+		return complexCondition;
 	}
 
 	@Override
 	public String toString() {
-		return atoms.toString();
+		if (isComplex) {
+			return complexCondition.toString();
+		} else {			
+			return atoms.toString();
+		}
 	}
 }

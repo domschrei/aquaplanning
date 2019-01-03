@@ -11,26 +11,27 @@ public class PlanningProblem {
 	private Map<String, Type> types;
 	private List<Argument> constants; // both from domain and problem
 	private Map<String, Predicate> predicates;
+	private Map<String, DerivedPredicate> derivedPredicates;
 	private List<Operator> operators;
 	private List<Condition> initialState;
-	private List<Condition> goals;
-	private List<Quantification> quantifiedGoals;
+	private List<AbstractCondition> goals;
 	private boolean hasActionCosts;
 	
 	public PlanningProblem(String domainName, String problemName, Map<String, Type> types, 
-			List<Argument> constants, Map<String, Predicate> predicates,
-			List<Operator> operators, List<Condition> initialState, List<Condition> goals, 
-			List<Quantification> quantifiedGoals, boolean hasActionCosts) {
+			List<Argument> constants, Map<String, Predicate> predicates, 
+			Map<String, DerivedPredicate> derivedPredicates,
+			List<Operator> operators, List<Condition> initialState, 
+			List<AbstractCondition> goals, boolean hasActionCosts) {
 		super();
 		this.domainName = domainName;
 		this.problemName = problemName;
 		this.types = types;
 		this.constants = constants;
 		this.predicates = predicates;
+		this.derivedPredicates = derivedPredicates;
 		this.operators = operators;
 		this.initialState = initialState;
 		this.goals = goals;
-		this.quantifiedGoals = quantifiedGoals;
 		this.hasActionCosts = hasActionCosts;
 	}
 	
@@ -86,6 +87,10 @@ public class PlanningProblem {
 		return predicates;
 	}
 	
+	public Map<String, DerivedPredicate> getDerivedPredicates() {
+		return derivedPredicates;
+	}
+	
 	public List<Operator> getOperators() {
 		return operators;
 	}
@@ -94,12 +99,8 @@ public class PlanningProblem {
 		return initialState;
 	}
 	
-	public List<Condition> getGoals() {
+	public List<AbstractCondition> getGoals() {
 		return goals;
-	}
-	
-	public List<Quantification> getQuantifiedGoals() {
-		return quantifiedGoals;
 	}
 	
 	public boolean hasActionCosts() {
@@ -127,6 +128,9 @@ public class PlanningProblem {
 			//if (p.toString().charAt(0) != '_' && p.toString().charAt(0) != '=')
 				str.append("  " + p + "\n");
 		}
+		for (DerivedPredicate p : derivedPredicates.values()) {
+			str.append("  " + p + "\n");
+		}
 		str.append("Operators:\n");
 		for (Operator o : operators) {
 			str.append("  " + o + "\n");
@@ -136,11 +140,8 @@ public class PlanningProblem {
 			str.append("  " + c + "\n");
 		}
 		str.append("Goals:\n");
-		for (Condition c : goals) {
+		for (AbstractCondition c : goals) {
 			str.append("  " + c + "\n");
-		}
-		for (Quantification q : quantifiedGoals) {
-			str.append("  " + q + "\n");
 		}
 		String out = str.toString();
 		if (out.endsWith("\n")) {

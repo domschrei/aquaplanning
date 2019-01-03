@@ -10,16 +10,22 @@ import java.util.function.Function;
 public class Action {
 
 	private String name;
+	private int cost;
+	boolean isComplex = false;
 
+	// Properties of a simple (purely conjunctive) action
 	private AtomSet preconditionsPos;
 	private AtomSet preconditionsNeg;
 	private AtomSet effectsPos;
 	private AtomSet effectsNeg;
 	private List<ConditionalEffect> conditionalEffects;
-	private int cost;
+	
+	// Properties of a complex (disjunctive) action
+	private Precondition complexPrecondition;
+	private Effect complexEffect;
 	
 	/**
-	 * Creates an action with the provided properties.
+	 * Creates a simple action with the provided properties.
 	 */
 	public Action(String name, List<Atom> preconditions, List<Atom> effects, 
 			List<ConditionalEffect> conditionalEffects) {
@@ -33,9 +39,36 @@ public class Action {
 	}
 
 	/**
+	 * Creates a simple action with the provided properties (alternative constructor).
+	 */
+	public Action(String name, AtomSet preconditionsPos, AtomSet preconditionsNeg,
+				  AtomSet effectsPos, AtomSet effectsNeg, List<ConditionalEffect> conditionalEffects) {
+		this.name = name;
+		this.preconditionsPos = preconditionsPos;
+		this.preconditionsNeg = preconditionsNeg;
+		this.effectsPos = effectsPos;
+		this.effectsNeg = effectsNeg;
+		this.conditionalEffects = conditionalEffects;
+	}
+	
+	/**
+	 * Creates a complex action with the provided properties.
+	 */
+	public Action(String name, Precondition complexPrecondition, Effect complexEffect) {
+		this.name = name;
+		this.complexPrecondition = complexPrecondition;
+		this.complexEffect = complexEffect;
+		isComplex = true;
+	}
+
+	/**
 	 * True iff this action is applicable in the provided state.
 	 */
 	public boolean isApplicable(State state) {
+		
+		if (isComplex) {
+			return complexPrecondition.holds(state);
+		}
 		
 		if (!state.holdsAll(preconditionsPos))
 			return false;
@@ -51,6 +84,10 @@ public class Action {
 	 */
 	public boolean isApplicableRelaxed(State state) {
 		
+		if (isComplex) {
+			return complexPrecondition.holdsRelaxed(state);
+		}
+		
 		if (!state.holdsAll(preconditionsPos))
 			return false;
 		return true;
@@ -64,6 +101,10 @@ public class Action {
 	 */
 	public State apply(State state) {
 		
+		if (isComplex) {
+			return complexEffect.applyTo(state);
+		}
+		
 		// Apply basic effects
 		State newState = new State(state);
 		newState.addAll(effectsPos);
@@ -75,7 +116,7 @@ public class Action {
 			// Are all conditions satisfied?
 			boolean isActive = state.holdsAll(condEffect.getConditionsPos());
 			isActive &= state.holdsNone(condEffect.getConditionsNeg());
-
+			
 			if (isActive) {
 				// -- yes: apply the consequences
 				newState.addAll(condEffect.getEffectsPos());
@@ -94,6 +135,10 @@ public class Action {
 	 * isApplicableRelaxed(state).
 	 */
 	public State applyRelaxed(State state) {
+		
+		if (isComplex) {
+			return complexEffect.applyRelaxedTo(state);
+		}
 		
 		// Apply basic positive effects
 		State newState = new State(state);
@@ -127,14 +172,41 @@ public class Action {
 		if (cost != 0) {			
 			out += "[cost:" + cost + "]";
 		}
-		out += " PRE: { " + atomSetToString.apply(preconditionsPos) 
-						+ " ; NOT " + atomSetToString.apply(preconditionsNeg);
-		out += "} POST: { " + atomSetToString.apply(effectsPos) 
-						+ " ; NOT " + atomSetToString.apply(effectsNeg) + " ; ";
-		for (ConditionalEffect eff : conditionalEffects) {
-			out += eff.toString(atomSetToString) + " ";
+		if (isComplex) {
+			out += " PRE: " + complexPrecondition.toString();
+			out += " ; POST: " + complexEffect.toString();
+		} else {
+			if (preconditionsPos.numAtoms() > 0 || preconditionsNeg.numAtoms() > 0) {
+				out += " PRE: { ";
+				if (preconditionsPos.numAtoms() > 0) {					
+					out += atomSetToString.apply(preconditionsPos) + " "; 
+				}
+				if (preconditionsPos.numAtoms() > 0 && preconditionsNeg.numAtoms() > 0) {
+					out += "; ";
+				}
+				if (preconditionsNeg.numAtoms() > 0) {					
+					out += "NOT " + atomSetToString.apply(preconditionsNeg) + " "; 
+				}
+				out += "}";
+			}
+			if (effectsPos.numAtoms() > 0 || effectsNeg.numAtoms() > 0) {
+				out += " POST: { ";
+				if (effectsPos.numAtoms() > 0) {					
+					out += atomSetToString.apply(effectsPos) + " "; 
+				}
+				if (effectsPos.numAtoms() > 0 && effectsNeg.numAtoms() > 0) {
+					out += "; ";
+				}
+				if (effectsNeg.numAtoms() > 0) {					
+					out += "NOT " + atomSetToString.apply(effectsNeg) + " "; 
+				}
+				out += "}";
+			}
+			for (ConditionalEffect eff : conditionalEffects) {
+				out += eff.toString(atomSetToString) + " ";
+			}
+			out += "}";
 		}
-		out += "}";
 		return out;
 	}
 	

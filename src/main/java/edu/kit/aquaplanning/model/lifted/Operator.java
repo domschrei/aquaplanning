@@ -7,15 +7,13 @@ public class Operator {
 
 	private String name;
 	private List<Argument> arguments;
-	private List<AbstractCondition> preconditions;
-	private List<AbstractCondition> effects;
+	private AbstractCondition precondition;
+	private AbstractCondition effect;
 	private int cost;
 	
 	public Operator(String name) {
 		this.name = name;
 		arguments = new ArrayList<>();
-		preconditions = new ArrayList<>();
-		effects = new ArrayList<>();
 		this.cost = 0;
 	}
 	
@@ -23,24 +21,12 @@ public class Operator {
 		this.arguments.add(arg);
 	}
 	
-	public void addPrecondition(AbstractCondition cond) {
-		this.preconditions.add(cond);
+	public void setPrecondition(AbstractCondition cond) {
+		this.precondition = cond;
 	}
 	
-	public void addEffect(AbstractCondition cond) {
-		this.effects.add(cond);
-	}
-	
-	public void addConditionalEffect(ConsequentialCondition cond) {
-		this.effects.add(cond);
-	}
-	
-	public void addQuantifiedPrecondition(Quantification q) {
-		this.preconditions.add(q);
-	}
-	
-	public void addQuantifiedEffect(Quantification q) {
-		this.effects.add(q);
+	public void setEffect(AbstractCondition cond) {
+		this.effect = cond;
 	}
 	
 	public void setCost(int cost) {
@@ -62,12 +48,12 @@ public class Operator {
 		return argTypes;
 	}
 	
-	public List<AbstractCondition> getPreconditions() {
-		return preconditions;
+	public AbstractCondition getPrecondition() {
+		return precondition;
 	}
 	
-	public List<AbstractCondition> getEffects() {
-		return effects;
+	public AbstractCondition getEffect() {
+		return effect;
 	}
 	
 	public int getCost() {
@@ -82,14 +68,10 @@ public class Operator {
 		
 		Operator op = new Operator(name);
 		args.forEach(arg -> op.addArgument(arg));
-		for (AbstractCondition cond : preconditions) {
-			AbstractCondition c = cond.getConditionBoundToArguments(arguments, args);
-			op.addPrecondition(c);
-		}
-		for (AbstractCondition cond : effects) {
-			AbstractCondition c = cond.getConditionBoundToArguments(arguments, args);
-			op.addEffect(c);
-		}
+		AbstractCondition pre = precondition.getConditionBoundToArguments(arguments, args);
+		op.setPrecondition(pre);
+		AbstractCondition eff = effect.getConditionBoundToArguments(arguments, args);
+		op.setEffect(eff);
 		op.cost = cost;
 		return op;
 	}
@@ -105,16 +87,10 @@ public class Operator {
 		if (cost != 0) {			
 			out += "[cost:" + cost + "]";
 		}
-		out += " PRE: { ";
-		for (AbstractCondition c : preconditions) {
-			out += c + " ";
-		}
-		out += "}";
-		out += " POST: { ";
-		for (AbstractCondition c : effects) {
-			out += c + " ";
-		}
-		out += "}";
+		out += " PRE: ";
+		out += precondition + " ";
+		out += " POST: ";
+		out += effect;
 		return out;
 	}
 
@@ -124,9 +100,9 @@ public class Operator {
 		int result = 1;
 		result = prime * result + ((arguments == null) ? 0 : arguments.hashCode());
 		result = prime * result + cost;
-		result = prime * result + ((effects == null) ? 0 : effects.hashCode());
+		result = prime * result + ((effect == null) ? 0 : effect.hashCode());
 		result = prime * result + ((name == null) ? 0 : name.hashCode());
-		result = prime * result + ((preconditions == null) ? 0 : preconditions.hashCode());
+		result = prime * result + ((precondition == null) ? 0 : precondition.hashCode());
 		return result;
 	}
 
@@ -146,20 +122,20 @@ public class Operator {
 			return false;
 		if (cost != other.cost)
 			return false;
-		if (effects == null) {
-			if (other.effects != null)
+		if (effect == null) {
+			if (other.effect != null)
 				return false;
-		} else if (!effects.equals(other.effects))
+		} else if (!effect.equals(other.effect))
 			return false;
 		if (name == null) {
 			if (other.name != null)
 				return false;
 		} else if (!name.equals(other.name))
 			return false;
-		if (preconditions == null) {
-			if (other.preconditions != null)
+		if (precondition == null) {
+			if (other.precondition != null)
 				return false;
-		} else if (!preconditions.equals(other.preconditions))
+		} else if (!precondition.equals(other.precondition))
 			return false;
 		return true;
 	}

@@ -23,14 +23,29 @@ public class Plan implements Iterable<Action> {
 	public int getLength() {
 		return actions.size();
 	}
+
+	/**
+	 * Calculates the total cost of the plan
+	 * @return
+	 * 		The cost of the plan
+	 */
+	public int getCost() {
+		int sum = 0;
+		for (Action a : actions) {
+			sum += a.getCost();
+		}
+		return sum;
+	}
 	
 	@Override
 	public String toString() {
 		
 		StringBuilder builder = new StringBuilder();
-		int step = 1;
+		int step = 0;
 		for (Action action : actions) {
-			builder.append(step + ":\t" + action.getName() + "\n");
+			builder.append(step + " : " + action.getName()
+				// Remove special symbols from operator splitting
+				.replaceAll("\\$.*\\$", "") + "\n");
 			step++;
 		}
 		return builder.toString();

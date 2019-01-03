@@ -49,6 +49,10 @@ public class Condition extends AbstractCondition {
 		return c;
 	}
 	
+	public void setNegated(boolean negated) {
+		this.negated = negated;
+	}
+	
 	@Override
 	public Condition getConditionBoundToArguments(List<Argument> refArgs, List<Argument> argValues) {
 		
@@ -76,6 +80,18 @@ public class Condition extends AbstractCondition {
 			}
 		}
 		return newCondition;
+	}
+	
+	@Override
+	public AbstractCondition simplify(boolean negated) {
+		Condition c = this.copy();
+		c.setNegated(this.negated != negated);
+		return c;
+	}
+	
+	@Override
+	public AbstractCondition getDNF() {
+		return this.copy();
 	}
 	
 	public Condition copy() {
@@ -110,7 +126,7 @@ public class Condition extends AbstractCondition {
 		int result = 1;
 		result = prime * result + ((arguments == null) ? 0 : arguments.hashCode());
 		result = prime * result + (negated ? 1231 : 1237);
-		result = prime * result + ((predicate == null) ? 0 : predicate.hashCode());
+		result = prime * result + ((getPredicate() == null) ? 0 : getPredicate().hashCode());
 		return result;
 	}
 
@@ -130,10 +146,10 @@ public class Condition extends AbstractCondition {
 			return false;
 		if (negated != other.negated)
 			return false;
-		if (predicate == null) {
-			if (other.predicate != null)
+		if (getPredicate() == null) {
+			if (other.getPredicate() != null)
 				return false;
-		} else if (!predicate.equals(other.predicate))
+		} else if (!getPredicate().equals(other.getPredicate()))
 			return false;
 		return true;
 	}

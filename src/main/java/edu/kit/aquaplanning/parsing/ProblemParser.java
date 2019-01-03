@@ -16,15 +16,22 @@ import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
+import edu.kit.aquaplanning.model.PddlRequirement;
 import edu.kit.aquaplanning.model.lifted.AbstractCondition;
 import edu.kit.aquaplanning.model.lifted.Argument;
 import edu.kit.aquaplanning.model.lifted.Condition;
+import edu.kit.aquaplanning.model.lifted.ConditionSet;
 import edu.kit.aquaplanning.model.lifted.ConsequentialCondition;
+import edu.kit.aquaplanning.model.lifted.DerivedCondition;
+import edu.kit.aquaplanning.model.lifted.DerivedPredicate;
+import edu.kit.aquaplanning.model.lifted.Implication;
+import edu.kit.aquaplanning.model.lifted.Negation;
 import edu.kit.aquaplanning.model.lifted.Operator;
 import edu.kit.aquaplanning.model.lifted.Predicate;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.model.lifted.Quantification;
 import edu.kit.aquaplanning.model.lifted.Type;
+import edu.kit.aquaplanning.model.lifted.AbstractCondition.ConditionType;
 import edu.kit.aquaplanning.model.lifted.Quantification.Quantifier;
 import edu.kit.aquaplanning.parsing.PddlParser.ActionDefBodyContext;
 import edu.kit.aquaplanning.parsing.PddlParser.ActionDefContext;
@@ -34,6 +41,7 @@ import edu.kit.aquaplanning.parsing.PddlParser.AtomicTermFormulaContext;
 import edu.kit.aquaplanning.parsing.PddlParser.CEffectContext;
 import edu.kit.aquaplanning.parsing.PddlParser.CondEffectContext;
 import edu.kit.aquaplanning.parsing.PddlParser.ConstantsDefContext;
+import edu.kit.aquaplanning.parsing.PddlParser.DerivedDefContext;
 import edu.kit.aquaplanning.parsing.PddlParser.DomainNameContext;
 import edu.kit.aquaplanning.parsing.PddlParser.EffectContext;
 import edu.kit.aquaplanning.parsing.PddlParser.FunctionListContext;
@@ -66,10 +74,10 @@ public class ProblemParser extends PddlBaseListener {
 	private Map<String, Type> types;
 	private List<Argument> constants; // both from domain and problem
 	private Map<String, Predicate> predicates;
+	private Map<String, DerivedPredicate> derivedPredicates;
 	private List<Operator> operators;
 	private List<Condition> initialState;
-	private List<Condition> goals;
-	private List<Quantification> quantifiedGoals;
+	private List<AbstractCondition> goals;
 	private boolean hasActionCosts;
 	
 	private ParserRuleContext parseContext;
@@ -77,16 +85,17 @@ public class ProblemParser extends PddlBaseListener {
 	 * All different contexts of the parser which may need to be remembered
 	 */
 	private enum ParseContext {
-		typeDefs, constantDefs, predicateDefs, functionsDef, actionDef, 
-		actionPre, actionEff, actionCondEff, actionCondEffPre, actionCondEffCons,
-		objectDefs, initialStateDef, goalDef, atom, negation, conjunction,
-		quantification, literal, equivalence;
+		typeDefs, constantDefs, predicateDefs, derivedPredicateDef, 
+		functionsDef, actionDef, actionPre, actionEff, objectDefs, 
+		initialStateDef, goalDef;
 	}
-	private Stack<ParseContext> context;
+	private ParseContext context;
 	private String parsedFile; // the file *currently* being parsed
 
 	private Predicate predicate;
 	private Type supertype;
+	
+	private Stack<AbstractCondition> conditionStack;
 	
 	/**
 	 * Parses a pair of PDDL domain and problem files.
@@ -97,9 +106,9 @@ public class ProblemParser extends PddlBaseListener {
 	 */
 	public PlanningProblem parse(String domainFile, String problemFile) 
 			throws FileNotFoundException, IOException {
-		
-		context = new Stack<>();
-		
+				
+		conditionStack = new Stack<>();
+
 		// Get domain
         ANTLRInputStream in = new ANTLRInputStream(new FileInputStream(domainFile));
         PddlLexer lexer = new PddlLexer(in);
@@ -125,11 +134,16 @@ public class ProblemParser extends PddlBaseListener {
         parsedFile = problemFile;
         walker = new ParseTreeWalker();
         walker.walk(this, ctx);
+
+        // In case no derived predicates were entered...
+        if (derivedPredicates == null) {
+            derivedPredicates = new HashMap<>();
+        }
         
         // Create object to return
         PlanningProblem problem = new PlanningProblem(domainName, problemName, 
-        		types, constants, predicates, operators, 
-        		initialState, goals, quantifiedGoals, hasActionCosts);
+        		types, constants, predicates, derivedPredicates, operators, 
+        		initialState, goals, hasActionCosts);
         return problem;
 	}
 	
@@ -170,19 +184,12 @@ public class ProblemParser extends PddlBaseListener {
 		// explicit requirement is unsupported.
 		for (int childIdx = 2; childIdx+1 < ctx.getChildCount(); childIdx++) {
 			String requirement = ctx.getChild(childIdx).getText();
-			switch(requirement) {
-			case ":strips":
-			case ":typing":
-			case ":negative-preconditions":
-			case ":conditional-effects":
-			case ":equality":
-			case ":universal-preconditions":
-			case ":action-costs":
+			
+			if (PddlRequirement.isSupported(requirement)) {				
 				if (!requirements.contains(requirement.substring(1))) {
 					requirements.add(requirement.substring(1));
 				}
-				break;
-			default:
+			} else {				
 				error("Unsupported requirement: " + requirement + ".");
 			}
 		}
@@ -195,17 +202,12 @@ public class ProblemParser extends PddlBaseListener {
 	@Override
 	public void enterTypesDef(TypesDefContext ctx) {
 		
-		context.push(ParseContext.typeDefs);
+		context = ParseContext.typeDefs;
 		types = new HashMap<>();
 
 		// Create a virtual supertype for general predicate "="
 		supertype = new Type("_root_type");
 		types.put("_root_type",  supertype);
-	}
-
-	@Override
-	public void exitTypesDef(TypesDefContext ctx) {
-		context.pop(); // typeDefs
 	}
 
 	@Override
@@ -264,7 +266,7 @@ public class ProblemParser extends PddlBaseListener {
 					
 					// Add subtype
 					elements.add(elemName);
-					if (isInContext(ParseContext.typeDefs) 
+					if (context == ParseContext.typeDefs
 							&& !types.containsKey(elemName)) {
 						
 						types.put(elemName, new Type(elemName));
@@ -282,15 +284,18 @@ public class ProblemParser extends PddlBaseListener {
 						supertype.addSubtype(elemName);
 					}
 					
-					if (isInContext(ParseContext.typeDefs)) {
+					if (context == ParseContext.typeDefs) {
 						// Type definitions: set supertype
 						type.addSubtypes(elements);
 					
-					} else if (isInContext(ParseContext.constantDefs) 
-							|| isInContext(ParseContext.objectDefs)) {
+					} else if (context == ParseContext.constantDefs
+							|| context == ParseContext.objectDefs) {
 						// Constant definitions: add constants
 						for (String constantName : elements) {
-							constants.add(new Argument(constantName, type));
+							Argument constant = new Argument(constantName, type);
+							if (!constants.contains(constant)) {								
+								constants.add(constant);
+							}
 						}
 					}
 				}		
@@ -305,15 +310,8 @@ public class ProblemParser extends PddlBaseListener {
 	@Override
 	public void enterConstantsDef(ConstantsDefContext ctx) {
 		
-		context.push(ParseContext.constantDefs);
+		context = ParseContext.constantDefs;
 		constants = new ArrayList<>();
-	}
-
-	@Override
-	public void exitConstantsDef(ConstantsDefContext ctx) {
-		
-		assertTopContext(ParseContext.constantDefs);
-		context.pop();
 	}
 
 	
@@ -323,7 +321,7 @@ public class ProblemParser extends PddlBaseListener {
 	@Override
 	public void enterFunctionsDef(FunctionsDefContext ctx) {
 		
-		context.push(ParseContext.functionsDef);
+		context = ParseContext.functionsDef;
 	}
 	
 	@Override
@@ -338,13 +336,6 @@ public class ProblemParser extends PddlBaseListener {
 				+ "only the function \"(total-cost) - number\" is allowed.");
 		}
 	}
-	
-	@Override
-	public void exitFunctionsDef(FunctionsDefContext ctx) {
-		
-		assertTopContext(ParseContext.functionsDef);
-		context.pop();
-	}
 
 	
 	
@@ -353,33 +344,25 @@ public class ProblemParser extends PddlBaseListener {
 	@Override
 	public void enterPredicatesDef(PredicatesDefContext ctx) {
 		
-		context.push(ParseContext.predicateDefs);
+		context = ParseContext.predicateDefs;
 		predicates = new HashMap<>();
-	}
-
-	@Override
-	public void exitPredicatesDef(PredicatesDefContext ctx) {
-		
-		assertTopContext(ParseContext.predicateDefs);
-		context.pop();
 	}
 	
 	@Override
 	public void enterAtomicFormulaSkeleton(AtomicFormulaSkeletonContext ctx) {
 		
-		if (isInContext(ParseContext.predicateDefs)) {
+		if (context == ParseContext.predicateDefs) {
 			// A new predicate is being defined; create the object
 			String predName = ctx.children.get(1).getText().toLowerCase();
 			predicate = new Predicate(predName);
 			predicates.put(predName, predicate);
+			
+		} else if (context == ParseContext.derivedPredicateDef) {
+			// A derived predicate is being defined
+			String predName = ctx.children.get(1).getText().toLowerCase();
+			((DerivedPredicate) predicate).setName(predName);
+			derivedPredicates.put(predName, (DerivedPredicate) predicate);
 		}
-	}
-
-	@Override
-	public void exitAtomicFormulaSkeleton(AtomicFormulaSkeletonContext ctx) {
-		
-		// Predicate is fully processed at this point
-		predicate = null;
 	}
 
 	/**
@@ -393,7 +376,7 @@ public class ProblemParser extends PddlBaseListener {
 	public void enterSingleTypeVarList(SingleTypeVarListContext ctx) {
 		
 		// Extract type
-		String typeName = ctx.children.get(ctx.children.size()-1).getText();
+		String typeName = ctx.children.get(ctx.children.size()-1).getText().toLowerCase();
 		Type type = types.get(typeName);
 		if (type == null) {
 			error("Usage of undefined type \"" + typeName + "\".");
@@ -402,19 +385,24 @@ public class ProblemParser extends PddlBaseListener {
 		// Iterate over arguments
 		for (int childIdx = 0; childIdx < ctx.children.size()-2; childIdx++) {
 			
-			if (isInContext(ParseContext.predicateDefs)) {	
-				// Add type to current predicate
-				predicate.addArgumentType(type);
-				
-			} else if (isInContext(ParseContext.quantification)) {
+			if (isInQuantification()) {
 				// Add argument to quantification
-				String argName = ctx.children.get(childIdx).getText();
+				String argName = ctx.children.get(childIdx).getText().toLowerCase();
 				Quantification q = currentQuantification();
 				q.addVariable(new Argument(argName, type));
 
-			} else if (isInContext(ParseContext.actionDef)) {
+			} else if (context == ParseContext.predicateDefs) {	
+				// Add type to current predicate
+				predicate.addArgumentType(type);
+				
+			} else if (context == ParseContext.derivedPredicateDef) {	
+				// Add type to current predicate
+				String argName = ctx.children.get(childIdx).getText().toLowerCase();
+				((DerivedPredicate) predicate).addArgument(new Argument(argName, type));
+				
+			} else if (context == ParseContext.actionDef) {
 				// Add argument to current operator
-				String argName = ctx.children.get(childIdx).getText();
+				String argName = ctx.children.get(childIdx).getText().toLowerCase();
 				currentOperator().addArgument(new Argument(argName, type));
 			}
 		}
@@ -428,7 +416,7 @@ public class ProblemParser extends PddlBaseListener {
 	@Override
 	public void enterTypedVariableList(TypedVariableListContext ctx) {
 		
-		if (isInContext(ParseContext.quantification)) {
+		if (isInQuantification()) {
 			// Quantified variables
 			
 			// Read variables from left to right until a SingleTypeVarList is hit
@@ -439,15 +427,58 @@ public class ProblemParser extends PddlBaseListener {
 					break;
 				} else {
 					// Variable ("untyped" for now; type is added later)
-					String varName = ctx.children.get(childIdx).getText();
+					String varName = ctx.children.get(childIdx).getText().toLowerCase();
 					Type type = new Type("quantified"); // to be added later
 					Argument arg = new Argument(varName, type);
 					currentQuantification().addVariable(arg);
 				}
 			}
+			
+		} else if (context == ParseContext.predicateDefs || context == ParseContext.derivedPredicateDef) {	
+			// Predicate definition
+			
+			// Read variables from right to left until a SingleTypeVarList is hit
+			if (ctx.children == null) {
+				// Empty variable list
+			} else {				
+				for (int childIdx = ctx.children.size()-1; childIdx >= 0; childIdx--) {
+					if (ctx.children.get(childIdx).getChildCount() > 1) {
+						// Typed definition
+						break;
+					}
+					
+					// We don't know the type of this argument, 
+					// so we assume the supertype
+					if (context == ParseContext.predicateDefs) {						
+						predicate.addArgumentType(supertype);
+					} else if (context == ParseContext.derivedPredicateDef) {
+
+						String varName = ctx.children.get(childIdx).getText().toLowerCase();
+						((DerivedPredicate) predicate).addArgument(new Argument(varName, supertype));
+					}
+				}
+			}
+			
 		}
 	}
 	
+	
+	
+	// Derived predicate definitions
+	
+	@Override
+	public void enterDerivedDef(DerivedDefContext ctx) {
+		// '(' ':derived' atomicFormulaSkeleton goalDesc ')'
+		
+		context = ParseContext.derivedPredicateDef;
+		if (derivedPredicates == null) {
+			derivedPredicates = new HashMap<>();
+		}
+		
+		DerivedPredicate p = new DerivedPredicate();
+		this.predicate = p;
+	}
+		
 	
 	
 	// Action definitions
@@ -455,7 +486,7 @@ public class ProblemParser extends PddlBaseListener {
 	@Override
 	public void enterActionDef(ActionDefContext ctx) {
 		
-		context.push(ParseContext.actionDef);
+		context = ParseContext.actionDef;
 		if (operators == null)
 			operators = new ArrayList<>();
 		
@@ -463,13 +494,6 @@ public class ProblemParser extends PddlBaseListener {
 		String opName = ctx.children.get(2).getText().toLowerCase();
 		Operator op = new Operator(opName);
 		operators.add(op);
-	}
-
-	@Override
-	public void exitActionDef(ActionDefContext ctx) {
-		
-		assertTopContext(ParseContext.actionDef);
-		context.pop();
 	}
 
 	/**
@@ -488,26 +512,19 @@ public class ProblemParser extends PddlBaseListener {
 				ctx.children.get(1).getText().equals(")")) {
 				
 				// Parse effects now (in the case that the preconds are empty)
-				context.push(ParseContext.actionEff);
+				context = ParseContext.actionEff;
 
 			} else {
 				
 				// Parse preconditions now
-				context.push(ParseContext.actionPre);
+				context = ParseContext.actionPre;
 			}
 			
 		} else if (ctx.children.get(0).getText().equalsIgnoreCase(":effect")) {
 			
 			// Parse effects now (in the case that there are no preconds)
-			context.push(ParseContext.actionEff);
+			context = ParseContext.actionEff;
 		}
-	}
-	
-	@Override
-	public void exitActionDefBody(ActionDefBodyContext ctx) {
-		
-		assertTopContext(ParseContext.actionEff);
-		context.pop();
 	}
 	
 	
@@ -519,67 +536,45 @@ public class ProblemParser extends PddlBaseListener {
 	@Override
 	public void enterGoalDesc(GoalDescContext ctx) {
 		
-		// If conditional effects are being parsed, 
-		// then the prerequisite part is entered now
-		if (isTopContext(ParseContext.actionCondEff)) {
-			context.push(ParseContext.actionCondEffPre);
-		}
-		
 		if (ctx.children.size() == 1) {
 			
 			// Atomic formula
-			context.push(ParseContext.atom);
 			// Will be processed as an atomicTermFormula
 			
 		} else {
 			
 			// Check the kind of the expression
 			String expressionType = ctx.children.get(1).getText();
+			AbstractCondition condition = null;
 			
 			if (expressionType.equalsIgnoreCase("not")) {
-				if (isTopContext(ParseContext.negation)) {
-					error("Nested negations are not supported; "
-							+ "you can just remove them pairwise.");
-				}
-				context.push(ParseContext.negation); // remember negation
+
+				condition = new Negation();
 				
 			} else if (expressionType.equalsIgnoreCase("and")) {
-				// Currently, conjunctions are used for nothing
-				// except for bundling multiple conditions into a list
-				if (isTopContext(ParseContext.negation)) {
-					error("Negated conjunctions of conditions are unsupported "
-						+ "(because they effectively become disjunctive conditions).");
-				}
-				context.push(ParseContext.conjunction);
 				
+				condition = new ConditionSet(ConditionType.conjunction);
+				
+			} else if (expressionType.equalsIgnoreCase("or")) {
+				
+				condition = new ConditionSet(ConditionType.disjunction);
+				
+			} else if (expressionType.equalsIgnoreCase("imply")) {
+					
+				condition = new Implication();
+					
 			} else if (expressionType.equalsIgnoreCase("forall")) {
+
 				// Universal quantification
-				context.push(ParseContext.quantification);
-				
-				// Create quantification, add to currently parsed object
-				Quantification q = new Quantification(Quantifier.universal);
-				if (isInContext(ParseContext.actionDef)) {
-					if (isInContext(ParseContext.actionCondEffPre)) {
-						currentConditionalEffect().addPrerequisite(q);
-					} else if (isInContext(ParseContext.actionCondEffCons)) {
-						currentConditionalEffect().addConsequence(q);
-					} else {	
-						currentOperator().addQuantifiedPrecondition(q);
-					}
-				} else if (isInContext(ParseContext.goalDef)) {
-					quantifiedGoals.add(new Quantification(Quantifier.universal));
-				}
+				condition = new Quantification(Quantifier.universal);
 			
 			} else if (expressionType.equalsIgnoreCase("exists")) {
-				// Existential quantification - not supported as of now
-				context.push(ParseContext.quantification);
-				error("Existantial quantifications are not supported.");
+				
+				// Existential quantification
+				condition = new Quantification(Quantifier.existential);
 				
 			} else if (expressionType.equals("=")) {
 				// Equality
-				
-				boolean negated = isTopContext(ParseContext.negation);
-				context.push(ParseContext.equivalence);
 				
 				// Create new "equals" predicate, if necessary
 				Predicate p = null;
@@ -593,35 +588,21 @@ public class ProblemParser extends PddlBaseListener {
 				}
 				
 				// Create corresponding condition and add it to currently parsed object
-				Condition cond = new Condition(p, negated);
+				Condition cond = new Condition(p);
 				cond.addArgument(new Argument(ctx.children.get(2).getText(), supertype));
 				cond.addArgument(new Argument(ctx.children.get(3).getText(), supertype));
-				addToCurrentObject(cond);
-			} else {
-				error("Unsupported conditional expression \"" + expressionType + "\".");
+				condition = cond;
 			}
+
+			enterCondition(condition);
 		}
-		
 	}
 
 	@Override
 	public void exitGoalDesc(GoalDescContext ctx) {
 		
-		context.pop(); // atomic, and, not, forall, exists, etc.
-		
-		if (isTopContext(ParseContext.actionPre)) {
-			
-			// Preconditions are finished: switch to effects
-			assertTopContext(ParseContext.actionPre);
-			context.pop();
-			context.push(ParseContext.actionEff);
-		
-		} else if (isTopContext(ParseContext.actionCondEffPre)) {
-			
-			// Prerequisites of an effect are finished;
-			// switch to consequences
-			assertTopContext(ParseContext.actionCondEffPre);
-			context.pop();
+		if (ctx.children.size() > 1) {
+			exitCondition();
 		}
 	}
 
@@ -635,30 +616,20 @@ public class ProblemParser extends PddlBaseListener {
 	@Override
 	public void enterAtomicTermFormula(AtomicTermFormulaContext ctx) {
 		
-		// Read the relevant context sub-stack and apply relevant elements
-		boolean negated = false;
-		for (int pos = context.size()-1; pos >= 0; pos--) {
-			ParseContext c = context.get(pos);
-			
-			// End of relevant context reached?
-			if (c == ParseContext.actionPre || c == ParseContext.actionEff 
-				|| c == ParseContext.goalDef || c == ParseContext.quantification) {
-				break;
-			}
-			
-			// Apply negation
-			if (c == ParseContext.negation) {
-				negated = !negated;
-			}
-		}
-		
 		// Create condition
+		Condition cond = null;
 		String predicateName = ctx.children.get(1).getText().toLowerCase();
 		Predicate predicate = predicates.get(predicateName);
 		if (predicate == null) {
-			error("Predicate \"" + predicateName + "\" is undefined.");
+			predicate = derivedPredicates.get(predicateName);
+			if (predicate == null) {
+				error("Predicate \"" + predicateName + "\" is undefined.");
+			} else {
+				cond = new DerivedCondition((DerivedPredicate) predicate);
+			}
+		} else {			
+			cond = new Condition(predicate);
 		}
-		Condition cond = new Condition(predicate, negated);
 		
 		// Add arguments of condition
 		for (int childIdx = 2; childIdx+1 < ctx.children.size(); childIdx++) {
@@ -672,7 +643,7 @@ public class ProblemParser extends PddlBaseListener {
 				
 				// -- variable
 				
-				if (isInContext(ParseContext.quantification)) {
+				if (isInQuantification()) {
 					// Quantification
 					
 					// Is the variable bound to the quantifier?
@@ -684,8 +655,18 @@ public class ProblemParser extends PddlBaseListener {
 						}
 					} // -- if not: type == null
 				
-				} else if (isInContext(ParseContext.goalDef)) {
+				} else if (context == ParseContext.goalDef) {
 					error("Variables in goal specifications are illegal.");
+				
+				} else if (context == ParseContext.derivedPredicateDef) {
+					
+					// Derived predicate definition
+					DerivedPredicate p = (DerivedPredicate) predicate;
+					for (Argument arg : p.getArguments()) {
+						if (termStr.equalsIgnoreCase(arg.getName())) {
+							type = arg.getType();
+						}
+					}
 				}
 				
 				if (type == null) {
@@ -709,6 +690,12 @@ public class ProblemParser extends PddlBaseListener {
 						type = constant.getType();
 					}
 				}
+				
+				if (type == null) {
+					// New constant is created; infer type from predicate
+					type = predicate.getArgumentTypes().get(childIdx-2);
+					constants.add(new Argument(termStr, type));
+				}
 			}
 			
 			if (type == null) {
@@ -721,14 +708,14 @@ public class ProblemParser extends PddlBaseListener {
 		
 		// Add created condition to preconditions/effects
 		// of the current operator
-		if (isInContext(ParseContext.quantification)) {
+		
+		if (isInQuantification()) {
 			// We need to infer the types of bound variables
 			Quantification q = currentQuantification();
 			inferQuantifiedTypes(q, cond);
-			addToCurrentObject(cond);
-		} else {
-			addToCurrentObject(cond);
 		}
+		enterCondition(cond);
+		exitCondition();
 		
 		// Basic checks for correct typing and predicate use
 		checkConsistency(cond);
@@ -741,23 +728,15 @@ public class ProblemParser extends PddlBaseListener {
 	@Override
 	public void enterEffect(EffectContext ctx) {
 		
-		// Recognize conjunctions ("and") inside effects
-		if (isInContext(ParseContext.actionEff)) {
-			if (ctx.children.get(0).getText().equals("(")) {
-				if (ctx.children.get(1).getText().equalsIgnoreCase("and")) {
-					context.push(ParseContext.conjunction);
-				}
-			}
-		}
+		// Add conjunction ("and") inside effects
+		enterCondition(new ConditionSet(ConditionType.conjunction));
 	}
 
 	@Override
 	public void exitEffect(EffectContext ctx) {
 		
-		// If there is a conjunction left in the context, remove it
-		if (isTopContext(ParseContext.conjunction)) {
-			context.pop();
-		}
+		// Conjunction left in the context
+		exitCondition();
 	}
 
 	@Override
@@ -768,24 +747,17 @@ public class ProblemParser extends PddlBaseListener {
 			// ( when <goalDesc> <condEffect> )
 			
 			// Create new cond. effect object
-			if (isInContext(ParseContext.quantification)) {
-				// Conditional effect inside quantification
-				currentQuantification().addCondition(new ConsequentialCondition());
-			} else {
-				// Conditional effect as one of the operator effects
-				currentOperator().addConditionalEffect(new ConsequentialCondition());
-			}
-			context.push(ParseContext.actionCondEff);
+			ConsequentialCondition condition = new ConsequentialCondition();
+			enterCondition(condition);
 		
-		} else if (ctx.children.size() == 7 
-				&& ctx.children.get(1).getText().equalsIgnoreCase("forall")) {
+		} else if (ctx.children.size() == 7) {
 			// Quantification as one of the operator effects
 			
 			// Create new quantification object
-			context.push(ParseContext.quantification);
-			currentOperator().addQuantifiedEffect(new Quantification(Quantifier.universal));
+			Quantification q = new Quantification(Quantifier.universal);
+			enterCondition(q);
 			
-		} else if (ctx.children == null || ctx.children.size() > 1) {
+		} else if (ctx.children.size() != 1) {
 			error("An effect specification is unsupported: " + ctx.getText());
 		}
 	}
@@ -793,94 +765,90 @@ public class ProblemParser extends PddlBaseListener {
 	@Override
 	public void exitCEffect(CEffectContext ctx) {
 		
-		// Remove any context that must belong to this CEffect
-		if (isTopContext(ParseContext.actionCondEff)) {			
-			context.pop(); // actionCondEff
-		} else if (isTopContext(ParseContext.quantification)) {
-			context.pop(); // quantification
-		}
-	}
-	
-	/**
-	 * Parsing of the second part of a conditional effect:
-	 * The consequences.
-	 */
-	@Override
-	public void enterCondEffect(CondEffectContext ctx) {
-		
-		context.push(ParseContext.actionCondEffCons);
-	}
-	
-	@Override
-	public void exitCondEffect(CondEffectContext ctx) {
-		
-		assertTopContext(ParseContext.actionCondEffCons);
-		context.pop();
+		// Cond. effect or quantification
+		if (ctx.children.size() > 1)
+			exitCondition();
 	}
 	
 	@Override
 	public void enterPEffect(PEffectContext ctx) {
 		
-		if (isInContext(ParseContext.actionEff)) {
+		if (ctx.children.size() > 4) {
 			
-			if (ctx.children.size() > 4) {
-				
-				// Function operation
-				if (hasActionCosts) {
+			// Function operation
+			if (hasActionCosts) {
 
-					// Get parameters of the function operation
-					String operation = ctx.children.get(1).getText();
-					String functionName = ctx.children.get(2).getText();
-					String value = ctx.children.get(3).getText();
+				// Get parameters of the function operation
+				String operation = ctx.children.get(1).getText();
+				String functionName = ctx.children.get(2).getText();
+				String value = ctx.children.get(3).getText();
+				
+				// Only total-cost is a valid function
+				if (functionName.equalsIgnoreCase("(total-cost)")) {
 					
-					// Only total-cost is a valid function
-					if (functionName.equalsIgnoreCase("(total-cost)")) {
-						
-						// No conditional effects, and no increase/assign operation
-						if (isInContext(ParseContext.actionCondEff)) {
-							error("Function operations in conditional effects "
-									+ "are not supported.");
-						} else if (!operation.equalsIgnoreCase("increase")) {
-							error("Action cost may only increase as an operator effect.");
-						} else {
-							
-							// Set action cost of the operator
-							try {
-								currentOperator().setCost(Integer.parseInt(value));
-							} catch (NumberFormatException e) {
-								error("Invalid function assignment \"" + value 
-									+ "\" (only positive integer constants are allowed).");
-							}
-						}
-						
+					// No conditional effects, and no increase/assign operation
+					if (!operation.equalsIgnoreCase("increase")) {
+						error("Action cost may only increase as an operator effect.");
 					} else {
-						error("Unrecognized function \"" + functionName + "\".");
+						
+						// Set action cost of the operator
+						try {
+							currentOperator().setCost(Integer.parseInt(value));
+						} catch (NumberFormatException e) {
+							error("Invalid function assignment \"" + value 
+								+ "\" (only positive integer constants are allowed).");
+						}
 					}
 					
 				} else {
-					error("A function effect is used, "
-						+ "but no functions have been defined.");
+					error("Unrecognized function \"" + functionName + "\".");
 				}
 				
-			} else if (ctx.children.size() == 1) {
-				
-				// atomic term
-				context.push(ParseContext.atom);
-				
 			} else {
-				
-				// "not"
-				context.push(ParseContext.negation);
+				error("A function effect is used, "
+					+ "but no functions have been defined.");
 			}
+			
+		} else if (ctx.children.size() == 1) {
+			
+			// atomic term
+			
+		} else {
+			
+			// "not"
+			Negation neg = new Negation();
+			enterCondition(neg);
 		}
 	}
 
 	@Override
 	public void exitPEffect(PEffectContext ctx) {
 		
-		if (isTopContext(ParseContext.atom) 
-				|| isTopContext(ParseContext.negation))
-			context.pop(); // atom, negation
+		// Negation
+		if (ctx.children.size() > 1 && ctx.children.size() <= 4) {
+			exitCondition();
+		}
+	}
+	
+	@Override
+	public void enterCondEffect(CondEffectContext ctx) {
+		
+		if (ctx.children.size() > 1 
+				&& ctx.children.get(1).getText().toLowerCase().equals("and")) {
+			
+			ConditionSet and = new ConditionSet(ConditionType.conjunction);
+			enterCondition(and);
+		}
+	}
+	
+	@Override
+	public void exitCondEffect(CondEffectContext ctx) {
+		
+		if (ctx.children.size() > 1 
+				&& ctx.children.get(1).getText().toLowerCase().equals("and")) {
+			
+			exitCondition();
+		}
 	}
 	
 	
@@ -891,16 +859,9 @@ public class ProblemParser extends PddlBaseListener {
 	@Override
 	public void enterObjectDecl(ObjectDeclContext ctx) {
 		
-		context.push(ParseContext.objectDefs);
+		context = ParseContext.objectDefs;
 		if (constants == null)
 			constants = new ArrayList<>();
-	}
-
-	@Override
-	public void exitObjectDecl(ObjectDeclContext ctx) {
-		
-		assertTopContext(ParseContext.objectDefs);
-		context.pop();
 	}
 	
 	
@@ -910,15 +871,8 @@ public class ProblemParser extends PddlBaseListener {
 	@Override
 	public void enterInit(InitContext ctx) {
 		
-		context.push(ParseContext.initialStateDef);
+		context = ParseContext.initialStateDef;
 		initialState = new ArrayList<>();
-	}
-
-	@Override
-	public void exitInit(InitContext ctx) {
-		
-		assertTopContext(ParseContext.initialStateDef);
-		context.pop();
 	}
 
 	@Override
@@ -950,24 +904,12 @@ public class ProblemParser extends PddlBaseListener {
 	}
 	
 	@Override
-	public void enterNameLiteral(NameLiteralContext ctx) {
-		
-		context.push(ParseContext.literal);
+	public void exitNameLiteral(NameLiteralContext ctx) {
 		
 		// "not" expression
 		if (ctx.children.size() > 1) {
-			context.push(ParseContext.negation);
+			initialState.get(initialState.size()-1).setNegated(true);
 		}
-	}
-	
-	@Override
-	public void exitNameLiteral(NameLiteralContext ctx) {
-		
-		if (isTopContext(ParseContext.negation)) {
-			context.pop(); // negation
-		}
-		assertTopContext(ParseContext.literal);
-		context.pop(); // literal
 	}
 
 	/**
@@ -977,15 +919,20 @@ public class ProblemParser extends PddlBaseListener {
 	@Override
 	public void enterAtomicNameFormula(AtomicNameFormulaContext ctx) {
 		
-		// Negation status
-		boolean negated = (isTopContext(ParseContext.negation));
 		// Predicate
+		Condition condition = null;
 		String predicateName = ctx.children.get(1).getText().toLowerCase();
 		Predicate predicate = predicates.get(predicateName);
-		if (predicate == null)
-			error("Predicate \"" + predicateName + "\" is undefined.");
-		
-		Condition condition = new Condition(predicate, negated);
+		if (predicate == null) {
+			predicate = derivedPredicates.get(predicateName);
+			if (predicate == null) {
+				error("Predicate \"" + predicateName + "\" is undefined.");
+			} else {
+				condition = new DerivedCondition((DerivedPredicate) predicate);
+			}
+		} else {
+			condition = new Condition(predicate);
+		}		
 		
 		// Parse condition's arguments
 		for (int childIdx = 2; childIdx+1 < ctx.getChildCount(); childIdx++) {
@@ -1020,16 +967,8 @@ public class ProblemParser extends PddlBaseListener {
 	@Override
 	public void enterGoal(GoalContext ctx) {
 		
-		context.push(ParseContext.goalDef);
+		context = ParseContext.goalDef;
 		goals = new ArrayList<>();
-		quantifiedGoals = new ArrayList<>();
-	}
-	
-	@Override
-	public void exitGoal(GoalContext ctx) {
-		
-		assertTopContext(ParseContext.goalDef);
-		context.pop();
 	}
 	
 	@Override
@@ -1052,7 +991,7 @@ public class ProblemParser extends PddlBaseListener {
 	
 	/* END OF PARSING LISTENER METHODS */
 	
-	
+
 	
 	/**
 	 * Do basic predicate arity and type checks for a given condition.
@@ -1061,7 +1000,7 @@ public class ProblemParser extends PddlBaseListener {
 		
 		Predicate p = cond.getPredicate();
 		if (p == null) {
-			error("The predicate of a condition is not properly defined.");
+			error("The predicate of condition " + cond + " is not properly defined.");
 		}
 		if (p.getNumArgs() != cond.getNumArgs()) {
 			error("The arity of condition \"" + cond.toString() 
@@ -1164,32 +1103,55 @@ public class ProblemParser extends PddlBaseListener {
 		return false;
 	}
 	
-	private boolean isTopContext(ParseContext context) {
-		return this.context.peek() == context;
-	}
-	
-	private boolean isInContext(ParseContext context) {
-		return this.context.contains(context);
-	}
-	
-	private boolean isContextHigherThan(ParseContext higher, ParseContext lower) {
-		boolean reachedHigherEl = false;
-		for (int i = context.size()-1; i >= 0; i--) {
-			ParseContext ctx = context.get(i);
-			if (ctx == higher)
-				reachedHigherEl = true;
-			if (ctx == lower)
-				return reachedHigherEl;
+	private void enterCondition(AbstractCondition childCond) {
+		
+		AbstractCondition condition = null;
+		if (!conditionStack.isEmpty()) 
+			condition = conditionStack.peek();
+		
+		if (condition != null) {
+			switch (condition.getConditionType()) {
+			case atomic:
+				break;
+			case conjunction:
+			case disjunction:
+				((ConditionSet) condition).add(childCond);
+				break;
+			case implication:
+				Implication i = (Implication) condition;
+				if (i.getIfCondition() == null) {
+					i.setIfCondition(childCond);
+				} else {
+					i.setThenCondition(childCond);
+				}
+				break;
+			case consequential:
+				ConsequentialCondition c = (ConsequentialCondition) condition;
+				if (c.getPrerequisite() == null) {
+					c.setPrerequisite(childCond);
+				} else if (c.getConsequence() == null) {
+					c.setConsequence(childCond);
+				} else {
+					error(c + " already finished!");
+				}
+				break;
+			case negation:
+				((Negation) condition).setChildCondition(childCond);
+				break;
+			case quantification:
+				((Quantification) condition).setCondition(childCond);
+				break;
+			}
 		}
-		return false;
+		
+		conditionStack.push(childCond);
 	}
 	
-	private void assertTopContext(ParseContext context) {
-		if (context != this.context.peek()) {
-			new Exception("Context mismatch. Expected: " + context 
-					+ ", actual: " + this.context.peek()).printStackTrace();
-			error("The parser reached an illegal internal state. This might be a bug.");
-		}
+	private void exitCondition() {
+		
+		AbstractCondition condition = conditionStack.pop();
+		if (conditionStack.isEmpty())
+			addToCurrentObject(condition);
 	}
 	
 	/**
@@ -1197,43 +1159,21 @@ public class ProblemParser extends PddlBaseListener {
 	 * depending on the current parsing context 
 	 * (precondition, effect, goal, ...).
 	 */
-	private void addToCurrentObject(Condition cond) {
+	private void addToCurrentObject(AbstractCondition cond) {
 		
-		if (isInContext(ParseContext.actionDef)) {
-			if (isInContext(ParseContext.quantification)) {
-				
-				if (isInContext(ParseContext.actionCondEff) 
-						&& isContextHigherThan(ParseContext.actionCondEff, ParseContext.quantification)) {
-					
-					// Conditional effect inside a quantification
-					if (isInContext(ParseContext.actionCondEffPre)) {
-						List<AbstractCondition> conds = currentQuantification().getConditions();
-						ConsequentialCondition c = (ConsequentialCondition) conds.get(conds.size()-1);
-						c.addPrerequisite(cond);
-					} else if (isInContext(ParseContext.actionCondEffCons)) {
-						List<AbstractCondition> conds = currentQuantification().getConditions();
-						ConsequentialCondition c = (ConsequentialCondition) conds.get(conds.size()-1);
-						c.addConsequence(cond);
-					}
-				} else {					
-					currentQuantification().addCondition(cond);
-				}
-				
-			} else if (isInContext(ParseContext.actionCondEffPre)) {
-				currentConditionalEffect().addPrerequisite(cond);
-			} else if (isInContext(ParseContext.actionCondEffCons)) {
-				currentConditionalEffect().addConsequence(cond);
-			} else if (isInContext(ParseContext.actionEff)) {
-				currentOperator().addEffect(cond);
-			} else if (isInContext(ParseContext.actionPre)) {						
-				currentOperator().addPrecondition(cond);
+		if (context == ParseContext.actionPre || context == ParseContext.actionEff) {
+			Operator op = currentOperator();
+			if (op.getPrecondition() == null) {
+				op.setPrecondition(cond);
+			} else {						
+				op.setEffect(cond);
 			}
-		} else if (isInContext(ParseContext.goalDef)) {
-			if (isInContext(ParseContext.quantification)) {
-				currentQuantification().addCondition(cond);
-			} else {				
-				goals.add(cond);
-			}
+		} else if (context == ParseContext.goalDef) {
+			goals.add(cond);
+		} else if (context == ParseContext.initialStateDef) {
+			initialState.add((Condition) cond);
+		} else if (context == ParseContext.derivedPredicateDef) {
+			((DerivedPredicate) predicate).setCondition(cond);
 		}
 	}
 	
@@ -1244,43 +1184,25 @@ public class ProblemParser extends PddlBaseListener {
 		return operators.get(operators.size()-1);
 	}
 
+	private boolean isInQuantification() {
+		return currentQuantification() != null;
+	}
+	
 	/**
 	 * The quantification currently being parsed.
 	 */
 	private Quantification currentQuantification() {
 		
-		if (isInContext(ParseContext.actionCondEff) && 
-				isContextHigherThan(ParseContext.quantification, ParseContext.actionCondEff)) {
-			
-			// Quantification inside a conditional effect
-			ConsequentialCondition c = (ConsequentialCondition) currentOperator().getEffects()
-					.get(currentOperator().getEffects().size()-1);
-			if (isInContext(ParseContext.actionCondEffPre)) {
-				return (Quantification) c.getPrerequisites().get(c.getPrerequisites().size()-1);
+		AbstractCondition condition = null;
+		int position = conditionStack.size()-1;
+		while (position >= 0) {
+			condition = conditionStack.get(position);
+			if (condition.getConditionType() == ConditionType.quantification) {
+				return (Quantification) condition;
 			}
-			if (isInContext(ParseContext.actionCondEffCons)) {
-				return (Quantification) c.getConsequences().get(c.getConsequences().size()-1);
-			}
-			
-		} else if (isInContext(ParseContext.actionPre)) {			
-			return (Quantification) currentOperator().getPreconditions().get(
-					currentOperator().getPreconditions().size()-1);
-		} else if (isInContext(ParseContext.actionEff)) {
-			return (Quantification) currentOperator().getEffects().get(
-					currentOperator().getEffects().size()-1);
-		} else if (isInContext(ParseContext.goalDef)) {
-			return quantifiedGoals.get(quantifiedGoals.size()-1);
+			position--;
 		}
 		return null;
-	}
-	
-	/**
-	 * The conditional effect currently being parsed.
-	 */
-	private ConsequentialCondition currentConditionalEffect() {
-		
-		List<AbstractCondition> effects = currentOperator().getEffects();					
-		return (ConsequentialCondition) effects.get(effects.size()-1);
 	}
 	
 	

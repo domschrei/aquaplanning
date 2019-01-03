@@ -10,6 +10,7 @@
     (set ?o - object2)
 )
 
+; if all objects are not marked, then all objects are marked.
 (:action mark
     :parameters (?o - object1)
     :precondition (and
@@ -24,6 +25,7 @@
     )
 )
 
+; when all objects are set, the argument object is unset
 (:action unset
     :parameters (?o - object2)
     :precondition (and )

@@ -5,7 +5,7 @@ import java.util.List;
 
 public class Predicate {
 
-	private String name;
+	protected String name;
 	private List<Type> argumentTypes;
 	
 	public Predicate(String name) {
