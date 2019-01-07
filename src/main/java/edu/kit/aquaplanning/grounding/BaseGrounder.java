@@ -20,6 +20,8 @@ import edu.kit.aquaplanning.model.lifted.Argument;
 import edu.kit.aquaplanning.model.lifted.Condition;
 import edu.kit.aquaplanning.model.lifted.ConditionSet;
 import edu.kit.aquaplanning.model.lifted.ConsequentialCondition;
+import edu.kit.aquaplanning.model.lifted.DerivedCondition;
+import edu.kit.aquaplanning.model.lifted.DerivedPredicate;
 import edu.kit.aquaplanning.model.lifted.Implication;
 import edu.kit.aquaplanning.model.lifted.Negation;
 import edu.kit.aquaplanning.model.lifted.Operator;
@@ -57,6 +59,11 @@ public abstract class BaseGrounder implements Grounder {
 	 */
 	protected Atom atom(Predicate p, List<Argument> constants) {
 		
+		// Check if predicate is simple
+		if (p instanceof DerivedPredicate) {
+			throw new IllegalArgumentException("Attempted to create simple atom "
+					+ "of a derived predicate.");
+		}
 		// Create data structure for atoms, if necessary
 		if (atoms == null) {
 			atoms = new HashMap<>();
@@ -144,7 +151,7 @@ public abstract class BaseGrounder implements Grounder {
 			AbstractCondition c = conditionsToProcess.get(i);
 			
 			if (c.getConditionType() == ConditionType.atomic) {
-				
+									
 				// Atomic condition
 				Condition cond = (Condition) c;
 				Atom atom = atom(cond.getPredicate(), cond.getArguments());
@@ -217,6 +224,10 @@ public abstract class BaseGrounder implements Grounder {
 		ConditionSet set;
 		switch (cond.getConditionType()) {
 		case atomic:
+			if (cond instanceof DerivedCondition) {
+				return toPrecondition(((DerivedCondition) cond).getPredicate().getCondition(), 
+						((Condition) cond).isNegated() != negated);
+			}
 			pre = new Precondition(PreconditionType.atom);
 			Condition c = (Condition) cond;
 			pre.setAtom(atom(c.getPredicate(), c.getArguments(), c.isNegated() != negated));
@@ -363,8 +374,8 @@ public abstract class BaseGrounder implements Grounder {
 	}
 	
 	// Constant conditions
-	private final Condition trueCondition = new Condition(new Predicate("_TRUE"));
-	private final Condition falseCondition = new Condition(new Predicate("_FALSE"));
+	protected final Condition trueCondition = new Condition(new Predicate("_TRUE"));
+	protected final Condition falseCondition = new Condition(new Predicate("_FALSE"));
 	
 	/**
 	 * Given an operator with simplified conditions, resolves all occurring equalities.
@@ -411,7 +422,7 @@ public abstract class BaseGrounder implements Grounder {
 	 * May return <code>trueCondition</code> or <code>falseCondition</code>
 	 * if the condition simplifies to true or false, respectively.
 	 */
-	private AbstractCondition resolveEqualities(AbstractCondition cond) {
+	protected AbstractCondition resolveEqualities(AbstractCondition cond) {
 		
 		switch (cond.getConditionType()) {
 		case atomic:
@@ -421,6 +432,17 @@ public abstract class BaseGrounder implements Grounder {
 					return trueCondition;
 				} else {
 					return falseCondition;
+				}
+			} else if (cond instanceof DerivedCondition) {
+				DerivedPredicate p = ((DerivedCondition) cond).getPredicate().copy();
+				AbstractCondition c = resolveEqualities(p.getCondition());
+				if (trueCondition.equals(c)) {
+					return ((DerivedCondition) cond).isNegated() ? falseCondition : trueCondition;
+				} else if (falseCondition.equals(c)) {
+					return ((DerivedCondition) cond).isNegated() ? trueCondition : falseCondition;
+				} else {
+					p.setCondition(c);
+					return new DerivedCondition(p, ((Condition) cond).getArguments());
 				}
 			} else {
 				return atom.copy();
@@ -479,7 +501,15 @@ public abstract class BaseGrounder implements Grounder {
 		
 		switch (cond.getConditionType()) {
 		case atomic:
-			return true;
+			if (cond instanceof DerivedCondition) {
+				return false;
+				/*
+				return isConditionConjunctive(
+						((DerivedCondition) cond).getPredicate().getCondition(), 
+						insideConditionalEffect, insideQuantification);*/
+			} else {
+				return true;
+			}
 		case negation:
 			return ((Negation) cond).getChildCondition().getConditionType() == ConditionType.atomic;
 		case conjunction:

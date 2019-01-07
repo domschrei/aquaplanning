@@ -158,7 +158,7 @@ public class SimpleSatPlanner extends Planner {
 	}
 
 	/**
-	 * Clauses about about the transition between step and step+1
+	 * Clauses encoding the transition between step and step+1
 	 * @param problem
 	 * @param solver
 	 * @param step
@@ -179,7 +179,7 @@ public class SimpleSatPlanner extends Planner {
 			}
 		}
 		
-		// frame axioms -- if an atom changes there must and action causing it
+		// frame axioms -- if an atom changes then there must be an action causing it
 		for (int atomId = 0; atomId < problem.getNumAtoms(); atomId++) {
 			// change of atom from true to false
 			List<Action> supports = getSupportingActions(atomId, false);
@@ -193,7 +193,7 @@ public class SimpleSatPlanner extends Planner {
 			}
 			solver.addClause(p2n);
 
-			// change of atom form false to true
+			// change of atom from false to true
 			supports = getSupportingActions(atomId, true);
 			int[] n2p = new int[2+getSupportingActions(atomId, true).size()];
 			n2p[0] = getAtomSatVariable(atomId, step);

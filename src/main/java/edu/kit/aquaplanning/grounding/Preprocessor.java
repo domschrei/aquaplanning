@@ -11,8 +11,11 @@ import edu.kit.aquaplanning.model.lifted.Quantification.Quantifier;
 import edu.kit.aquaplanning.model.lifted.AbstractCondition;
 import edu.kit.aquaplanning.model.lifted.AbstractCondition.ConditionType;
 import edu.kit.aquaplanning.model.lifted.Argument;
+import edu.kit.aquaplanning.model.lifted.Condition;
 import edu.kit.aquaplanning.model.lifted.ConditionSet;
 import edu.kit.aquaplanning.model.lifted.ConsequentialCondition;
+import edu.kit.aquaplanning.model.lifted.DerivedCondition;
+import edu.kit.aquaplanning.model.lifted.DerivedPredicate;
 import edu.kit.aquaplanning.model.lifted.Implication;
 import edu.kit.aquaplanning.model.lifted.Negation;
 
@@ -42,14 +45,17 @@ public class Preprocessor {
 		
 		this.problem = problem;
 		
+		// Resolve derived predicates
+		if (config.substituteDerivedPredicates) {			
+			resolveDerivedPredicates();
+		}
+		
 		// Eliminate quantifications,
 		// Simplify structure of logical expressions,
 		// Convert to DNF, if desired
 		boolean convertToDNF = !config.keepDisjunctions;
 		simplifyProblem(convertToDNF);
-
 		if (convertToDNF) {
-			
 			// Split DNF operators w.r.t. their preconditions
 			// into new, simple operators
 			List<Operator> newOperators = new ArrayList<>();
@@ -119,6 +125,14 @@ public class Preprocessor {
 		
 		// All cases besides quantification: just propagating down
 		case atomic:
+			if (cond instanceof DerivedCondition) {
+				cond = cond.copy();
+				AbstractCondition inner = ((DerivedCondition) cond).getPredicate().getCondition();
+				((DerivedCondition) cond).getPredicate().setCondition(
+					instantiateQuantifications(inner)
+				);
+				return cond;
+			}
 			return cond.copy();
 		case negation:
 			Negation n = new Negation();
@@ -277,5 +291,83 @@ public class Preprocessor {
 		}
 		
 		return splitConds;
+	}
+	
+	private void resolveDerivedPredicates() {
+		
+		// Resolve derived predicates in operator preconditions
+		// and conditional effects
+		for (Operator op : problem.getOperators()) {
+			AbstractCondition cond = op.getPrecondition();
+			op.setPrecondition(resolveDerivedPredicates(cond));
+			cond = op.getEffect();
+			op.setEffect(resolveDerivedPredicates(cond));
+		}
+		
+		// Resolve derived predicates in goals
+		List<AbstractCondition> newGoals = new ArrayList<>();
+		for (AbstractCondition goal : problem.getGoals()) {
+			newGoals.add(resolveDerivedPredicates(goal));
+		}
+		problem.getGoals().clear();
+		problem.getGoals().addAll(newGoals);
+	}
+	
+	private AbstractCondition resolveDerivedPredicates(AbstractCondition cond) {
+		
+		switch (cond.getConditionType()) {
+		
+		// All cases besides atomic: just propagating down
+		case atomic:
+			if (cond instanceof DerivedCondition) {
+				// Return the condition which is inside the derived predicate
+				DerivedPredicate p = ((DerivedCondition) cond).getPredicate();
+				AbstractCondition innerCondition = ((DerivedPredicate) 
+					((Condition) cond).getPredicate()
+				).getCondition();
+				innerCondition = innerCondition.getConditionBoundToArguments(
+						p.getArguments(), ((Condition) cond).getArguments());
+				// There may be nested derived predicates
+				return resolveDerivedPredicates(innerCondition);
+			} else {				
+				return cond.copy();
+			}
+		case negation:
+			Negation n = new Negation();
+			n.setChildCondition(resolveDerivedPredicates(
+					((Negation) cond).getChildCondition()));
+			return n;
+		case conjunction:
+		case disjunction:
+			ConditionSet set = new ConditionSet(cond.getConditionType());
+			for (AbstractCondition c : ((ConditionSet) cond).getConditions()) {
+				set.add(resolveDerivedPredicates(c));
+			}
+			return set;
+		case consequential:
+			ConsequentialCondition condCC = (ConsequentialCondition) cond;
+			ConsequentialCondition cc = new ConsequentialCondition();
+			cc.setPrerequisite(resolveDerivedPredicates(condCC.getPrerequisite()));
+			cc.setConsequence(resolveDerivedPredicates(condCC.getConsequence()));
+			return cc;
+		case implication:
+			Implication condImp = (Implication) cond;
+			Implication i = new Implication();
+			i.setIfCondition(resolveDerivedPredicates(condImp.getIfCondition()));
+			i.setThenCondition(resolveDerivedPredicates(condImp.getThenCondition()));
+			return i;
+			
+		case quantification:
+			Quantification q = (Quantification) cond;
+			Quantification qNew = new Quantification(q.getQuantifier());
+			for (Argument arg : q.getVariables()) {
+				qNew.addVariable(arg);
+			}
+			qNew.setCondition(resolveDerivedPredicates(q.getCondition()));
+			return qNew;
+			
+		default:
+			return null;
+		}
 	}
 }

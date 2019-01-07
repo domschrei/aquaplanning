@@ -20,6 +20,7 @@ import edu.kit.aquaplanning.model.lifted.Quantification;
 import edu.kit.aquaplanning.model.lifted.AbstractCondition.ConditionType;
 import edu.kit.aquaplanning.model.lifted.Condition;
 import edu.kit.aquaplanning.model.lifted.ConditionSet;
+import edu.kit.aquaplanning.model.lifted.DerivedCondition;
 
 /**
  * Grounder doing a reachability analysis through some 
@@ -48,6 +49,7 @@ public class RelaxedPlanningGraphGrounder extends BaseGrounder {
 		constants.addAll(problem.getConstants());
 		constants.sort((c1, c2) -> c1.getName().compareTo(c2.getName()));
 		
+		// Will equality predicates remain in the problem?
 		if (config.keepEqualities) {
 			// add equality conditions
 			Predicate pEquals = problem.getPredicate("=");
@@ -89,10 +91,23 @@ public class RelaxedPlanningGraphGrounder extends BaseGrounder {
 		State initialState = new State(initialStateAtoms);
 		
 		// Extract goal
-		boolean simpleGoal = true;
+		AbstractCondition complexGoal = null;
 		List<Atom> goalAtoms = new ArrayList<>();
 		// For each goal
 		for (AbstractCondition cond : problem.getGoals()) {
+			
+			// Simplify equalities from condition, if necessary
+			if (!config.keepEqualities) {				
+				cond = resolveEqualities(cond);
+				if (trueCondition.equals(cond)) {
+					// Precondition is always true: not necessary in goal
+					continue;
+				} else if (falseCondition.equals(cond)) {
+					// Condition is always false: goal is unsatisfiable
+					return null;
+				}
+			}
+			
 			// Is the condition simple?
 			if (isConditionConjunctive(cond, false, false)) {				
 				if (cond.getConditionType() == ConditionType.quantification) {				
@@ -106,20 +121,26 @@ public class RelaxedPlanningGraphGrounder extends BaseGrounder {
 					List<Object> results = getSimpleAtoms(((ConditionSet) cond).getConditions());
 					goalAtoms.addAll((List<Atom>) results.get(0));
 				} else {
-					// Atom
-					Condition c = (Condition) cond;
-					Atom atom = atom(c.getPredicate(), c.getArguments());
-					atom.set(!c.isNegated());
-					goalAtoms.add(atom);
+					if (cond instanceof DerivedCondition) {
+						// Derived condition
+						complexGoal = cond;
+						break;
+					} else {						
+						// Atom
+						Condition c = (Condition) cond;
+						Atom atom = atom(c.getPredicate(), c.getArguments());
+						atom.set(!c.isNegated());
+						goalAtoms.add(atom);
+					}
 				}
 			} else {
 				// Complex condition
-				simpleGoal = false;
+				complexGoal = cond;
 				break;
 			}
 		}
 		Goal goal;
-		if (simpleGoal) {
+		if (complexGoal == null) {
 			// Goal with simple list of atoms
 			goal = new Goal(goalAtoms);
 		} else {
@@ -128,7 +149,7 @@ public class RelaxedPlanningGraphGrounder extends BaseGrounder {
 				throw new IllegalArgumentException("If the goal is complex, it "
 						+ "must be one single condition after preprocessing.");
 			}
-			Precondition pre = toPrecondition(problem.getGoals().get(0), false);
+			Precondition pre = toPrecondition(complexGoal, false);
 			goal = new Goal(pre);
 		}
 		

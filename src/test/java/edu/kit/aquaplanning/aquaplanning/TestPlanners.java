@@ -35,6 +35,11 @@ public class TestPlanners extends TestCase {
 		fullTest("testfiles/quantifications/domain.pddl", "testfiles/quantifications/p2.pddl");
 	}
 	
+	public void testDerivedPredicates() throws FileNotFoundException, IOException {
+
+		fullTest("testfiles/derivedPredicates/domain1.pddl", "testfiles/derivedPredicates/p1.pddl");
+	}
+	
 	public void testAdlFeatures() throws FileNotFoundException, IOException {
 
 		Configuration config = new Configuration();
@@ -98,10 +103,14 @@ public class TestPlanners extends TestCase {
 			
 		System.out.println("Parsing ...");
 		pp = new ProblemParser().parse(domainFile, problemFile);
+		String out = pp.toString();
+		assertTrue("String representation of problem is null", out != null);
 				
 		System.out.println("Grounding ...");
 		Grounder grounder = new RelaxedPlanningGraphGrounder(new Configuration());
 		gpp = grounder.ground(pp);
+		out = gpp.toString();
+		assertTrue("String representation of ground problem is null", out != null);
 		
 		assertTrue("No actions have been produced during grounding.",
 				gpp.getActions().size() > 0);

@@ -1,4 +1,5 @@
 package edu.kit.aquaplanning.parsing;
+
 // Generated from Pddl.g4 by ANTLR 4.7.1
 import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.CharStream;

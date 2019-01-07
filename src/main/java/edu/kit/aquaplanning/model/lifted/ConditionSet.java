@@ -55,7 +55,8 @@ public class ConditionSet extends AbstractCondition {
 			if (child.getConditionType() == type) {
 				// Simplify away nested AND/OR into a single set
 				for (AbstractCondition grandchild : ((ConditionSet) child).getConditions()) {
-					c.add(grandchild.simplify(negated));
+					// grandchild has already been simplified
+					c.add(grandchild);
 				}
 			} else {			
 				c.add(child);
