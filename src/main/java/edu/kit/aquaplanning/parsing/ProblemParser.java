@@ -22,8 +22,7 @@ import edu.kit.aquaplanning.model.lifted.Argument;
 import edu.kit.aquaplanning.model.lifted.Condition;
 import edu.kit.aquaplanning.model.lifted.ConditionSet;
 import edu.kit.aquaplanning.model.lifted.ConsequentialCondition;
-import edu.kit.aquaplanning.model.lifted.DerivedCondition;
-import edu.kit.aquaplanning.model.lifted.DerivedPredicate;
+import edu.kit.aquaplanning.model.lifted.Axiom;
 import edu.kit.aquaplanning.model.lifted.Implication;
 import edu.kit.aquaplanning.model.lifted.Negation;
 import edu.kit.aquaplanning.model.lifted.Operator;
@@ -74,7 +73,7 @@ public class ProblemParser extends PddlBaseListener {
 	private Map<String, Type> types;
 	private List<Argument> constants; // both from domain and problem
 	private Map<String, Predicate> predicates;
-	private Map<String, DerivedPredicate> derivedPredicates;
+	private Map<String, Axiom> derivedPredicates;
 	private List<Operator> operators;
 	private List<Condition> initialState;
 	private List<AbstractCondition> goals;
@@ -106,8 +105,10 @@ public class ProblemParser extends PddlBaseListener {
 	 */
 	public PlanningProblem parse(String domainFile, String problemFile) 
 			throws FileNotFoundException, IOException {
-				
+		
 		conditionStack = new Stack<>();
+		predicates = new HashMap<>();
+		derivedPredicates = new HashMap<>();
 
 		// Get domain
         ANTLRInputStream in = new ANTLRInputStream(new FileInputStream(domainFile));
@@ -135,11 +136,6 @@ public class ProblemParser extends PddlBaseListener {
         walker = new ParseTreeWalker();
         walker.walk(this, ctx);
 
-        // In case no derived predicates were entered...
-        if (derivedPredicates == null) {
-            derivedPredicates = new HashMap<>();
-        }
-        
         // Create object to return
         PlanningProblem problem = new PlanningProblem(domainName, problemName, 
         		types, constants, predicates, derivedPredicates, operators, 
@@ -345,24 +341,22 @@ public class ProblemParser extends PddlBaseListener {
 	public void enterPredicatesDef(PredicatesDefContext ctx) {
 		
 		context = ParseContext.predicateDefs;
-		predicates = new HashMap<>();
 	}
 	
 	@Override
 	public void enterAtomicFormulaSkeleton(AtomicFormulaSkeletonContext ctx) {
 		
+		// A new predicate is being defined; create the object
+		String predName = ctx.children.get(1).getText().toLowerCase();
 		if (context == ParseContext.predicateDefs) {
-			// A new predicate is being defined; create the object
-			String predName = ctx.children.get(1).getText().toLowerCase();
 			predicate = new Predicate(predName);
-			predicates.put(predName, predicate);
-			
 		} else if (context == ParseContext.derivedPredicateDef) {
-			// A derived predicate is being defined
-			String predName = ctx.children.get(1).getText().toLowerCase();
-			((DerivedPredicate) predicate).setName(predName);
-			derivedPredicates.put(predName, (DerivedPredicate) predicate);
+			predicate = new Predicate(predName, true);
+			if (!derivedPredicates.containsKey(predicate.getName())) {
+				derivedPredicates.put(predicate.getName(), new Axiom(predicate));
+			}
 		}
+		predicates.put(predName, predicate);
 	}
 
 	/**
@@ -397,8 +391,10 @@ public class ProblemParser extends PddlBaseListener {
 				
 			} else if (context == ParseContext.derivedPredicateDef) {	
 				// Add type to current predicate
+				predicate.addArgumentType(type);
+				// Add type to derived predicate argument list
 				String argName = ctx.children.get(childIdx).getText().toLowerCase();
-				((DerivedPredicate) predicate).addArgument(new Argument(argName, type));
+				derivedPredicates.get(predicate.getName()).addArgument(new Argument(argName, type));
 				
 			} else if (context == ParseContext.actionDef) {
 				// Add argument to current operator
@@ -454,7 +450,7 @@ public class ProblemParser extends PddlBaseListener {
 					} else if (context == ParseContext.derivedPredicateDef) {
 
 						String varName = ctx.children.get(childIdx).getText().toLowerCase();
-						((DerivedPredicate) predicate).addArgument(new Argument(varName, supertype));
+						derivedPredicates.get(predicate.getName()).addArgument(new Argument(varName, supertype));
 					}
 				}
 			}
@@ -471,12 +467,6 @@ public class ProblemParser extends PddlBaseListener {
 		// '(' ':derived' atomicFormulaSkeleton goalDesc ')'
 		
 		context = ParseContext.derivedPredicateDef;
-		if (derivedPredicates == null) {
-			derivedPredicates = new HashMap<>();
-		}
-		
-		DerivedPredicate p = new DerivedPredicate();
-		this.predicate = p;
 	}
 		
 	
@@ -621,15 +611,9 @@ public class ProblemParser extends PddlBaseListener {
 		String predicateName = ctx.children.get(1).getText().toLowerCase();
 		Predicate predicate = predicates.get(predicateName);
 		if (predicate == null) {
-			predicate = derivedPredicates.get(predicateName);
-			if (predicate == null) {
-				error("Predicate \"" + predicateName + "\" is undefined.");
-			} else {
-				cond = new DerivedCondition((DerivedPredicate) predicate);
-			}
-		} else {			
-			cond = new Condition(predicate);
+			error("Predicate \"" + predicateName + "\" is undefined.");	
 		}
+		cond = new Condition(predicate);
 		
 		// Add arguments of condition
 		for (int childIdx = 2; childIdx+1 < ctx.children.size(); childIdx++) {
@@ -654,17 +638,15 @@ public class ProblemParser extends PddlBaseListener {
 							type = new Type("quantified");
 						}
 					} // -- if not: type == null
+				}
 				
-				} else if (context == ParseContext.goalDef) {
-					error("Variables in goal specifications are illegal.");
-				
-				} else if (context == ParseContext.derivedPredicateDef) {
+				if (type == null && context == ParseContext.derivedPredicateDef) {
 					
 					// Derived predicate definition
-					DerivedPredicate p = (DerivedPredicate) predicate;
-					for (Argument arg : p.getArguments()) {
+					for (Argument arg : derivedPredicates.get(this.predicate.getName()).getArguments()) {
 						if (termStr.equalsIgnoreCase(arg.getName())) {
 							type = arg.getType();
+							break;
 						}
 					}
 				}
@@ -706,22 +688,19 @@ public class ProblemParser extends PddlBaseListener {
 			cond.addArgument(new Argument(termStr, type));
 		}
 		
-		// Add created condition to preconditions/effects
-		// of the current operator
-		
 		if (isInQuantification()) {
 			// We need to infer the types of bound variables
 			Quantification q = currentQuantification();
 			inferQuantifiedTypes(q, cond);
 		}
+		
+		// Normal predicate: atomic condition
 		enterCondition(cond);
 		exitCondition();
 		
 		// Basic checks for correct typing and predicate use
 		checkConsistency(cond);
 	}		
-	
-	
 	
 	// Effect definition
 	
@@ -924,15 +903,9 @@ public class ProblemParser extends PddlBaseListener {
 		String predicateName = ctx.children.get(1).getText().toLowerCase();
 		Predicate predicate = predicates.get(predicateName);
 		if (predicate == null) {
-			predicate = derivedPredicates.get(predicateName);
-			if (predicate == null) {
-				error("Predicate \"" + predicateName + "\" is undefined.");
-			} else {
-				condition = new DerivedCondition((DerivedPredicate) predicate);
-			}
-		} else {
-			condition = new Condition(predicate);
-		}		
+			error("Predicate \"" + predicateName + "\" is undefined.");
+		}
+		condition = new Condition(predicate);
 		
 		// Parse condition's arguments
 		for (int childIdx = 2; childIdx+1 < ctx.getChildCount(); childIdx++) {
@@ -1112,6 +1085,7 @@ public class ProblemParser extends PddlBaseListener {
 		if (condition != null) {
 			switch (condition.getConditionType()) {
 			case atomic:
+			case derived:
 				break;
 			case conjunction:
 			case disjunction:
@@ -1173,7 +1147,7 @@ public class ProblemParser extends PddlBaseListener {
 		} else if (context == ParseContext.initialStateDef) {
 			initialState.add((Condition) cond);
 		} else if (context == ParseContext.derivedPredicateDef) {
-			((DerivedPredicate) predicate).setCondition(cond);
+			derivedPredicates.get(predicate.getName()).setCondition(cond);
 		}
 	}
 	

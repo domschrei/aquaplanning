@@ -6,12 +6,13 @@ import java.util.List;
 public class Precondition {
 
 	public enum PreconditionType {
-		atom, negation, conjunction, disjunction, implication;
+		atom, negation, conjunction, disjunction, implication, derived;
 	}
 	
 	private PreconditionType type;
 	private List<Precondition> children;
 	private Atom atom;
+	private DerivedAtom derivedAtom;
 	
 	public Precondition(PreconditionType type) {
 		this.type = type;
@@ -24,6 +25,10 @@ public class Precondition {
 	
 	public void setAtom(Atom atom) {
 		this.atom = atom;
+	}
+	
+	public void setDerivedAtom(DerivedAtom derivedAtom) {
+		this.derivedAtom = derivedAtom;
 	}
 	
 	public Precondition getSingleChild() {
@@ -55,6 +60,8 @@ public class Precondition {
 		switch (type) {
 		case atom:
 			return state.holds(atom);
+		case derived:
+			return state.holds(derivedAtom);
 		case conjunction:
 			for (Precondition pre : children) {
 				if (!pre.holds(state)) {
@@ -83,6 +90,8 @@ public class Precondition {
 		switch (type) {
 		case atom:
 			return !atom.getValue() || state.holds(atom);
+		case derived:
+			return state.holds(derivedAtom);
 		case negation:
 			return true;
 		case conjunction:
@@ -114,6 +123,8 @@ public class Precondition {
 			return atom.toString();
 		case negation:
 			return "¬" + getSingleChild().toString();
+		case derived:
+			return derivedAtom.getName();
 		case conjunction:
 		case disjunction:
 			String out = "{ " + (type == PreconditionType.conjunction ? "AND" : "OR") + " ";

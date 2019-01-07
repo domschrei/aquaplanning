@@ -1,7 +1,6 @@
 package edu.kit.aquaplanning.grounding;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import edu.kit.aquaplanning.Configuration;
@@ -16,11 +15,9 @@ import edu.kit.aquaplanning.model.lifted.Argument;
 import edu.kit.aquaplanning.model.lifted.Operator;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.model.lifted.Predicate;
-import edu.kit.aquaplanning.model.lifted.Quantification;
 import edu.kit.aquaplanning.model.lifted.AbstractCondition.ConditionType;
 import edu.kit.aquaplanning.model.lifted.Condition;
 import edu.kit.aquaplanning.model.lifted.ConditionSet;
-import edu.kit.aquaplanning.model.lifted.DerivedCondition;
 
 /**
  * Grounder doing a reachability analysis through some 
@@ -88,6 +85,7 @@ public class RelaxedPlanningGraphGrounder extends BaseGrounder {
 		graph.getLiftedState(0).forEach(cond -> {
 			initialStateAtoms.add(atom(cond.getPredicate(), cond.getArguments()));
 		});
+		initialStateAtoms.add(atom(trueCondition.getPredicate(), trueCondition.getArguments()));
 		State initialState = new State(initialStateAtoms);
 		
 		// Extract goal
@@ -109,29 +107,17 @@ public class RelaxedPlanningGraphGrounder extends BaseGrounder {
 			}
 			
 			// Is the condition simple?
-			if (isConditionConjunctive(cond, false, false)) {				
-				if (cond.getConditionType() == ConditionType.quantification) {				
-					// Resolve quantifications into flat sets of atoms
-					AbstractCondition condition = ArgumentCombination.resolveQuantification(
-							(Quantification) cond, problem, constants);
-					List<Object> results = getSimpleAtoms(Arrays.asList(condition));
-					goalAtoms.addAll((List<Atom>) results.get(0));
-				} else if (cond.getConditionType() == ConditionType.conjunction) {
+			if (isConditionConjunctive(cond, false)) {				
+				if (cond.getConditionType() == ConditionType.conjunction) {
 					// Conjunction
 					List<Object> results = getSimpleAtoms(((ConditionSet) cond).getConditions());
 					goalAtoms.addAll((List<Atom>) results.get(0));
-				} else {
-					if (cond instanceof DerivedCondition) {
-						// Derived condition
-						complexGoal = cond;
-						break;
-					} else {						
-						// Atom
-						Condition c = (Condition) cond;
-						Atom atom = atom(c.getPredicate(), c.getArguments());
-						atom.set(!c.isNegated());
-						goalAtoms.add(atom);
-					}
+				} else {					
+					// Atom
+					Condition c = (Condition) cond;
+					Atom atom = atom(c.getPredicate(), c.getArguments());
+					atom.set(!c.isNegated());
+					goalAtoms.add(atom);
 				}
 			} else {
 				// Complex condition
@@ -152,6 +138,9 @@ public class RelaxedPlanningGraphGrounder extends BaseGrounder {
 			Precondition pre = toPrecondition(complexGoal, false);
 			goal = new Goal(pre);
 		}
+		
+		// Ground derived predicates' semantics
+		groundDerivedAtoms();
 		
 		// Assemble finished problem
 		GroundPlanningProblem planningProblem = new GroundPlanningProblem(initialState, actions, 

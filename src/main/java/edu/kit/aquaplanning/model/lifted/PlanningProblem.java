@@ -11,7 +11,7 @@ public class PlanningProblem {
 	private Map<String, Type> types;
 	private List<Argument> constants; // both from domain and problem
 	private Map<String, Predicate> predicates;
-	private Map<String, DerivedPredicate> derivedPredicates;
+	private Map<String, Axiom> derivedPredicates;
 	private List<Operator> operators;
 	private List<Condition> initialState;
 	private List<AbstractCondition> goals;
@@ -19,7 +19,7 @@ public class PlanningProblem {
 	
 	public PlanningProblem(String domainName, String problemName, Map<String, Type> types, 
 			List<Argument> constants, Map<String, Predicate> predicates, 
-			Map<String, DerivedPredicate> derivedPredicates,
+			Map<String, Axiom> derivedPredicates,
 			List<Operator> operators, List<Condition> initialState, 
 			List<AbstractCondition> goals, boolean hasActionCosts) {
 		super();
@@ -87,7 +87,7 @@ public class PlanningProblem {
 		return predicates;
 	}
 	
-	public Map<String, DerivedPredicate> getDerivedPredicates() {
+	public Map<String, Axiom> getDerivedPredicates() {
 		return derivedPredicates;
 	}
 	
@@ -128,8 +128,8 @@ public class PlanningProblem {
 			//if (p.toString().charAt(0) != '_' && p.toString().charAt(0) != '=')
 				str.append("  " + p + "\n");
 		}
-		for (DerivedPredicate p : derivedPredicates.values()) {
-			str.append("  " + p + "\n");
+		for (Axiom c : derivedPredicates.values()) {
+			str.append("  " + c.getPredicate() + " := " + c.getCondition() + "\n");
 		}
 		str.append("Operators:\n");
 		for (Operator o : operators) {

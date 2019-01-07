@@ -2,6 +2,7 @@ package edu.kit.aquaplanning.grounding;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.model.lifted.Operator;
@@ -11,11 +12,9 @@ import edu.kit.aquaplanning.model.lifted.Quantification.Quantifier;
 import edu.kit.aquaplanning.model.lifted.AbstractCondition;
 import edu.kit.aquaplanning.model.lifted.AbstractCondition.ConditionType;
 import edu.kit.aquaplanning.model.lifted.Argument;
-import edu.kit.aquaplanning.model.lifted.Condition;
 import edu.kit.aquaplanning.model.lifted.ConditionSet;
 import edu.kit.aquaplanning.model.lifted.ConsequentialCondition;
-import edu.kit.aquaplanning.model.lifted.DerivedCondition;
-import edu.kit.aquaplanning.model.lifted.DerivedPredicate;
+import edu.kit.aquaplanning.model.lifted.Axiom;
 import edu.kit.aquaplanning.model.lifted.Implication;
 import edu.kit.aquaplanning.model.lifted.Negation;
 
@@ -45,16 +44,12 @@ public class Preprocessor {
 		
 		this.problem = problem;
 		
-		// Resolve derived predicates
-		if (config.substituteDerivedPredicates) {			
-			resolveDerivedPredicates();
-		}
-		
 		// Eliminate quantifications,
 		// Simplify structure of logical expressions,
 		// Convert to DNF, if desired
 		boolean convertToDNF = !config.keepDisjunctions;
 		simplifyProblem(convertToDNF);
+		
 		if (convertToDNF) {
 			// Split DNF operators w.r.t. their preconditions
 			// into new, simple operators
@@ -76,6 +71,7 @@ public class Preprocessor {
 		List<Operator> operators = new ArrayList<>();
 		for (Operator op : problem.getOperators()) {
 			
+			
 			// Preconditions
 			AbstractCondition pre = op.getPrecondition();
 			pre = instantiateQuantifications(pre);
@@ -84,6 +80,7 @@ public class Preprocessor {
 				pre = pre.getDNF();
 			}
 			op.setPrecondition(pre);
+			
 			
 			// Effects
 			AbstractCondition eff = op.getEffect();
@@ -104,12 +101,24 @@ public class Preprocessor {
 		for (AbstractCondition cond : problem.getGoals()) {
 			goalSet.add(cond);
 		}
-		AbstractCondition newGoal = instantiateQuantifications(goalSet).simplify(false);
+		AbstractCondition newGoal = instantiateQuantifications(goalSet);
+		newGoal = newGoal.simplify(false);
 		if (toDNF) {
 			newGoal = newGoal.getDNF();
 		}
 		problem.getGoals().clear();
 		problem.getGoals().add(newGoal);
+		
+		// Simplify derived conditions
+		Map<String, Axiom> derived = problem.getDerivedPredicates();
+		for (Axiom cond : derived.values()) {
+			AbstractCondition c = cond.getCondition();
+			c = instantiateQuantifications(c).simplify(false);
+			if (toDNF) {
+				c = c.getDNF();
+			}
+			cond.setCondition(c);
+		}
 	}
 	
 	/**
@@ -125,14 +134,6 @@ public class Preprocessor {
 		
 		// All cases besides quantification: just propagating down
 		case atomic:
-			if (cond instanceof DerivedCondition) {
-				cond = cond.copy();
-				AbstractCondition inner = ((DerivedCondition) cond).getPredicate().getCondition();
-				((DerivedCondition) cond).getPredicate().setCondition(
-					instantiateQuantifications(inner)
-				);
-				return cond;
-			}
 			return cond.copy();
 		case negation:
 			Negation n = new Negation();
@@ -293,6 +294,7 @@ public class Preprocessor {
 		return splitConds;
 	}
 	
+	/*
 	private void resolveDerivedPredicates() {
 		
 		// Resolve derived predicates in operator preconditions
@@ -311,8 +313,9 @@ public class Preprocessor {
 		}
 		problem.getGoals().clear();
 		problem.getGoals().addAll(newGoals);
-	}
+	}*/
 	
+	/*
 	private AbstractCondition resolveDerivedPredicates(AbstractCondition cond) {
 		
 		switch (cond.getConditionType()) {
@@ -369,5 +372,5 @@ public class Preprocessor {
 		default:
 			return null;
 		}
-	}
+	}*/
 }

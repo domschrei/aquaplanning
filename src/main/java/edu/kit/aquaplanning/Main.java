@@ -1,12 +1,15 @@
 package edu.kit.aquaplanning;
 
 import java.io.FileWriter;
+import java.io.IOException;
 
 import edu.kit.aquaplanning.grounding.Grounder;
 import edu.kit.aquaplanning.grounding.RelaxedPlanningGraphGrounder;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
+import edu.kit.aquaplanning.optimization.Clock;
+import edu.kit.aquaplanning.optimization.SimplePlanOptimizer;
 import edu.kit.aquaplanning.parsing.ProblemParser;
 import edu.kit.aquaplanning.planners.Planner;
 import edu.kit.aquaplanning.validate.Validator;
@@ -58,6 +61,21 @@ public class Main {
 		return config;
 	}
 	
+	/**
+	 * Prints the provided plan to stdout. 
+	 * If the config says so, also outputs the plan to a file.
+	 */
+	private static void printPlan(Configuration config, Plan plan) throws IOException {
+		
+		System.out.println(plan);
+		if (config.planOutputFile != null) {
+			// Write plan to file
+			FileWriter w = new FileWriter(config.planOutputFile);
+			w.write(plan.toString());
+			w.close();
+		}
+	}
+	
 	public static void main(String[] args) throws Exception {
 		
 		System.out.println("This is Aquaplanning - QUick Automated Planning.");
@@ -101,14 +119,16 @@ public class Main {
 				
 				System.out.println("Planner finished with a plan of length " 
 						+ plan.getLength() + ".");
+				printPlan(config, plan);
 				
-				// Print found plan
-				System.out.println(plan);
-				if (config.planOutputFile != null) {
-					// Write plan to file
-					FileWriter w = new FileWriter(config.planOutputFile);
-					w.write(plan.toString());
-					w.close();
+				if (config.optimizePlan) {
+					// Employ plan optimization
+					
+					System.out.println("Plan optimization ...");
+					SimplePlanOptimizer o = new SimplePlanOptimizer(planningProblem);
+					plan = o.improvePlan(plan, new Clock(5000));
+					System.out.println("Final plan has a length of " + plan.getLength() + ".");
+					printPlan(config, plan);
 				}
 				
 				// Step 4: Validate plan (directly outputting any errors)

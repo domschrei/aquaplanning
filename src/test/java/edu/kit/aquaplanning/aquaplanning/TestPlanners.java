@@ -38,6 +38,8 @@ public class TestPlanners extends TestCase {
 	public void testDerivedPredicates() throws FileNotFoundException, IOException {
 
 		fullTest("testfiles/derivedPredicates/domain1.pddl", "testfiles/derivedPredicates/p1.pddl");
+		fullTest("testfiles/derivedPredicates/domain2.pddl", "testfiles/derivedPredicates/p2.pddl");
+		fullTest("testfiles/derivedPredicates/domain3.pddl", "testfiles/derivedPredicates/p3.pddl");
 	}
 	
 	public void testAdlFeatures() throws FileNotFoundException, IOException {

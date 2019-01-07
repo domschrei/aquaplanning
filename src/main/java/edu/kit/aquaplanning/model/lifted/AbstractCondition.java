@@ -5,7 +5,7 @@ import java.util.List;
 public abstract class AbstractCondition {
 
 	public enum ConditionType {
-		atomic, consequential, quantification, conjunction, disjunction, negation, implication;
+		atomic, consequential, quantification, conjunction, disjunction, negation, implication, derived;
 	}
 	
 	protected ConditionType conditionType;
