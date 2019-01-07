@@ -71,7 +71,6 @@ public class Preprocessor {
 		List<Operator> operators = new ArrayList<>();
 		for (Operator op : problem.getOperators()) {
 			
-			
 			// Preconditions
 			AbstractCondition pre = op.getPrecondition();
 			pre = instantiateQuantifications(pre);
@@ -80,7 +79,6 @@ public class Preprocessor {
 				pre = pre.getDNF();
 			}
 			op.setPrecondition(pre);
-			
 			
 			// Effects
 			AbstractCondition eff = op.getEffect();

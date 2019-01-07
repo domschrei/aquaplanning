@@ -1223,6 +1223,9 @@ public class ProblemParser extends PddlBaseListener {
 				} else if (pre.getExpRight() == null) {
 					pre.setExpRight(exp);
 				}
+			} else if (cond.getConditionType() == ConditionType.numericEffect) {
+				NumericEffect eff = (NumericEffect) cond;
+				eff.setExpression(exp);
 			}
 		}
 		

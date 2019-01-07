@@ -73,4 +73,27 @@ public class NumericEffect extends AbstractCondition {
 	public AbstractCondition copy() {
 		return new NumericEffect(type, function.copy(), expression.copy());
 	}
+	
+	@Override
+	public String toString() {
+		String out = function.toString();
+		switch (type) {
+		case assign:
+			out += ":=";
+			break;
+		case increase:
+			out += "+=";
+			break;
+		case decrease:
+			out += "-=";
+			break;
+		case scaleUp:
+			out += "*=";
+			break;
+		case scaleDown:
+			out += "/=";
+			break;
+		}
+		return out + expression;
+	}
 }
