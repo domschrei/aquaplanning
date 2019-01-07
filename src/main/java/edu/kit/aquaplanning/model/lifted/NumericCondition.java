@@ -41,6 +41,10 @@ public class NumericCondition extends AbstractCondition {
 		this.expRight = expRight;
 	}
 	
+	public Comparator getComparator() {
+		return comparator;
+	}
+	
 	public NumericExpression getExpLeft() {
 		return expLeft;
 	}
@@ -75,8 +79,11 @@ public class NumericCondition extends AbstractCondition {
 	
 	@Override
 	public AbstractCondition getConditionBoundToArguments(List<Argument> refArgs, List<Argument> argValues) {
-		// TODO Auto-generated method stub
-		return null;
+		
+		NumericCondition copy = copy();
+		copy.expLeft = copy.expLeft.getExpressionBoundToArguments(refArgs, argValues);
+		copy.expRight = copy.expRight.getExpressionBoundToArguments(refArgs, argValues);
+		return copy;
 	}
 
 	@Override
@@ -90,7 +97,7 @@ public class NumericCondition extends AbstractCondition {
 	}
 
 	@Override
-	public AbstractCondition copy() {
+	public NumericCondition copy() {
 		NumericCondition c = new NumericCondition(comparator);
 		c.setExpLeft(expLeft.copy());
 		c.setExpRight(expRight.copy());

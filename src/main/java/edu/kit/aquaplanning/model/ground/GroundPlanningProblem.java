@@ -13,15 +13,18 @@ public class GroundPlanningProblem {
 	private Goal goal;
 	private boolean hasActionCosts;
 	private List<String> atomNames;
+	private List<String> numericAtomNames;
 	
 	public GroundPlanningProblem(State initState, List<Action> actions, 
-			Goal goal, boolean hasActionCosts, List<String> atomNames) {
+			Goal goal, boolean hasActionCosts, List<String> atomNames, 
+			List<String> numericAtomNames) {
 		
 		this.initialState = initState;
 		this.actions = actions;
 		this.goal = goal;
 		this.hasActionCosts = hasActionCosts;
 		this.atomNames = atomNames;
+		this.numericAtomNames = numericAtomNames;
 	}
 	
 	public State getInitialState() {
@@ -71,6 +74,9 @@ public class GroundPlanningProblem {
 			if (atoms.get(i)) {
 				out += atomNames.get(i) + " ";
 			}
+		}
+		for (int i = 0; i < numericAtomNames.size(); i++) {
+			out += numericAtomNames.get(i) + "=" + state.get(new NumericAtom(i, numericAtomNames.get(i), 0)) + " ";
 		}
 		return out + "}";
 	}

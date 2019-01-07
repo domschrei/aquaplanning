@@ -3,16 +3,22 @@ package edu.kit.aquaplanning.model.ground;
 import java.util.ArrayList;
 import java.util.List;
 
+import edu.kit.aquaplanning.model.lifted.NumericCondition.Comparator;
+
 public class Precondition {
 
 	public enum PreconditionType {
-		atom, negation, conjunction, disjunction, implication, derived;
+		atom, negation, conjunction, disjunction, implication, derived, numeric;
 	}
 	
 	private PreconditionType type;
 	private List<Precondition> children;
 	private Atom atom;
 	private DerivedAtom derivedAtom;
+	
+	private Comparator comparator;
+	private GroundNumericExpression expLeft;
+	private GroundNumericExpression expRight;
 	
 	public Precondition(PreconditionType type) {
 		this.type = type;
@@ -29,6 +35,18 @@ public class Precondition {
 	
 	public void setDerivedAtom(DerivedAtom derivedAtom) {
 		this.derivedAtom = derivedAtom;
+	}
+	
+	public void setComparator(Comparator comparator) {
+		this.comparator = comparator;
+	}
+	
+	public void setExpLeft(GroundNumericExpression expLeft) {
+		this.expLeft = expLeft;
+	}
+	
+	public void setExpRight(GroundNumericExpression expRight) {
+		this.expRight = expRight;
 	}
 	
 	public Precondition getSingleChild() {
@@ -80,6 +98,20 @@ public class Precondition {
 			return !getSingleChild().holds(state);
 		case implication:
 			return !children.get(0).holds(state) || children.get(1).holds(state);
+		case numeric:
+			switch (comparator) {
+			case greater:
+				return expLeft.evaluate(state) > expRight.evaluate(state);
+			case greaterEquals:
+				return expLeft.evaluate(state) >= expRight.evaluate(state);
+			case lower:
+				return expLeft.evaluate(state) < expRight.evaluate(state);
+			case lowerEquals:
+				return expLeft.evaluate(state) <= expRight.evaluate(state);
+			case equals:
+				return Math.abs(expLeft.evaluate(state) - expRight.evaluate(state)) < 0.000001;
+			}
+			throw new IllegalArgumentException();
 		default:
 			throw new IllegalArgumentException("Invalid precondition type \"" + type + "\".");
 		}
@@ -110,6 +142,8 @@ public class Precondition {
 			return false;
 		case implication:
 			return true;
+		case numeric:
+			return true; // TODO better abstraction
 		default:
 			throw new IllegalArgumentException("Invalid precondition type \"" + type + "\".");
 		}
@@ -134,6 +168,8 @@ public class Precondition {
 			return out + "}";
 		case implication:
 			return "{ " + children.get(0).toString() + " => " + children.get(1).toString() + " }";
+		case numeric:
+			return expLeft + " " + comparator + " " + expRight;
 		default:
 			return "error";
 		}

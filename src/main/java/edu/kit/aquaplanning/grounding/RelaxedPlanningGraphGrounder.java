@@ -8,6 +8,7 @@ import edu.kit.aquaplanning.model.ground.Action;
 import edu.kit.aquaplanning.model.ground.Atom;
 import edu.kit.aquaplanning.model.ground.Goal;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
+import edu.kit.aquaplanning.model.ground.NumericAtom;
 import edu.kit.aquaplanning.model.ground.Precondition;
 import edu.kit.aquaplanning.model.ground.State;
 import edu.kit.aquaplanning.model.lifted.AbstractCondition;
@@ -18,6 +19,7 @@ import edu.kit.aquaplanning.model.lifted.Predicate;
 import edu.kit.aquaplanning.model.lifted.AbstractCondition.ConditionType;
 import edu.kit.aquaplanning.model.lifted.Condition;
 import edu.kit.aquaplanning.model.lifted.ConditionSet;
+import edu.kit.aquaplanning.model.lifted.Function;
 
 /**
  * Grounder doing a reachability analysis through some 
@@ -87,6 +89,10 @@ public class RelaxedPlanningGraphGrounder extends BaseGrounder {
 		});
 		initialStateAtoms.add(atom(trueCondition.getPredicate(), trueCondition.getArguments()));
 		State initialState = new State(initialStateAtoms);
+		for (Function f : problem.getInitialFunctionValues().keySet()) {
+			NumericAtom atom = numericAtom(f, problem.getInitialFunctionValues().get(f));
+			initialState.set(atom);
+		}
 		
 		// Extract goal
 		AbstractCondition complexGoal = null;
@@ -144,7 +150,7 @@ public class RelaxedPlanningGraphGrounder extends BaseGrounder {
 		
 		// Assemble finished problem
 		GroundPlanningProblem planningProblem = new GroundPlanningProblem(initialState, actions, 
-				goal, problem.hasActionCosts(), extractAtomNames());
+				goal, problem.hasActionCosts(), extractAtomNames(), extractNumericAtomNames());
 		return planningProblem;
 	}
 }

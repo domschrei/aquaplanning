@@ -31,7 +31,19 @@ public class NumericEffect extends AbstractCondition {
 	public void setExpression(NumericExpression expression) {
 		this.expression = expression;
 	}
+	
+	public Function getFunction() {
+		return function;
+	}
 
+	public NumericExpression getExpression() {
+		return expression;
+	}
+	
+	public Type getType() {
+		return type;
+	}
+	
 	@Override
 	public AbstractCondition getConditionBoundToArguments(List<Argument> refArgs, List<Argument> argValues) {
 		return new NumericEffect(type, function.getFunctionBoundToArguments(refArgs, argValues), 

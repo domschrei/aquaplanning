@@ -45,7 +45,7 @@ public class GroundNumericExpression {
 		case subtraction:
 		case multiplication:
 		case division:
-			float value = children.get(0).value;
+			float value = children.get(0).evaluate(s);
 			for (int i = 1; i < children.size(); i++) {
 				GroundNumericExpression child = children.get(i);
 				if (type == TermType.addition) {

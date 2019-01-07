@@ -31,4 +31,9 @@ public class NumericAtom {
 	public NumericAtom copy() {
 		return new NumericAtom(id, name, value);
 	}
+	
+	@Override
+	public String toString() {
+		return name;
+	}
 }

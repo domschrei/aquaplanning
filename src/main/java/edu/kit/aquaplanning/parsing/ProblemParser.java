@@ -154,8 +154,8 @@ public class ProblemParser extends PddlBaseListener {
         
         // Create object to return
         PlanningProblem problem = new PlanningProblem(domainName, problemName, 
-        		types, constants, predicates, derivedPredicates, operators, 
-        		initialState, goals, hasActionCosts);
+        		types, constants, predicates, derivedPredicates, functions, 
+        		operators, initialState, initialFunctionValues, goals, hasActionCosts);
         return problem;
 	}
 	
@@ -340,7 +340,7 @@ public class ProblemParser extends PddlBaseListener {
 	@Override
 	public void enterFunctionList(FunctionListContext ctx) {
 		
-		if (ctx.getText().equalsIgnoreCase("(total-cost)-number")) {
+		if (ctx.getText().toLowerCase().contains("(total-cost)-number")) {
 			// Metric function detected
 			hasActionCosts = true;
 		}
@@ -423,8 +423,7 @@ public class ProblemParser extends PddlBaseListener {
 				
 			} else if (context == ParseContext.functionsDef) {
 				// Add argument to function
-				String argName = ctx.children.get(childIdx).getText().toLowerCase();
-				function.addArgument(new Argument(argName, type));
+				function.addArgumentType(type);
 			}
 		}
 	}
@@ -792,7 +791,7 @@ public class ProblemParser extends PddlBaseListener {
 		}
 		for (int i = 2; i+1 < ctx.children.size(); i++) {
 			String arg = ctx.children.get(i).getText().toLowerCase();
-			Type type = function.getArgumentTypes().get(i-1);
+			Type type = function.getArgumentTypes().get(i-2);
 			function.addArgument(new Argument(arg, type));
 		}
 		

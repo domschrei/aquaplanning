@@ -134,13 +134,10 @@ public class Effect {
 			}
 			break;
 		case numeric:
-			// Delete-relaxation extended to numeric effects:
-			// Ignore value updates which decrease function values
+			// TODO Delete-relaxation extended to numeric effects
 			float result = expression.evaluate(oldState);
-			if (result >= oldState.get(function)) {				
-				function.setValue(result);
-				newState.set(function);
-			}
+			function.setValue(result);
+			newState.set(function);
 			break;
 		}
 	}
@@ -163,7 +160,7 @@ public class Effect {
 			}
 			return out + "}";
 		case numeric:
-			out = function + ":=" + expression;
+			return function + ":=" + expression;
 		default:
 			return "error";
 		}

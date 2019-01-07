@@ -17,7 +17,6 @@ public class Function {
 	
 	public void addArgument(Argument arg) {
 		this.arguments.add(arg);
-		this.argumentTypes.add(arg.getType());
 	}
 	
 	public void addArgumentType(Type type) {

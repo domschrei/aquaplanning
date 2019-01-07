@@ -43,6 +43,7 @@ public class State {
 		atoms = (AtomSet) other.atoms.clone();
 		this.derivedAtoms = new HashMap<>(); // TODO clone?
 		this.numericAtoms = new HashMap<>();
+		this.numericAtoms.putAll(other.numericAtoms);
 	}
 
 	/**
@@ -206,6 +207,10 @@ public class State {
 		State other = (State) obj;
 		if (!other.atoms.equals(atoms))
 			return false;
+		for (int i = 0; i < numericAtoms.size(); i++) {		
+			if (!other.numericAtoms.get(i).equals(numericAtoms.get(i)))
+				return false;
+		}
 		return true;
 	}
 	
@@ -216,6 +221,10 @@ public class State {
 		for (int i = 0; i < atoms.size(); i++) {
 			boolean atom = atoms.get(i);
 			result = prime * result + (atom ? 1 : 0);
+		}
+		for (int i = 0; i < numericAtoms.size(); i++) {
+			Float atom = numericAtoms.get(i);
+			result = prime * result + atom.hashCode();
 		}
 		return result;
 	}
@@ -230,6 +239,10 @@ public class State {
 		for (int i = 0; i < atoms.size(); i++) {
 			boolean atom = atoms.get(i);
 			builder.append((atom ? "1" : "0") + " ");
+		}
+		for (int i = 0; i < numericAtoms.size(); i++) {
+			float atom = numericAtoms.get(i);
+			builder.append(atom + " ");
 		}
 		return builder.toString();
 	}

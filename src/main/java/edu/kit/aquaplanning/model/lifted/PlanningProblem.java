@@ -12,15 +12,18 @@ public class PlanningProblem {
 	private List<Argument> constants; // both from domain and problem
 	private Map<String, Predicate> predicates;
 	private Map<String, Axiom> derivedPredicates;
+	private Map<String, Function> functions;
 	private List<Operator> operators;
 	private List<Condition> initialState;
+	private Map<Function, Float> initialFunctionValues;
 	private List<AbstractCondition> goals;
 	private boolean hasActionCosts;
 	
 	public PlanningProblem(String domainName, String problemName, Map<String, Type> types, 
 			List<Argument> constants, Map<String, Predicate> predicates, 
-			Map<String, Axiom> derivedPredicates,
+			Map<String, Axiom> derivedPredicates, Map<String, Function> functions,
 			List<Operator> operators, List<Condition> initialState, 
+			Map<Function, Float> initialFunctionValues,
 			List<AbstractCondition> goals, boolean hasActionCosts) {
 		super();
 		this.domainName = domainName;
@@ -29,8 +32,10 @@ public class PlanningProblem {
 		this.constants = constants;
 		this.predicates = predicates;
 		this.derivedPredicates = derivedPredicates;
+		this.functions = functions;
 		this.operators = operators;
 		this.initialState = initialState;
+		this.initialFunctionValues = initialFunctionValues;
 		this.goals = goals;
 		this.hasActionCosts = hasActionCosts;
 	}
@@ -91,12 +96,20 @@ public class PlanningProblem {
 		return derivedPredicates;
 	}
 	
+	public Map<String, Function> getFunctions() {
+		return functions;
+	}
+	
 	public List<Operator> getOperators() {
 		return operators;
 	}
 	
 	public List<Condition> getInitialState() {
 		return initialState;
+	}
+	
+	public Map<Function, Float> getInitialFunctionValues() {
+		return initialFunctionValues;
 	}
 	
 	public List<AbstractCondition> getGoals() {

@@ -146,7 +146,7 @@ public class Action {
 		
 		// Apply positive conditional effects, if applicable
 		for (ConditionalEffect condEffect : conditionalEffects) {
-			
+
 			// Are all POSITIVE conditions satisfied?
 			boolean isActive = state.holdsAll(condEffect.getConditionsPos());
 

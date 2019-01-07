@@ -12,6 +12,8 @@ import edu.kit.aquaplanning.model.ground.Atom;
 import edu.kit.aquaplanning.model.ground.ConditionalEffect;
 import edu.kit.aquaplanning.model.ground.DerivedAtom;
 import edu.kit.aquaplanning.model.ground.Effect;
+import edu.kit.aquaplanning.model.ground.GroundNumericExpression;
+import edu.kit.aquaplanning.model.ground.NumericAtom;
 import edu.kit.aquaplanning.model.ground.Effect.EffectType;
 import edu.kit.aquaplanning.model.ground.Precondition;
 import edu.kit.aquaplanning.model.ground.Precondition.PreconditionType;
@@ -21,13 +23,19 @@ import edu.kit.aquaplanning.model.lifted.Argument;
 import edu.kit.aquaplanning.model.lifted.Condition;
 import edu.kit.aquaplanning.model.lifted.ConditionSet;
 import edu.kit.aquaplanning.model.lifted.ConsequentialCondition;
+import edu.kit.aquaplanning.model.lifted.Function;
 import edu.kit.aquaplanning.model.lifted.Axiom;
 import edu.kit.aquaplanning.model.lifted.Implication;
 import edu.kit.aquaplanning.model.lifted.Negation;
+import edu.kit.aquaplanning.model.lifted.NumericCondition;
+import edu.kit.aquaplanning.model.lifted.NumericEffect;
+import edu.kit.aquaplanning.model.lifted.NumericEffect.Type;
+import edu.kit.aquaplanning.model.lifted.NumericExpression;
 import edu.kit.aquaplanning.model.lifted.Operator;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.model.lifted.Predicate;
 import edu.kit.aquaplanning.model.lifted.AbstractCondition.ConditionType;
+import edu.kit.aquaplanning.model.lifted.NumericExpression.TermType;
 
 @SuppressWarnings("unchecked") // needed for return type of getSimpleAtoms
 /**
@@ -42,11 +50,15 @@ public abstract class BaseGrounder implements Grounder {
 	protected Configuration config;
 	
 	protected List<Argument> constants;
+	
 	protected Map<String, Atom> atoms;
 	protected Map<Integer, String> atomNames;
 	
 	protected Map<String, DerivedAtom> derivedAtoms;
 	protected Map<Integer, String> derivedAtomNames;
+	
+	protected Map<String, NumericAtom> numericAtoms;
+	protected Map<Integer, String> numericAtomNames;
 	
 	protected List<Action> actions;
 	
@@ -57,6 +69,8 @@ public abstract class BaseGrounder implements Grounder {
 		atomNames = new HashMap<>();
 		derivedAtoms = new HashMap<>();
 		derivedAtomNames = new HashMap<>();
+		numericAtoms = new HashMap<>();
+		numericAtomNames = new HashMap<>();
 	}
 	
 	/**
@@ -114,6 +128,20 @@ public abstract class BaseGrounder implements Grounder {
 		return derivedAtoms.get(atomName);
 	}
 	
+	protected NumericAtom numericAtom(Function f, float value) {
+		
+		String atomName = getAtomName(f);
+		if (!numericAtoms.containsKey(atomName)) {
+			int atomId = numericAtoms.size();
+			NumericAtom atom = new NumericAtom(atomId, atomName, Float.NaN);
+			numericAtoms.put(atomName, atom);
+			numericAtomNames.put(atomId, atomName);
+		}
+		NumericAtom valuedAtom = numericAtoms.get(atomName).copy();
+		valuedAtom.setValue(value);
+		return valuedAtom;
+	}
+	
 	/**
 	 * Retrieves a copy of the atom corresponding to the provided predicate 
 	 * and constant arguments. If this atom has not been grounded before,
@@ -134,6 +162,20 @@ public abstract class BaseGrounder implements Grounder {
 		
 		String atomName = "(" + p.getName() + " ";
 		for (Argument c : args) {
+			atomName += c.getName() + " ";
+		}
+		atomName = atomName.substring(0, atomName.length()-1) + ")";
+		return atomName;
+	}
+	
+	/**
+	 * Assembles the name of an atom with a given predicate and a list
+	 * of constant arguments.
+	 */
+	protected String getAtomName(Function f) {
+		
+		String atomName = "(" + f.getName() + " ";
+		for (Argument c : f.getArguments()) {
 			atomName += c.getName() + " ";
 		}
 		atomName = atomName.substring(0, atomName.length()-1) + ")";
@@ -175,7 +217,7 @@ public abstract class BaseGrounder implements Grounder {
 		
 		List<Atom> atoms = new ArrayList<>();
 		List<ConditionalEffect> condEffects = new ArrayList<>();
-				
+		
 		// As long as conditions are left to process ...
 		List<AbstractCondition> conditionsToProcess = new ArrayList<>();
 		conditionsToProcess.addAll(conditions);
@@ -286,6 +328,13 @@ public abstract class BaseGrounder implements Grounder {
 			pre.add(toPrecondition(i.getIfCondition(), true));
 			pre.add(toPrecondition(i.getThenCondition(), false));
 			break;
+		case numericPrecondition:
+			pre = new Precondition(PreconditionType.numeric);
+			NumericCondition numCond = (NumericCondition) cond;
+			pre.setComparator(numCond.getComparator());
+			pre.setExpLeft(toGroundNumExp(numCond.getExpLeft()));
+			pre.setExpRight(toGroundNumExp(numCond.getExpRight()));
+			break;
 		default:
 			throw new IllegalArgumentException("Invalid precondition type: " + cond.getConditionType());
 		}
@@ -312,7 +361,7 @@ public abstract class BaseGrounder implements Grounder {
 		case atomic:
 			effect = new Effect(EffectType.atom);
 			c = (Condition) cond;
-			effect.setAtom(atom(c.getPredicate(), c.getArguments()));
+			effect.setAtom(atom(c.getPredicate(), c.getArguments(), c.isNegated()));
 			return effect;
 		case negation:
 			boolean negated = false;
@@ -343,9 +392,52 @@ public abstract class BaseGrounder implements Grounder {
 			return effect;
 		case numericEffect:
 			effect = new Effect(EffectType.numeric);
+			NumericEffect numEffect = (NumericEffect) cond;
+			NumericAtom atom = numericAtom(numEffect.getFunction(), Float.NaN);
+			GroundNumericExpression goalExp = toGroundNumExp(numEffect.getExpression());
+			Type type = numEffect.getType();
+			if (type != Type.assign) {
+				TermType termType = type == Type.increase ? TermType.addition : 
+					type == Type.decrease ? TermType.subtraction : 
+					type == Type.scaleUp ? TermType.multiplication : 
+					/*type == Type.scaleDown ? */TermType.division;
+				GroundNumericExpression composite = new GroundNumericExpression(termType);
+				composite.add(new GroundNumericExpression(atom));
+				composite.add(goalExp);
+				goalExp = composite;
+			}
+			effect.setFunction(atom);
+			effect.setExpression(goalExp);
+			return effect;
 		default:
 			throw new IllegalArgumentException("Invalid effect type \"" 
 					+ cond.getConditionType() + "\".");
+		}
+	}
+	
+	protected GroundNumericExpression toGroundNumExp(NumericExpression exp) {
+		GroundNumericExpression gExp;
+		switch (exp.getType()) {
+		case constant:
+			return new GroundNumericExpression(exp.getValue());
+		case function:
+			return new GroundNumericExpression(numericAtom(exp.getFunction(), Float.NaN));
+		case negation:
+			gExp = new GroundNumericExpression(TermType.negation);
+			gExp.add(gExp);
+			return gExp;
+		case addition:
+		case subtraction:
+		case multiplication:
+		case division:
+			gExp = new GroundNumericExpression(exp.getType());
+			for (NumericExpression child : exp.getChildren()) {
+				gExp.add(toGroundNumExp(child));
+			}
+			return gExp;
+		default:
+			throw new IllegalArgumentException("Invalid numeric expression type \"" 
+					+ exp.getType() + "\".");
 		}
 	}
 	
@@ -586,6 +678,14 @@ public abstract class BaseGrounder implements Grounder {
 		List<String> atomNames = new ArrayList<>();
 		for (int i = 0; i < atoms.size(); i++) {
 			atomNames.add(this.atomNames.get(i));
+		}
+		return atomNames;
+	}
+	public List<String> extractNumericAtomNames() {
+		
+		List<String> atomNames = new ArrayList<>();
+		for (int i = 0; i < numericAtoms.size(); i++) {
+			atomNames.add(this.numericAtomNames.get(i));
 		}
 		return atomNames;
 	}
