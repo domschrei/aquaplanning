@@ -36,7 +36,7 @@ public class ConditionSet extends AbstractCondition {
 	
 	@Override
 	public AbstractCondition simplify(boolean negated) {
-
+		
 		ConditionType type = null;
 		if (negated) {
 			// Swap junctor (de Morgan rule)
@@ -125,7 +125,7 @@ public class ConditionSet extends AbstractCondition {
 				}
 			}
 		}
-
+		
 		// No possible transformations
 		ConditionSet c = new ConditionSet(conditionType);
 		for (AbstractCondition child : dnfChildren) {

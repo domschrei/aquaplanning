@@ -58,6 +58,10 @@ public abstract class Planner {
 			return new ForwardSearchPlanner(config);
 		case satBased:
 			return new SimpleSatPlanner(config);
+		case parallel:
+			System.out.println("Doing parallel planning for up to " 
+						+ config.numThreads + " cores.");
+			return new SimpleParallelPlanner(config);
 		}
 		return null;
 	}

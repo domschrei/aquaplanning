@@ -45,6 +45,10 @@ public class Configuration {
 			description = "Maximum total runtime in seconds", defaultValue = "0")
 	public int maxTimeSeconds;
 	
+	@Option(paramLabel = "numThreads", names = {"-c", "--cores"}, 
+			description = "The amount of threads to spawn (where applicable)", defaultValue = "1")
+	public int numThreads;
+	
 	
 	/*
 	 * Preprocessing and grounding configuration
@@ -66,7 +70,7 @@ public class Configuration {
 	 */
 	
 	public enum PlannerType {
-		forwardSSS, satBased;
+		forwardSSS, satBased, parallel;
 	}
 	@Option(paramLabel = "plannerType", names = {"-p", "--planner"}, 
 			description = "Planner type to use: " + USAGE_OPTIONS_AND_DEFAULT, 
@@ -95,6 +99,14 @@ public class Configuration {
 	@Option(names = {"-r", "--revisit-states"}, description = "Re-enter a search node "
 			+ "even when the state has been reached before")
 	public boolean revisitStates;
+	
+	
+	/* 
+	 * Post-processing 
+	 */
+	
+	@Option(names = {"-O", "--optimize"}, description = "Optimize plan during postprocessing")
+	public boolean optimizePlan;
 	
 	
 	/**

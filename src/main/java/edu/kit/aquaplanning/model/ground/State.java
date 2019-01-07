@@ -1,17 +1,24 @@
 package edu.kit.aquaplanning.model.ground;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Represents a world state as a set of atoms which are currently true.
  */
 public class State {
-
+	
 	/**
 	 * Internal AtomSet of all true atoms.
 	 */
 	private AtomSet atoms;
+	
+	/**
+	 * Truth values of derived atoms, where already known.
+	 */
+	private Map<DerivedAtom, Boolean> derivedAtoms;
 	
 	/**
 	 * Creates a state containing exactly all TRUE atoms in the provided list.
@@ -19,6 +26,7 @@ public class State {
 	public State(List<Atom> atomList) {
 		
 		this.atoms = new AtomSet(atomList);
+		this.derivedAtoms = new HashMap<>();
 	}
 	
 	/**
@@ -27,13 +35,16 @@ public class State {
 	public State(State other) {
 		
 		atoms = (AtomSet) other.atoms.clone();
+		this.derivedAtoms = new HashMap<>(); // TODO clone?
 	}
 
 	/**
 	 * Creates a state containing all the atoms in the provided set.
 	 */
 	public State(AtomSet atomSet) {
+		
 		this.atoms = atomSet;
+		this.derivedAtoms = new HashMap<>();
 	}
 	
 	/**
@@ -80,6 +91,38 @@ public class State {
 	public boolean holdsNone(AtomSet atoms) {
 		
 		return this.atoms.none(atoms);
+	}
+	
+	/**
+	 * Determines and returns the truth value of a derived atom.
+	 * Note: Has side effects to the internal data structures
+	 * of this object in order to accelerate subsequent calls 
+	 * of this method.
+	 */
+	public boolean holds(DerivedAtom derivedAtom) {
+		
+		boolean visitedBefore = derivedAtoms.containsKey(derivedAtom);
+		if (!visitedBefore) {
+			// Value is not known yet: 
+			// open the derived atom
+			derivedAtoms.put(derivedAtom, null);
+			// try to find the value
+			Boolean value = derivedAtom.getCondition().holds(this);
+			// close the derived atom
+			derivedAtoms.put(derivedAtom, value);
+			return value;
+		} else {
+			Boolean value = derivedAtoms.get(derivedAtom);
+			if (value == null) {
+				// Derived atom is currently open: No gain of knowledge
+				System.out.println("Concluding that " + derivedAtom.getName() 
+					+ " must be FALSE.");
+				return false;
+			} else {
+				// value is known: return it
+				return value;
+			}
+		}		
 	}
 	
 	/**
