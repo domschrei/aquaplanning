@@ -341,8 +341,11 @@ public abstract class BaseGrounder implements Grounder {
 			effect.setCondition(toPrecondition(cc.getPrerequisite(), false));
 			effect.add(toEffect(cc.getConsequence()));
 			return effect;
+		case numericEffect:
+			effect = new Effect(EffectType.numeric);
 		default:
-			throw new IllegalArgumentException("Invalid effect type \"" + cond.getConditionType() + ".");
+			throw new IllegalArgumentException("Invalid effect type \"" 
+					+ cond.getConditionType() + "\".");
 		}
 	}
 	
@@ -365,8 +368,8 @@ public abstract class BaseGrounder implements Grounder {
 		// Assemble action name
 		String actionName = getActionName(liftedAction, liftedAction.getArguments());
 		
-		if (isConditionConjunctive(liftedAction.getPrecondition(), false) &&
-				isConditionConjunctive(liftedAction.getEffect(), false)) {
+		if (isConditionSimple(liftedAction.getPrecondition(), false) &&
+				isConditionSimple(liftedAction.getEffect(), false)) {
 			
 			// Simple action
 
@@ -493,6 +496,9 @@ public abstract class BaseGrounder implements Grounder {
 				newCC.setConsequence(cc.getConsequence().copy());
 				return newCC;
 			}
+		case numericPrecondition:
+		case numericEffect:
+			return cond.copy();
 		default:
 			throw new IllegalArgumentException("ConditionType " + cond.getConditionType() 
 			+ " has not been eliminated; maybe no preprocessing was done before.");
@@ -504,7 +510,7 @@ public abstract class BaseGrounder implements Grounder {
 	 * If calling this method for some top-level condition, do it with false, false
 	 * as 2nd and 3rd argument.
 	 */
-	protected boolean isConditionConjunctive(AbstractCondition cond, 
+	protected boolean isConditionSimple(AbstractCondition cond, 
 				boolean insideConditionalEffect) {
 		
 		switch (cond.getConditionType()) {
@@ -515,7 +521,7 @@ public abstract class BaseGrounder implements Grounder {
 		case conjunction:
 			for (AbstractCondition c : ((ConditionSet) cond).getConditions()) {
 				// In a conjunction, all elements must be conjunctive, too
-				if (!isConditionConjunctive(c, insideConditionalEffect))
+				if (!isConditionSimple(c, insideConditionalEffect))
 					return false;
 			}
 			return true;
@@ -530,11 +536,14 @@ public abstract class BaseGrounder implements Grounder {
 				return false;
 			ConsequentialCondition cc = (ConsequentialCondition) cond;
 			// Prerequisite and consequence must both be conjunctive
-			if (!isConditionConjunctive(cc.getPrerequisite(), true))
+			if (!isConditionSimple(cc.getPrerequisite(), true))
 				return false;
-			if (!isConditionConjunctive(cc.getConsequence(), true))
+			if (!isConditionSimple(cc.getConsequence(), true))
 				return false;
 			return true;
+		case numericPrecondition:
+		case numericEffect:
+			return false;
 		default:
 			throw new IllegalArgumentException("Invalid condition type " + cond.getConditionType());
 		}

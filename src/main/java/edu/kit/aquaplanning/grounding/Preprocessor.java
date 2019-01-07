@@ -195,6 +195,10 @@ public class Preprocessor {
 			
 			return dequantifiedSet;
 			
+		case numericPrecondition:
+		case numericEffect:	
+			return cond.copy();
+			
 		default:
 			return null;
 		}

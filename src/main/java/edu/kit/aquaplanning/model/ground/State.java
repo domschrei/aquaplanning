@@ -21,12 +21,18 @@ public class State {
 	private Map<DerivedAtom, Boolean> derivedAtoms;
 	
 	/**
+	 * Maps ID of numeric atom to its current value
+	 */
+	private Map<Integer, Float> numericAtoms;
+	
+	/**
 	 * Creates a state containing exactly all TRUE atoms in the provided list.
 	 */
 	public State(List<Atom> atomList) {
 		
 		this.atoms = new AtomSet(atomList);
 		this.derivedAtoms = new HashMap<>();
+		this.numericAtoms = new HashMap<>();
 	}
 	
 	/**
@@ -36,6 +42,7 @@ public class State {
 		
 		atoms = (AtomSet) other.atoms.clone();
 		this.derivedAtoms = new HashMap<>(); // TODO clone?
+		this.numericAtoms = new HashMap<>();
 	}
 
 	/**
@@ -45,6 +52,7 @@ public class State {
 		
 		this.atoms = atomSet;
 		this.derivedAtoms = new HashMap<>();
+		this.numericAtoms = new HashMap<>();
 	}
 	
 	/**
@@ -54,6 +62,11 @@ public class State {
 	public void set(Atom atom) {
 		
 		atoms.set(atom);
+	}
+	
+	public void set(NumericAtom atom) {
+		
+		numericAtoms.put(atom.getId(), atom.getValue());
 	}
 	
 	/**
@@ -73,6 +86,11 @@ public class State {
 	public boolean holds(Atom atom) {
 		
 		return atoms.get(atom);
+	}
+	
+	public float get(NumericAtom atom) {
+		
+		return numericAtoms.get(atom.getId());
 	}
 	
 	/**

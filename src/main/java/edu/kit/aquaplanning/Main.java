@@ -126,7 +126,7 @@ public class Main {
 					
 					System.out.println("Plan optimization ...");
 					SimplePlanOptimizer o = new SimplePlanOptimizer(planningProblem);
-					plan = o.improvePlan(plan, new Clock(5000));
+					plan = o.improvePlan(plan, new Clock(5000)); // TODO set proper time limit
 					System.out.println("Final plan has a length of " + plan.getLength() + ".");
 					printPlan(config, plan);
 				}

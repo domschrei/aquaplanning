@@ -25,7 +25,7 @@ public class NumericExpression {
 	
 	public NumericExpression(TermType type) {
 		this.type = type;
-		this.children = new ArrayList<NumericExpression>();
+		this.children = new ArrayList<>();
 	}
 	
 	public NumericExpression(float constantValue) {
@@ -86,41 +86,14 @@ public class NumericExpression {
 	
 	public NumericExpression copy() {
 		NumericExpression exp = new NumericExpression(type);
-		exp.children = new ArrayList<>();
-		exp.children.addAll(children);
-		exp.function = function.copy();
+		if (children != null) {			
+			exp.children = new ArrayList<>();
+			exp.children.addAll(children);
+		}
+		if (function != null)
+			exp.function = function.copy();
 		exp.value = value;
 		return exp;
-	}
-	
-	public float evaluate(NumericState s) {
-		switch (type) {
-		case constant:
-			return value;
-		case function:
-			return s.get(function);
-		case negation:
-			return - children.get(0).evaluate(s);
-		case addition:
-		case subtraction:
-		case multiplication:
-		case division:
-			float value = children.get(0).value;
-			for (int i = 1; i < children.size(); i++) {
-				NumericExpression child = children.get(i);
-				if (type == TermType.addition) {
-					value += child.evaluate(s);
-				} else if (type == TermType.subtraction) {
-					value -= child.evaluate(s);
-				} else if (type == TermType.multiplication) {
-					value *= child.evaluate(s);
-				} else if (type == TermType.division) {
-					value /= child.evaluate(s);
-				}
-			}
-			return value;
-		}
-		return UNDEFINED;
 	}
 	
 	@Override

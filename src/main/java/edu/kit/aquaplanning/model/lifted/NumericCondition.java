@@ -73,22 +73,6 @@ public class NumericCondition extends AbstractCondition {
 		return out;
 	}
 	
-	public boolean holds(NumericState s) {
-		switch (comparator) {
-		case greater:
-			return expLeft.evaluate(s) > expRight.evaluate(s);
-		case greaterEquals:
-			return expLeft.evaluate(s) >= expRight.evaluate(s);
-		case lower:
-			return expLeft.evaluate(s) < expRight.evaluate(s);
-		case lowerEquals:
-			return expLeft.evaluate(s) <= expRight.evaluate(s);
-		case equals:
-			return expLeft.evaluate(s) == expRight.evaluate(s);
-		}
-		throw new IllegalArgumentException();
-	}
-
 	@Override
 	public AbstractCondition getConditionBoundToArguments(List<Argument> refArgs, List<Argument> argValues) {
 		// TODO Auto-generated method stub

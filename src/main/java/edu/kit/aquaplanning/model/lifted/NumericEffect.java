@@ -31,27 +31,6 @@ public class NumericEffect extends AbstractCondition {
 	public void setExpression(NumericExpression expression) {
 		this.expression = expression;
 	}
-	
-	public void apply(NumericState state) {
-		float value = expression.evaluate(state);
-		switch (type) {
-		case assign:
-			state.set(function, value);
-			break;
-		case increase:
-			state.set(function, state.get(function) + value);
-			break;
-		case decrease:
-			state.set(function, state.get(function) - value);
-			break;
-		case scaleUp:
-			state.set(function, state.get(function) * value);
-			break;
-		case scaleDown:
-			state.set(function, state.get(function) / value);
-			break;
-		}
-	}
 
 	@Override
 	public AbstractCondition getConditionBoundToArguments(List<Argument> refArgs, List<Argument> argValues) {

@@ -107,7 +107,7 @@ public class RelaxedPlanningGraphGrounder extends BaseGrounder {
 			}
 			
 			// Is the condition simple?
-			if (isConditionConjunctive(cond, false)) {				
+			if (isConditionSimple(cond, false)) {				
 				if (cond.getConditionType() == ConditionType.conjunction) {
 					// Conjunction
 					List<Object> results = getSimpleAtoms(((ConditionSet) cond).getConditions());

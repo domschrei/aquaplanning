@@ -48,7 +48,6 @@ public class ConditionSet extends AbstractCondition {
 		ConditionSet c = new ConditionSet(type);
 		
 		// Propagate negations down to children, and simplify them too
-		System.out.println(conditions);
 		for (AbstractCondition child : conditions) {
 			child = child.simplify(negated);
 			

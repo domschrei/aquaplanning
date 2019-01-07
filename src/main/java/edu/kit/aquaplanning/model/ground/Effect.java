@@ -3,16 +3,28 @@ package edu.kit.aquaplanning.model.ground;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Represents any kind of ground effect of a certain action.
+ * Can be one of the following:
+ * - an atomic effect (a single atom is added or deleted)
+ * - a numeric effect (a numeric atom (ground function) is updated)
+ * - a conjunction of multiple effects
+ * - a conditional effect (a list of effects is applied if a certain precondition holds)
+ */
 public class Effect {
 
 	public enum EffectType {
-		atom, conjunction, condition;
+		atom, conjunction, condition, numeric;
 	}
 	
 	private EffectType type;
 	private List<Effect> children;
-	private Atom atom;
-	private Precondition condition; // only for EffectType.condition.
+	private Atom atom; // only for EffectType.atom
+	private Precondition condition; // only for EffectType.condition
+	
+	// only for EffectType.numeric
+	private NumericAtom function;
+	private GroundNumericExpression expression;
 	
 	public Effect(EffectType type) {
 		this.type = type;
@@ -29,6 +41,14 @@ public class Effect {
 	
 	public void setAtom(Atom atom) {
 		this.atom = atom;
+	}
+	
+	public void setFunction(NumericAtom function) {
+		this.function = function;
+	}
+	
+	public void setExpression(GroundNumericExpression expression) {
+		this.expression = expression;
 	}
 
 	public Effect getSingleChild() {
@@ -73,7 +93,7 @@ public class Effect {
 		return newState;
 	}
 	
-private void apply(State oldState, State newState) {
+	private void apply(State oldState, State newState) {
 		
 		switch (type) {
 		case atom:
@@ -88,6 +108,10 @@ private void apply(State oldState, State newState) {
 			for (Effect effect : children) {
 				effect.apply(oldState, newState);
 			}
+			break;
+		case numeric:
+			function.setValue(expression.evaluate(oldState));
+			newState.set(function);
 			break;
 		}
 	}
@@ -107,6 +131,15 @@ private void apply(State oldState, State newState) {
 		case conjunction:
 			for (Effect effect : children) {
 				effect.applyRelaxed(oldState, newState);
+			}
+			break;
+		case numeric:
+			// Delete-relaxation extended to numeric effects:
+			// Ignore value updates which decrease function values
+			float result = expression.evaluate(oldState);
+			if (result >= oldState.get(function)) {				
+				function.setValue(result);
+				newState.set(function);
 			}
 			break;
 		}
@@ -129,6 +162,8 @@ private void apply(State oldState, State newState) {
 				out += e.toString() + " ";
 			}
 			return out + "}";
+		case numeric:
+			out = function + ":=" + expression;
 		default:
 			return "error";
 		}
