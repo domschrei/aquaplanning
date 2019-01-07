@@ -22,18 +22,24 @@ import edu.kit.aquaplanning.model.lifted.Argument;
 import edu.kit.aquaplanning.model.lifted.Condition;
 import edu.kit.aquaplanning.model.lifted.ConditionSet;
 import edu.kit.aquaplanning.model.lifted.ConsequentialCondition;
+import edu.kit.aquaplanning.model.lifted.Function;
 import edu.kit.aquaplanning.model.lifted.Implication;
 import edu.kit.aquaplanning.model.lifted.Negation;
+import edu.kit.aquaplanning.model.lifted.NumericCondition;
+import edu.kit.aquaplanning.model.lifted.NumericEffect;
+import edu.kit.aquaplanning.model.lifted.NumericExpression;
 import edu.kit.aquaplanning.model.lifted.Operator;
 import edu.kit.aquaplanning.model.lifted.Predicate;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.model.lifted.Quantification;
 import edu.kit.aquaplanning.model.lifted.Type;
 import edu.kit.aquaplanning.model.lifted.AbstractCondition.ConditionType;
+import edu.kit.aquaplanning.model.lifted.NumericExpression.TermType;
 import edu.kit.aquaplanning.model.lifted.Quantification.Quantifier;
 import edu.kit.aquaplanning.parsing.PddlParser.ActionDefBodyContext;
 import edu.kit.aquaplanning.parsing.PddlParser.ActionDefContext;
 import edu.kit.aquaplanning.parsing.PddlParser.AtomicFormulaSkeletonContext;
+import edu.kit.aquaplanning.parsing.PddlParser.AtomicFunctionSkeletonContext;
 import edu.kit.aquaplanning.parsing.PddlParser.AtomicNameFormulaContext;
 import edu.kit.aquaplanning.parsing.PddlParser.AtomicTermFormulaContext;
 import edu.kit.aquaplanning.parsing.PddlParser.CEffectContext;
@@ -41,6 +47,9 @@ import edu.kit.aquaplanning.parsing.PddlParser.CondEffectContext;
 import edu.kit.aquaplanning.parsing.PddlParser.ConstantsDefContext;
 import edu.kit.aquaplanning.parsing.PddlParser.DomainNameContext;
 import edu.kit.aquaplanning.parsing.PddlParser.EffectContext;
+import edu.kit.aquaplanning.parsing.PddlParser.FCompContext;
+import edu.kit.aquaplanning.parsing.PddlParser.FExpContext;
+import edu.kit.aquaplanning.parsing.PddlParser.FHeadContext;
 import edu.kit.aquaplanning.parsing.PddlParser.FunctionListContext;
 import edu.kit.aquaplanning.parsing.PddlParser.FunctionsDefContext;
 import edu.kit.aquaplanning.parsing.PddlParser.GoalContext;
@@ -64,15 +73,19 @@ import edu.kit.aquaplanning.parsing.PddlParser.TypesDefContext;
 @SuppressWarnings("deprecation")
 public class ProblemParser extends PddlBaseListener {
 	
-	// Fields to populate during the parsing process
+	// Fields to populate during the parsing process: 
+	// Domain
 	private String domainName;
 	private String problemName;
 	private List<String> requirements;
 	private Map<String, Type> types;
 	private List<Argument> constants; // both from domain and problem
 	private Map<String, Predicate> predicates;
+	private Map<String, Function> functions;
 	private List<Operator> operators;
+	// Problem
 	private List<Condition> initialState;
+	private Map<Function, Float> initialFunctionValues;
 	private List<AbstractCondition> goals;
 	private boolean hasActionCosts;
 	
@@ -89,8 +102,10 @@ public class ProblemParser extends PddlBaseListener {
 
 	private Predicate predicate;
 	private Type supertype;
-	
+
 	private Stack<AbstractCondition> conditionStack;
+	private Stack<NumericExpression> expressionStack;
+	private Function function;
 	
 	/**
 	 * Parses a pair of PDDL domain and problem files.
@@ -103,6 +118,7 @@ public class ProblemParser extends PddlBaseListener {
 			throws FileNotFoundException, IOException {
 				
 		conditionStack = new Stack<>();
+		expressionStack = new Stack<>();
 
 		// Get domain
         ANTLRInputStream in = new ANTLRInputStream(new FileInputStream(domainFile));
@@ -312,6 +328,7 @@ public class ProblemParser extends PddlBaseListener {
 	public void enterFunctionsDef(FunctionsDefContext ctx) {
 		
 		context = ParseContext.functionsDef;
+		functions = new HashMap<>();
 	}
 	
 	@Override
@@ -320,11 +337,14 @@ public class ProblemParser extends PddlBaseListener {
 		if (ctx.getText().equalsIgnoreCase("(total-cost)-number")) {
 			// Metric function detected
 			hasActionCosts = true;
-			
-		} else {
-			error("Unsupported function definition found – "
-				+ "only the function \"(total-cost) - number\" is allowed.");
 		}
+	}
+	
+	@Override
+	public void enterAtomicFunctionSkeleton(AtomicFunctionSkeletonContext ctx) {
+		
+		function = new Function(ctx.children.get(1).getText().toLowerCase());
+		functions.put(function.getName(), function);
 	}
 
 	
@@ -390,6 +410,11 @@ public class ProblemParser extends PddlBaseListener {
 				// Add argument to current operator
 				String argName = ctx.children.get(childIdx).getText().toLowerCase();
 				currentOperator().addArgument(new Argument(argName, type));
+				
+			} else if (context == ParseContext.functionsDef) {
+				// Add argument to function
+				String argName = ctx.children.get(childIdx).getText().toLowerCase();
+				function.addArgument(new Argument(argName, type));
 			}
 		}
 	}
@@ -559,6 +584,18 @@ public class ProblemParser extends PddlBaseListener {
 			enterCondition(condition);
 		}
 	}
+	
+	@Override
+	public void enterFComp(FCompContext ctx) {
+		// '(' binaryComp fExp fExp ')'
+		NumericCondition cond = new NumericCondition(ctx.children.get(1).getText());
+		enterCondition(cond);
+	}
+	
+	@Override
+	public void exitFComp(FCompContext ctx) {
+		exitCondition();
+	}
 
 	@Override
 	public void exitGoalDesc(GoalDescContext ctx) {
@@ -664,7 +701,82 @@ public class ProblemParser extends PddlBaseListener {
 		
 		// Basic checks for correct typing and predicate use
 		checkConsistency(cond);
-	}		
+	}	
+	
+	@Override
+	public void enterFExp(FExpContext ctx) {
+		
+		// NUMBER | '(' binaryOp fExp fExp2 ')' | '(' '-' fExp ')' | fHead
+		NumericExpression exp = null;
+		
+		if (ctx.children.get(0).getText().equals("(")) {
+			if (ctx.children.get(0).getText().equals("-")) {
+				// Case 3 (negative fExp)
+				exp = new NumericExpression(TermType.negation);
+			} else {
+				// Case 2 (operation)
+				TermType type = null;
+				switch (ctx.children.get(1).getText()) {
+				case "+":
+					type = TermType.addition; break;
+				case "-":
+					type = TermType.subtraction; break;
+				case "*":
+					type = TermType.multiplication; break;
+				case "/":
+					type = TermType.division; break;
+				}
+				exp = new NumericExpression(type);
+			}
+		} else if (ctx.children.get(0).getText().matches("-?\\d+(\\.\\d+)?")) {
+			// Case 1 (number)
+			exp = new NumericExpression(Float.parseFloat(ctx.children.get(0).getText()));
+		} else {
+			// Case 4 (function)
+			exp = new NumericExpression(TermType.function);
+		}
+		
+		enterNumericExpression(exp);
+	}
+	
+	@Override
+	public void enterFHead(FHeadContext ctx) {
+		
+		// '(' functionSymbol term* ')' | functionSymbol
+		
+		String functionName;
+		if (ctx.children.size() == 1) {
+			functionName = ctx.children.get(0).getText().toLowerCase();
+		} else {
+			functionName = ctx.children.get(1).getText().toLowerCase();
+		}
+		function = functions.get(functionName).copy();
+		if (function == null) {
+			error("Function \"" + functionName + "\" has not been defined.");
+		}
+		for (int i = 2; i+1 < ctx.children.size(); i++) {
+			String arg = ctx.children.get(i).getText().toLowerCase();
+			Type type = function.getArgumentTypes().get(i-1);
+			function.addArgument(new Argument(arg, type));
+		}
+		
+		if (!expressionStack.isEmpty()) {
+			// Function is part of a numeric expression
+			expressionStack.peek().setFunction(function);
+		} else if (!conditionStack.isEmpty()) {
+			// Function is being updated as an effect
+			NumericEffect eff = (NumericEffect) conditionStack.peek();
+			eff.setFunction(function);
+		} // else: function will be used elsewhere
+	}
+	
+	@Override
+	public void exitFExp(FExpContext ctx) {
+		
+		exitNumericExpression();
+	}
+	
+	
 	
 	
 	
@@ -719,40 +831,24 @@ public class ProblemParser extends PddlBaseListener {
 	public void enterPEffect(PEffectContext ctx) {
 		
 		if (ctx.children.size() > 4) {
+			// Function update
 			
-			// Function operation
-			if (hasActionCosts) {
-
-				// Get parameters of the function operation
-				String operation = ctx.children.get(1).getText();
-				String functionName = ctx.children.get(2).getText();
-				String value = ctx.children.get(3).getText();
-				
-				// Only total-cost is a valid function
-				if (functionName.equalsIgnoreCase("(total-cost)")) {
-					
-					// No conditional effects, and no increase/assign operation
-					if (!operation.equalsIgnoreCase("increase")) {
-						error("Action cost may only increase as an operator effect.");
-					} else {
-						
-						// Set action cost of the operator
-						try {
-							currentOperator().setCost(Integer.parseInt(value));
-						} catch (NumberFormatException e) {
-							error("Invalid function assignment \"" + value 
-								+ "\" (only positive integer constants are allowed).");
-						}
-					}
-					
-				} else {
-					error("Unrecognized function \"" + functionName + "\".");
-				}
-				
-			} else {
-				error("A function effect is used, "
-					+ "but no functions have been defined.");
+			String operation = ctx.children.get(1).getText();
+			NumericEffect.Type type = null;
+			switch (operation) {
+			case "assign":
+				type = NumericEffect.Type.assign; break;
+			case "increase":
+				type = NumericEffect.Type.increase; break;
+			case "decrease":
+				type = NumericEffect.Type.decrease; break;
+			case "scale-up":
+				type = NumericEffect.Type.scaleUp; break;
+			case "scale-down":
+				type = NumericEffect.Type.scaleDown; break;
 			}
+			NumericEffect eff = new NumericEffect(type);
+			enterCondition(eff);
 			
 		} else if (ctx.children.size() == 1) {
 			
@@ -769,8 +865,8 @@ public class ProblemParser extends PddlBaseListener {
 	@Override
 	public void exitPEffect(PEffectContext ctx) {
 		
-		// Negation
-		if (ctx.children.size() > 1 && ctx.children.size() <= 4) {
+		// Negation, Function update
+		if (ctx.children.size() > 1) {
 			exitCondition();
 		}
 	}
@@ -818,33 +914,15 @@ public class ProblemParser extends PddlBaseListener {
 		
 		context = ParseContext.initialStateDef;
 		initialState = new ArrayList<>();
+		initialFunctionValues = new HashMap<>();
 	}
 
 	@Override
-	public void enterInitEl(InitElContext ctx) {
+	public void exitInitEl(InitElContext ctx) {
 		
 		if (ctx.children.size() == 5) {
-			
-			if (ctx.children.get(1).getText().equals("=")) {
-				
-				if (!ctx.children.get(1).getText().equals("=")) {
-					error("Invalid function assignment operator \"" 
-						+ ctx.children.get(1).getText() + "\" in goal definition.");
-				}
-				if (!ctx.children.get(2).getText().equalsIgnoreCase("(total-cost)")) {
-					error("Invalid function \"" 
-						+ ctx.children.get(2).getText() + "\" in goal definition.");
-				}
-				if (!ctx.children.get(3).getText().equals("0")) {
-					error("Invalid function assignment value \"" 
-						+ ctx.children.get(3).getText() + "\" in goal definition "
-								+ "(only 0 is allowed).");
-				}
-				
-			} else {				
-				error("An unsupported initial state specification is used.");			
-			}
-			
+			// '(' '=' fHead NUMBER ')'
+			initialFunctionValues.put(function, Float.parseFloat(ctx.children.get(3).getText()));			
 		}
 	}
 	
@@ -1050,6 +1128,8 @@ public class ProblemParser extends PddlBaseListener {
 		if (condition != null) {
 			switch (condition.getConditionType()) {
 			case atomic:
+			case numericPrecondition:
+			case numericEffect:
 				break;
 			case conjunction:
 			case disjunction:
@@ -1090,6 +1170,32 @@ public class ProblemParser extends PddlBaseListener {
 		AbstractCondition condition = conditionStack.pop();
 		if (conditionStack.isEmpty())
 			addToCurrentObject(condition);
+	}
+	
+	private void enterNumericExpression(NumericExpression exp) {
+		
+		NumericExpression parent = null;
+		if (!expressionStack.isEmpty()) {
+			parent = expressionStack.peek();
+			parent.add(exp);
+		} else {
+			AbstractCondition cond = conditionStack.peek();
+			if (cond.getConditionType() == ConditionType.numericPrecondition) {				
+				NumericCondition pre = (NumericCondition) cond;
+				if (pre.getExpLeft() == null) {
+					pre.setExpLeft(exp);
+				} else if (pre.getExpRight() == null) {
+					pre.setExpRight(exp);
+				}
+			}
+		}
+		
+		expressionStack.push(exp);
+	}
+	
+	private void exitNumericExpression() {
+		
+		expressionStack.pop();
 	}
 	
 	/**
