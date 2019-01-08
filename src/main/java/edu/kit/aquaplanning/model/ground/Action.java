@@ -11,7 +11,6 @@ public class Action {
 
 	private String name;
 	private int cost;
-	boolean isComplex = false;
 
 	// Properties of a simple (purely conjunctive) action
 	private AtomSet preconditionsPos;
@@ -58,7 +57,18 @@ public class Action {
 		this.name = name;
 		this.complexPrecondition = complexPrecondition;
 		this.complexEffect = complexEffect;
-		isComplex = true;
+	}
+	
+	public Action(String name, List<Atom> simplePre, Precondition complexPre, 
+			List<Atom> simpleEff, List<ConditionalEffect> condEff, Effect complexEff) {
+		this.name = name;
+		this.preconditionsPos = new AtomSet(simplePre, true);
+		this.preconditionsNeg = new AtomSet(simplePre, false);
+		this.complexPrecondition = complexPre;
+		this.effectsPos = new AtomSet(simpleEff, true);
+		this.effectsNeg = new AtomSet(simpleEff, false);
+		this.conditionalEffects = condEff;
+		this.complexEffect = complexEff;
 	}
 
 	/**
@@ -66,10 +76,8 @@ public class Action {
 	 */
 	public boolean isApplicable(State state) {
 		
-		if (isComplex) {
-			return complexPrecondition.holds(state);
-		}
-		
+		if (complexPrecondition != null && !complexPrecondition.holds(state))
+			return false;
 		if (!state.holdsAll(preconditionsPos))
 			return false;
 		if (!state.holdsNone(preconditionsNeg))
@@ -84,10 +92,8 @@ public class Action {
 	 */
 	public boolean isApplicableRelaxed(State state) {
 		
-		if (isComplex) {
-			return complexPrecondition.holdsRelaxed(state);
-		}
-		
+		if (complexPrecondition != null && !complexPrecondition.holdsRelaxed(state))
+			return false;
 		if (!state.holdsAll(preconditionsPos))
 			return false;
 		return true;
@@ -101,15 +107,14 @@ public class Action {
 	 */
 	public State apply(State state) {
 		
-		if (isComplex) {
-			return complexEffect.applyTo(state);
-		}
-		
-		// Apply basic effects
+		// Apply effects
 		State newState = new State(state);
+		if (complexEffect != null) {
+			newState = complexEffect.applyTo(state);
+		}
 		newState.addAll(effectsPos);
 		newState.removeAll(effectsNeg);
-
+		
 		// Apply conditional effects, if applicable
 		for (ConditionalEffect condEffect : conditionalEffects) {
 			
@@ -136,12 +141,11 @@ public class Action {
 	 */
 	public State applyRelaxed(State state) {
 		
-		if (isComplex) {
-			return complexEffect.applyRelaxedTo(state);
-		}
-		
 		// Apply basic positive effects
 		State newState = new State(state);
+		if (complexEffect != null) {			
+			newState = complexEffect.applyRelaxedTo(state);
+		}
 		newState.addAll(effectsPos);
 		
 		// Apply positive conditional effects, if applicable
@@ -172,41 +176,33 @@ public class Action {
 		if (cost != 0) {			
 			out += "[cost:" + cost + "]";
 		}
-		if (isComplex) {
-			out += " PRE: " + complexPrecondition.toString();
-			out += " ; POST: " + complexEffect.toString();
-		} else {
-			if (preconditionsPos.numAtoms() > 0 || preconditionsNeg.numAtoms() > 0) {
-				out += " PRE: { ";
-				if (preconditionsPos.numAtoms() > 0) {					
-					out += atomSetToString.apply(preconditionsPos) + " "; 
-				}
-				if (preconditionsPos.numAtoms() > 0 && preconditionsNeg.numAtoms() > 0) {
-					out += "; ";
-				}
-				if (preconditionsNeg.numAtoms() > 0) {					
-					out += "NOT " + atomSetToString.apply(preconditionsNeg) + " "; 
-				}
-				out += "}";
-			}
-			if (effectsPos.numAtoms() > 0 || effectsNeg.numAtoms() > 0) {
-				out += " POST: { ";
-				if (effectsPos.numAtoms() > 0) {					
-					out += atomSetToString.apply(effectsPos) + " "; 
-				}
-				if (effectsPos.numAtoms() > 0 && effectsNeg.numAtoms() > 0) {
-					out += "; ";
-				}
-				if (effectsNeg.numAtoms() > 0) {					
-					out += "NOT " + atomSetToString.apply(effectsNeg) + " "; 
-				}
-				out += "}";
-			}
-			for (ConditionalEffect eff : conditionalEffects) {
-				out += eff.toString(atomSetToString) + " ";
-			}
-			out += "}";
+		out += " PRE: { " + complexPrecondition.toString() + " ";
+		if (preconditionsPos.numAtoms() > 0) {					
+			out += atomSetToString.apply(preconditionsPos) + " "; 
 		}
+		if (preconditionsPos.numAtoms() > 0 && preconditionsNeg.numAtoms() > 0) {
+			out += "; ";
+		}
+		if (preconditionsNeg.numAtoms() > 0) {					
+			out += "NOT " + atomSetToString.apply(preconditionsNeg) + " "; 
+		}
+		out += "}";
+		out += " POST: { " + complexEffect.toString() + " ";
+		if (effectsPos.numAtoms() > 0) {					
+			out += atomSetToString.apply(effectsPos) + " "; 
+		}
+		if (effectsPos.numAtoms() > 0 && effectsNeg.numAtoms() > 0) {
+			out += "; ";
+		}
+		if (effectsNeg.numAtoms() > 0) {					
+			out += "NOT " + atomSetToString.apply(effectsNeg) + " "; 
+		}
+		out += "}";
+		for (ConditionalEffect eff : conditionalEffects) {
+			out += eff.toString(atomSetToString) + " ";
+		}
+		out += "}";
+		
 		return out;
 	}
 	

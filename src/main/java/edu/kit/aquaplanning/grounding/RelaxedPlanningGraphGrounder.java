@@ -11,11 +11,11 @@ import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.NumericAtom;
 import edu.kit.aquaplanning.model.ground.Precondition;
 import edu.kit.aquaplanning.model.ground.State;
-import edu.kit.aquaplanning.model.lifted.AbstractCondition;
 import edu.kit.aquaplanning.model.lifted.Argument;
 import edu.kit.aquaplanning.model.lifted.Operator;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.model.lifted.Predicate;
+import edu.kit.aquaplanning.util.Pair;
 import edu.kit.aquaplanning.model.lifted.AbstractCondition.ConditionType;
 import edu.kit.aquaplanning.model.lifted.Condition;
 import edu.kit.aquaplanning.model.lifted.ConditionSet;
@@ -34,7 +34,6 @@ public class RelaxedPlanningGraphGrounder extends BaseGrounder {
 	/**
 	 * Grounds the entire problem.
 	 */
-	@SuppressWarnings("unchecked") // needed for return type of getSimpleAtoms
 	@Override
 	public GroundPlanningProblem ground(PlanningProblem problem) {
 		
@@ -95,54 +94,16 @@ public class RelaxedPlanningGraphGrounder extends BaseGrounder {
 		}
 		
 		// Extract goal
-		AbstractCondition complexGoal = null;
-		List<Atom> goalAtoms = new ArrayList<>();
-		// For each goal
-		for (AbstractCondition cond : problem.getGoals()) {
-			
-			// Simplify equalities from condition, if necessary
-			if (!config.keepEqualities) {				
-				cond = resolveEqualities(cond);
-				if (trueCondition.equals(cond)) {
-					// Precondition is always true: not necessary in goal
-					continue;
-				} else if (falseCondition.equals(cond)) {
-					// Condition is always false: goal is unsatisfiable
-					return null;
-				}
-			}
-			
-			// Is the condition simple?
-			if (isConditionSimple(cond, false)) {				
-				if (cond.getConditionType() == ConditionType.conjunction) {
-					// Conjunction
-					List<Object> results = getSimpleAtoms(((ConditionSet) cond).getConditions());
-					goalAtoms.addAll((List<Atom>) results.get(0));
-				} else {					
-					// Atom
-					Condition c = (Condition) cond;
-					Atom atom = atom(c.getPredicate(), c.getArguments());
-					atom.set(!c.isNegated());
-					goalAtoms.add(atom);
-				}
-			} else {
-				// Complex condition
-				complexGoal = cond;
-				break;
-			}
-		}
+		ConditionSet goalSet = new ConditionSet(ConditionType.conjunction);
+		problem.getGoals().forEach(c -> goalSet.add(c));
 		Goal goal;
-		if (complexGoal == null) {
-			// Goal with simple list of atoms
-			goal = new Goal(goalAtoms);
+		Pair<List<Atom>, Precondition> splitGoal = splitAndGroundPrecondition(goalSet);
+		if (splitGoal.getRight().getChildren().size() > 0) {
+			// Complex goal
+			goal = new Goal(splitGoal.getRight());
 		} else {
-			// Goal with a complex logical expression
-			if (problem.getGoals().size() != 1) {
-				throw new IllegalArgumentException("If the goal is complex, it "
-						+ "must be one single condition after preprocessing.");
-			}
-			Precondition pre = toPrecondition(complexGoal, false);
-			goal = new Goal(pre);
+			// Simple goal
+			goal = new Goal(splitGoal.getLeft());
 		}
 		
 		// Ground derived predicates' semantics
