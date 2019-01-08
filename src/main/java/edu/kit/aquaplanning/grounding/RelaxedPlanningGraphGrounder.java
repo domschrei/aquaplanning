@@ -8,8 +8,8 @@ import edu.kit.aquaplanning.model.ground.Action;
 import edu.kit.aquaplanning.model.ground.Atom;
 import edu.kit.aquaplanning.model.ground.Goal;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
-import edu.kit.aquaplanning.model.ground.NumericAtom;
 import edu.kit.aquaplanning.model.ground.Precondition;
+import edu.kit.aquaplanning.model.ground.Precondition.PreconditionType;
 import edu.kit.aquaplanning.model.ground.State;
 import edu.kit.aquaplanning.model.lifted.Argument;
 import edu.kit.aquaplanning.model.lifted.Operator;
@@ -19,7 +19,6 @@ import edu.kit.aquaplanning.util.Pair;
 import edu.kit.aquaplanning.model.lifted.AbstractCondition.ConditionType;
 import edu.kit.aquaplanning.model.lifted.Condition;
 import edu.kit.aquaplanning.model.lifted.ConditionSet;
-import edu.kit.aquaplanning.model.lifted.Function;
 
 /**
  * Grounder doing a reachability analysis through some 
@@ -37,7 +36,7 @@ public class RelaxedPlanningGraphGrounder extends BaseGrounder {
 	@Override
 	public GroundPlanningProblem ground(PlanningProblem problem) {
 		
-		this.problem = problem;
+		setProblem(problem);
 		
 		// First, preprocess the problem into a standardized structure
 		new Preprocessor(config).preprocess(problem);
@@ -49,7 +48,7 @@ public class RelaxedPlanningGraphGrounder extends BaseGrounder {
 		
 		// Will equality predicates remain in the problem?
 		if (config.keepEqualities) {
-			// add equality conditions
+			// --yes: add equality conditions
 			Predicate pEquals = problem.getPredicate("=");
 			if (pEquals != null) {
 				// for all objects c: add the condition (= c c)
@@ -82,25 +81,22 @@ public class RelaxedPlanningGraphGrounder extends BaseGrounder {
 		}
 		
 		// Extract initial state
-		List<Atom> initialStateAtoms = new ArrayList<>();
-		graph.getLiftedState(0).forEach(cond -> {
-			initialStateAtoms.add(atom(cond.getPredicate(), cond.getArguments()));
-		});
-		initialStateAtoms.add(atom(trueCondition.getPredicate(), trueCondition.getArguments()));
-		State initialState = new State(initialStateAtoms);
-		for (Function f : problem.getInitialFunctionValues().keySet()) {
-			NumericAtom atom = numericAtom(f, problem.getInitialFunctionValues().get(f));
-			initialState.set(atom);
-		}
+		State initialState = getInitialState();
 		
 		// Extract goal
 		ConditionSet goalSet = new ConditionSet(ConditionType.conjunction);
 		problem.getGoals().forEach(c -> goalSet.add(c));
 		Goal goal;
 		Pair<List<Atom>, Precondition> splitGoal = splitAndGroundPrecondition(goalSet);
-		if (splitGoal.getRight().getChildren().size() > 0) {
-			// Complex goal
-			goal = new Goal(splitGoal.getRight());
+		if (splitGoal.getRight() != null) {
+			// Complex goal: add simple AND complex parts
+			Precondition complexGoal = splitGoal.getRight();
+			splitGoal.getLeft().forEach(atom -> {
+				Precondition atomPre = new Precondition(PreconditionType.atom);
+				atomPre.setAtom(atom);
+				complexGoal.add(atomPre);
+			});
+			goal = new Goal(complexGoal);
 		} else {
 			// Simple goal
 			goal = new Goal(splitGoal.getLeft());
