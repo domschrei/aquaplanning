@@ -24,6 +24,9 @@ public abstract class Planner {
 	 */
 	protected boolean withinComputationalBounds(int iterations) {
 		
+		if (Thread.interrupted())
+			return false;
+		
 		boolean withinIterations = false;
 		boolean withinTime = false;
 

@@ -97,6 +97,9 @@ public class Configuration {
 			+ "even when the state has been reached before")
 	public boolean revisitStates;
 	
+	@Option(names = {"-S", "--seed"}, description = "Random seed to use for randomized search strategies")
+	public int seed;
+	
 	
 	/* 
 	 * Post-processing 
@@ -114,4 +117,28 @@ public class Configuration {
 	public Configuration() {
 		startTimeMillis = System.currentTimeMillis();
 	}
+
+	public Configuration copy() {
+		
+		Configuration config = new Configuration();
+		config.domainFile = domainFile;
+		config.problemFile = problemFile;
+		config.planOutputFile = planOutputFile;
+		config.maxIterations = maxIterations;
+		config.maxTimeSeconds = maxTimeSeconds;
+		config.numThreads = numThreads;
+		config.keepDisjunctions = keepDisjunctions;
+		config.keepEqualities = keepEqualities;
+		config.plannerType = plannerType;
+		config.heuristic = heuristic;
+		config.heuristicWeight = heuristicWeight;
+		config.searchStrategy = searchStrategy;
+		config.revisitStates = revisitStates;
+		config.seed = seed;
+		config.optimizePlan = optimizePlan;
+		config.startTimeMillis = startTimeMillis;
+		return config;
+	}
+	
+	
 }

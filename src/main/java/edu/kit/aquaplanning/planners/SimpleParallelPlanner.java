@@ -2,6 +2,7 @@ package edu.kit.aquaplanning.planners;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
@@ -16,19 +17,25 @@ public class SimpleParallelPlanner extends Planner {
 	
 	public SimpleParallelPlanner(Configuration config) {
 		super(config);
-		config.searchStrategy = Mode.randomChoice;
 		numThreads = config.numThreads;
 	}
 
 	private void onPlanFound(Plan plan) {
 		this.plan = plan;
+		for (Thread thread : threads) {
+			thread.interrupt();
+		}
 	}
 	
 	@Override
 	public Plan findPlan(GroundPlanningProblem problem) {
 		
 		threads = new ArrayList<>();
+		Random random = new Random(this.config.seed);
 		for (int i = 1; i <= numThreads; i++) {
+			Configuration config = this.config.copy();
+			config.searchStrategy = Mode.randomChoice;	
+			config.seed = random.nextInt();
 			Planner planner = new ForwardSearchPlanner(config);
 			Thread thread = new Thread(new Runnable() {
 				@Override

@@ -86,7 +86,7 @@ public class SearchQueue {
 			break;
 		case randomChoice:
 			list = new ArrayList<>();
-			random = new Random(1337); // <-- seed
+			random = new Random(strategy.getSeed());
 		}
 		visitedStates = new HashSet<>();
 	}

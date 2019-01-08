@@ -41,7 +41,8 @@ public class SearchStrategy {
 	}	
 	
 	private Mode mode;
-	private int heuristicWeight = 10;
+	private int heuristicWeight = 10; // only for heuristic modes
+	private int seed = 1337;
 	
 	/**
 	 * Denotes whether a state can be visited multiple times during a search
@@ -55,6 +56,7 @@ public class SearchStrategy {
 		this.mode = config.searchStrategy;
 		this.heuristicWeight = config.heuristicWeight;
 		this.revisitStates = config.revisitStates;
+		this.seed = config.seed;
 	}
 	
 	/**
@@ -110,5 +112,9 @@ public class SearchStrategy {
 	
 	public int getHeuristicWeight() {
 		return heuristicWeight;
+	}
+	
+	public int getSeed() {
+		return seed;
 	}
 }
