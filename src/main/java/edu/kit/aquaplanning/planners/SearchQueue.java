@@ -87,6 +87,7 @@ public class SearchQueue {
 		case randomChoice:
 			list = new ArrayList<>();
 			random = new Random(strategy.getSeed());
+			break;
 		}
 		visitedStates = new HashSet<>();
 	}
@@ -142,7 +143,8 @@ public class SearchQueue {
 		if (strategy.getMode() == Mode.depthFirst) {
 			node = stack.pop();
 		} else if (strategy.getMode() == Mode.randomChoice) {
-			node = list.remove(random.nextInt(list.size()));
+			int r = random.nextInt(list.size());
+			node = list.remove(r);
 		} else {
 			node = queue.poll();
 		}
