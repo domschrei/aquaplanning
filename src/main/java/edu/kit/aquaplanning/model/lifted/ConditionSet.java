@@ -2,6 +2,7 @@ package edu.kit.aquaplanning.model.lifted;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 public class ConditionSet extends AbstractCondition {
 
@@ -149,5 +150,34 @@ public class ConditionSet extends AbstractCondition {
 		for (AbstractCondition c : conditions)
 			set.add(c);
 		return set;
+	}
+
+	@Override
+	public AbstractCondition traverse(Function<AbstractCondition, AbstractCondition> map, int recurseMode) {
+		
+		ConditionSet result;
+		
+		// Apply the inner function, if tail recursion is done
+		if (recurseMode == AbstractCondition.RECURSE_TAIL) {
+			result = (ConditionSet) map.apply(this);
+		} else {
+			result = copy();
+		}
+		
+		// Recurse
+		List<AbstractCondition> newConditions = new ArrayList<>();
+		for (AbstractCondition cond : result.getConditions()) {
+			AbstractCondition child = cond.traverse(map, recurseMode);
+			if (child != null)
+				newConditions.add(child);
+		}
+		result.conditions = newConditions;
+		
+		// Apply the inner function, if head recursion is done
+		if (recurseMode == AbstractCondition.RECURSE_HEAD) {
+			return map.apply(result);
+		}
+		
+		return result;
 	}
 }

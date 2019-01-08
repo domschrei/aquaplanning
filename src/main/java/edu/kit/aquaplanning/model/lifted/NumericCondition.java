@@ -1,6 +1,7 @@
 package edu.kit.aquaplanning.model.lifted;
 
 import java.util.List;
+import java.util.function.Function;
 
 public class NumericCondition extends AbstractCondition {
 
@@ -102,5 +103,10 @@ public class NumericCondition extends AbstractCondition {
 		c.setExpLeft(expLeft.copy());
 		c.setExpRight(expRight.copy());
 		return c;
+	}
+	
+	@Override
+	public AbstractCondition traverse(Function<AbstractCondition, AbstractCondition> map, int recurseMode) {
+		return map.apply(this);
 	}
 }

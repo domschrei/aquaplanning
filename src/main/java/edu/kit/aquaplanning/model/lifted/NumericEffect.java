@@ -87,4 +87,10 @@ public class NumericEffect extends AbstractCondition {
 		}
 		return out + expression;
 	}
+	
+	@Override
+	public AbstractCondition traverse(java.util.function.Function<AbstractCondition, AbstractCondition> map,
+			int recurseMode) {
+		return map.apply(this);
+	}
 }

@@ -125,6 +125,7 @@ public class ProblemParser extends PddlBaseListener {
 		expressionStack = new Stack<>();
 		predicates = new HashMap<>();
 		derivedPredicates = new HashMap<>();
+		functions = new HashMap<>();
 
 		// Get domain
         ANTLRInputStream in = new ANTLRInputStream(new FileInputStream(domainFile));
@@ -334,7 +335,6 @@ public class ProblemParser extends PddlBaseListener {
 	public void enterFunctionsDef(FunctionsDefContext ctx) {
 		
 		context = ParseContext.functionsDef;
-		functions = new HashMap<>();
 	}
 	
 	@Override

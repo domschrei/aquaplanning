@@ -1,6 +1,7 @@
 package edu.kit.aquaplanning.model.lifted;
 
 import java.util.List;
+import java.util.function.Function;
 
 public abstract class AbstractCondition {
 
@@ -45,4 +46,9 @@ public abstract class AbstractCondition {
 	public abstract AbstractCondition getDNF();
 	
 	public abstract AbstractCondition copy();
+	
+	public static final int RECURSE_HEAD = 1;
+	public static final int RECURSE_TAIL = 2;
+	
+	public abstract AbstractCondition traverse(Function<AbstractCondition, AbstractCondition> map, int recurseMode);
 }
