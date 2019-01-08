@@ -43,7 +43,13 @@ public class GroundPlanningProblem {
 		return hasActionCosts;
 	}
 
-	public List<String> getAtomNames() { return atomNames; }
+	public List<String> getAtomNames() { 
+		return atomNames; 
+	}
+	
+	public List<String> getNumericAtomNames() {
+		return numericAtomNames;
+	}
 	
 	public int getNumAtoms() {
 		return atomNames.size();

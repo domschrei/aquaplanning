@@ -63,6 +63,25 @@ public class GroundNumericExpression {
 		return NumericExpression.UNDEFINED;
 	}
 	
+	/**
+	 * Determines whether the expression only consists of constant
+	 * values (i.e. no numeric atoms are contained).
+	 */
+	public boolean isEffectivelyConstant() {
+		switch (type) {
+		case constant:
+			return true;
+		case function:
+			return false;
+		default:
+			boolean isConstant = true;
+			for (GroundNumericExpression child : children) {
+				isConstant &= child.isEffectivelyConstant();
+			}
+			return isConstant;
+		}
+	}
+	
 	@Override
 	public String toString() {
 		String connection = "";
@@ -87,5 +106,9 @@ public class GroundNumericExpression {
 			out += child.toString() + connection;
 		}
 		return out.substring(0, out.length()-3) + ")";
+	}
+	
+	public TermType getType() {
+		return type;
 	}
 }

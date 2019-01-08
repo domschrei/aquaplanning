@@ -136,8 +136,10 @@ public class Effect {
 		case numeric:
 			// TODO Delete-relaxation extended to numeric effects
 			float result = expression.evaluate(oldState);
-			function.setValue(result);
-			newState.set(function);
+			if (result > oldState.get(function)) {				
+				function.setValue(result);
+				newState.set(function);
+			}
 			break;
 		}
 	}

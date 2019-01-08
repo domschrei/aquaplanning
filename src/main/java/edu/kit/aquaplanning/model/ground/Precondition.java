@@ -5,17 +5,30 @@ import java.util.List;
 
 import edu.kit.aquaplanning.model.lifted.NumericCondition.Comparator;
 
+/**
+ * Represents any kind of ground precondition of a certain action.
+ * Can be one of the following:
+ * - Atomic precondition: a single atom or its negation
+ * - Negation: another (possibly complex) precondition in negated form
+ * - An operation on a number of preconditions (conjunction / disjunction / implication)
+ * - A derived atom ("axiom")
+ * - Numeric precondition (i.e. some comparator on two numeric expressions)
+ */
 public class Precondition {
 
 	public enum PreconditionType {
 		atom, negation, conjunction, disjunction, implication, derived, numeric;
 	}
-	
 	private PreconditionType type;
+
+	// atom
+	private Atom atom; 
+	// derived
+	private DerivedAtom derivedAtom; 
+	// negation, conjunction, disjunction, implication
 	private List<Precondition> children;
-	private Atom atom;
-	private DerivedAtom derivedAtom;
 	
+	// numeric
 	private Comparator comparator;
 	private GroundNumericExpression expLeft;
 	private GroundNumericExpression expRight;
@@ -29,22 +42,20 @@ public class Precondition {
 		this.children.add(pre);
 	}
 	
+	// Setters for type-dependent attributes
+	
 	public void setAtom(Atom atom) {
 		this.atom = atom;
 	}
-	
 	public void setDerivedAtom(DerivedAtom derivedAtom) {
 		this.derivedAtom = derivedAtom;
 	}
-	
 	public void setComparator(Comparator comparator) {
 		this.comparator = comparator;
 	}
-	
 	public void setExpLeft(GroundNumericExpression expLeft) {
 		this.expLeft = expLeft;
 	}
-	
 	public void setExpRight(GroundNumericExpression expRight) {
 		this.expRight = expRight;
 	}
@@ -109,7 +120,7 @@ public class Precondition {
 			case lowerEquals:
 				return expLeft.evaluate(state) <= expRight.evaluate(state);
 			case equals:
-				return Math.abs(expLeft.evaluate(state) - expRight.evaluate(state)) < 0.000001;
+				return Math.abs(expLeft.evaluate(state) - expRight.evaluate(state)) < 0.00001f;
 			}
 			throw new IllegalArgumentException();
 		default:
@@ -143,7 +154,40 @@ public class Precondition {
 		case implication:
 			return true;
 		case numeric:
-			return true; // TODO better abstraction
+			float valueLeft = expLeft.evaluate(state);
+			float valueRight = expRight.evaluate(state);
+			if (expRight.isEffectivelyConstant()) {
+				// (fluent exp) <comparator> (constant exp)
+				switch (comparator) {
+				case greater:
+					// "greater" comparison must hold
+					return valueLeft > valueRight;
+				case equals:
+				case greaterEquals:
+					// both fall together as "greaterEquals", must hold
+					return valueLeft >= valueRight;
+				case lower:
+				case lowerEquals:
+					// relaxed: ignore
+					return true;					
+				}
+			} else if (expLeft.isEffectivelyConstant()) {
+				// (constant exp) <comparator> (fluent exp)
+				switch (comparator) {
+				case lower:
+					// "lower" comparison must hold
+					return valueLeft < valueRight;
+				case equals:
+				case lowerEquals:
+					// both fall together as "lowerEquals", must hold
+					return valueLeft <= valueRight;
+				case greater:
+				case greaterEquals:
+					// relaxed: ignore
+					return true;					
+				}
+			}
+			return true; // if both sides are fluent
 		default:
 			throw new IllegalArgumentException("Invalid precondition type \"" + type + "\".");
 		}
@@ -169,9 +213,25 @@ public class Precondition {
 		case implication:
 			return "{ " + children.get(0).toString() + " => " + children.get(1).toString() + " }";
 		case numeric:
-			return expLeft + " " + comparator + " " + expRight;
+			return "(" + expLeft + " " + toString(comparator) + " " + expRight + ")";
 		default:
 			return "error";
 		}
+	}
+	
+	private String toString(Comparator comp) {
+		switch (comparator) {
+		case greater:
+			return ">";
+		case greaterEquals:
+			return "≥";
+		case lower:
+			return "<";
+		case lowerEquals:
+			return "≤";
+		case equals:
+			return "=";
+		}
+		return null;
 	}
 }
