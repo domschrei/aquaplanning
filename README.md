@@ -4,7 +4,7 @@ This is a Java framework for Automated Planning, developed by Tomáš Balyo and 
 
 ## Features
 
-Aquaplanning supports PDDL (Planning Domain Description Language) files as an input for planning domains and problems. The following features are implemented as of now (i.e. problems with these features can be parsed, grounded, and solved):
+Aquaplanning supports PDDL (Planning Domain Description Language) files as an input for planning domains and problems. The supported subset of PDDL is roughly **on par with [Fast Downward](http://www.fast-downward.org/)**, today's prototypical state-of-the-art classical planner. This means that the following features are implemented as of now (i.e. problems with these features can be parsed, grounded, and solved):
 
 * Basic STRIPS planning with typing
 * Negative conditions (preconditions / effects / goals)
@@ -13,6 +13,7 @@ Aquaplanning supports PDDL (Planning Domain Description Language) files as an in
 * Universal and existential quantifications
 * All ADL features, i.e. disjunctive conditions with `or`, `imply`, and non-atomic `not` expressions
 * Action costs (in its basic form `(:function total-cost - number)`, with constant positive cost per operator)
+* Derived predicates (as long as the resulting ground axioms are not directly recursing on themselves)
 
 For planning problems using these features (or any subset), a full representation of the read problem is available in the form of Java objects after parsing, as well as a separate representation after grounding the problem.
 For grounding purposes, Aquaplanning traverses the problem's (delete-)relaxed planning graph, resulting in a reasonable amount of atoms and actions in most cases.
