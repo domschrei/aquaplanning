@@ -29,8 +29,7 @@ public class SimplePlanOptimizer extends PlanOptimizer {
 		// Initial plan to be optimized
 		Plan plan = initialPlan.copy();
 		
-		// Check if there is still time left!
-		while (clock.hasTimeLeft()) {
+		while (true) {
 			
 			// Iterate over actions in the plan
 			State state = problem.getInitialState(); // current state
@@ -52,6 +51,11 @@ public class SimplePlanOptimizer extends PlanOptimizer {
 					// No loop: add action and remember new state
 					actions.add(a);					
 					visitedStates.add(state);
+				}
+				// Check if there is still time left!
+				if (!clock.hasTimeLeft()) {
+					System.out.println("TIMEOUT");
+					return plan;
 				}
 			}
 			
