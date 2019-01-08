@@ -27,17 +27,15 @@ public class SimpleParallelPlanner extends Planner {
 	/**
 	 * Callback for when some planner finds a plan.
 	 */
-	private void onPlanFound(Plan plan) {
-		
+	private synchronized void onPlanFound(Plan plan) {
 		if (this.plan != null) {
 			// Another planner already found a plan
 			return;
 		}
-		
 		this.plan = plan;
-		
 		// Interrupt all planners
-		for (Thread thread : threads) {
+		List<Thread> myThreadsList = new ArrayList<>(threads);
+		for (Thread thread : myThreadsList) {
 			// This interruption is acknowledged inside each planner thread
 			// when withinComputationalBounds() is checked the next time.
 			thread.interrupt();
