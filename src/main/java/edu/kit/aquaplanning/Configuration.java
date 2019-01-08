@@ -45,7 +45,7 @@ public class Configuration {
 			description = "Maximum total runtime in seconds", defaultValue = "0")
 	public int maxTimeSeconds;
 	
-	@Option(paramLabel = "numThreads", names = {"-c", "--cores"}, 
+	@Option(paramLabel = "numThreads", names = {"-T", "--threads"}, 
 			description = "The amount of threads to spawn (where applicable)", defaultValue = "1")
 	public int numThreads;
 	
@@ -97,7 +97,8 @@ public class Configuration {
 			+ "even when the state has been reached before")
 	public boolean revisitStates;
 	
-	@Option(names = {"-S", "--seed"}, description = "Random seed to use for randomized search strategies")
+	@Option(names = {"-S", "--seed"}, description = "Random seed to use for randomized search strategies",
+			defaultValue = "1337")
 	public int seed;
 	
 	

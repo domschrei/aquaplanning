@@ -52,7 +52,7 @@ public abstract class Planner {
 	public abstract Plan findPlan(GroundPlanningProblem problem);
 	
 	/**
-	 * Constructs a planner object fitting the provided configuration.
+	 * Constructs a planner object according to the provided configuration.
 	 */
 	public static Planner getPlanner(Configuration config) {
 		
@@ -62,8 +62,8 @@ public abstract class Planner {
 		case satBased:
 			return new SimpleSatPlanner(config);
 		case parallel:
-			System.out.println("Doing parallel planning for up to " 
-						+ config.numThreads + " cores.");
+			System.out.println("Doing parallel planning with up to " 
+						+ config.numThreads + " threads.");
 			return new SimpleParallelPlanner(config);
 		}
 		return null;

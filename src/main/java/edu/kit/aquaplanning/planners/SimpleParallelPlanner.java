@@ -9,6 +9,10 @@ import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
 import edu.kit.aquaplanning.planners.SearchStrategy.Mode;
 
+/**
+ * A trivial portfolio planner which launches a number of forward search planners,
+ * each with an uninformed, random search strategy and a different seed.
+ */
 public class SimpleParallelPlanner extends Planner {
 
 	private int numThreads;
@@ -20,9 +24,22 @@ public class SimpleParallelPlanner extends Planner {
 		numThreads = config.numThreads;
 	}
 
+	/**
+	 * Callback for when some planner finds a plan.
+	 */
 	private void onPlanFound(Plan plan) {
+		
+		if (this.plan != null) {
+			// Another planner already found a plan
+			return;
+		}
+		
 		this.plan = plan;
+		
+		// Interrupt all planners
 		for (Thread thread : threads) {
+			// This interruption is acknowledged inside each planner thread
+			// when withinComputationalBounds() is checked the next time.
 			thread.interrupt();
 		}
 	}
@@ -31,12 +48,17 @@ public class SimpleParallelPlanner extends Planner {
 	public Plan findPlan(GroundPlanningProblem problem) {
 		
 		threads = new ArrayList<>();
-		Random random = new Random(this.config.seed);
+		Random random = new Random(this.config.seed); // seed generator
+		
 		for (int i = 1; i <= numThreads; i++) {
+			
+			// Create a new, randomized planner
 			Configuration config = this.config.copy();
 			config.searchStrategy = Mode.randomChoice;	
 			config.seed = random.nextInt();
 			Planner planner = new ForwardSearchPlanner(config);
+			
+			// Create a thread running the planner
 			Thread thread = new Thread(new Runnable() {
 				@Override
 				public void run() {
@@ -47,17 +69,22 @@ public class SimpleParallelPlanner extends Planner {
 				}
 			});
 			threads.add(thread);
+			
+			// Start the planner (non-blocking call)
 			thread.start();
 		}
 		
-		while (plan == null) {
+		// Wait for all threads to finish
+		// (if some plan has been found, all threads are interrupted)
+		for (Thread thread : threads) {
 			try {
-				Thread.sleep(100);
+				thread.join();
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 		}
 		
+		// Plan is not null iff any planner was successful
 		return plan;
 	}
 }
