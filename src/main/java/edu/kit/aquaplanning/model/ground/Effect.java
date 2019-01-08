@@ -30,6 +30,12 @@ public class Effect {
 		this.type = type;
 		this.children = new ArrayList<>();
 	}
+	
+	public Effect(Atom atom) {
+		this.type = EffectType.atom;
+		this.children = new ArrayList<>();
+		this.atom = atom;
+	}
 
 	public void add(Effect effect) {
 		children.add(effect);

@@ -34,6 +34,8 @@ import edu.kit.aquaplanning.model.lifted.NumericExpression;
 import edu.kit.aquaplanning.model.lifted.Operator;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.model.lifted.Predicate;
+import edu.kit.aquaplanning.util.Pair;
+import edu.kit.aquaplanning.util.Triple;
 import edu.kit.aquaplanning.model.lifted.AbstractCondition.ConditionType;
 import edu.kit.aquaplanning.model.lifted.NumericExpression.TermType;
 
@@ -204,6 +206,97 @@ public abstract class BaseGrounder implements Grounder {
 		
 		List<Object> result = getSimpleAtoms(constantConditions);
 		return new State((List<Atom>) result.get(0));
+	}
+	
+	protected Pair<List<Atom>, Precondition> splitAndGroundPrecondition(AbstractCondition cond) {
+		
+		Pair<ConditionSet, ConditionSet> split = splitCondition(cond);
+		ConditionSet simpleSet = split.getLeft();
+		ConditionSet complexSet = split.getRight();
+		
+		List<Atom> atomList = new ArrayList<>();
+		Precondition complexPrecondition = new Precondition(PreconditionType.conjunction);
+		
+		for (AbstractCondition c : simpleSet.getConditions()) {
+			if (c.getConditionType() != ConditionType.atomic) {
+				// TODO ERROR
+			}
+			Condition liftedAtom = (Condition) c;
+			atomList.add(atom(liftedAtom.getPredicate(), liftedAtom.getArguments(), liftedAtom.isNegated()));
+		}
+		
+		for (AbstractCondition c : complexSet.getConditions()) {
+			complexPrecondition.add(toPrecondition(c, false));
+		}
+		
+		return new Pair<>(atomList, complexPrecondition);
+	}
+	
+	protected Triple<List<Atom>, List<ConditionalEffect>, Effect> splitAndGroundEffect(AbstractCondition cond) {
+		
+		Pair<ConditionSet, ConditionSet> split = splitCondition(cond);
+		ConditionSet simpleSet = split.getLeft();
+		ConditionSet complexSet = split.getRight();
+		
+		List<Atom> atomList = new ArrayList<>();
+		List<ConditionalEffect> condEffList = new ArrayList<>();
+		Effect complexEffect = new Effect(EffectType.conjunction);
+		
+		for (AbstractCondition c : simpleSet.getConditions()) {
+			if (c.getConditionType() != ConditionType.atomic) {
+				// TODO ERROR
+			}
+			Condition liftedAtom = (Condition) c;
+			atomList.add(atom(liftedAtom.getPredicate(), liftedAtom.getArguments(), liftedAtom.isNegated()));
+		}
+		
+		for (AbstractCondition c : complexSet.getConditions()) {
+			if (c.getConditionType() != ConditionType.consequential) {
+				// TODO ERROR
+			}
+			ConsequentialCondition cc = (ConsequentialCondition) c;
+			Pair<List<Atom>, Precondition> splitPrerequisite = splitAndGroundPrecondition(cc.getPrerequisite());
+			Triple<List<Atom>, List<ConditionalEffect>, Effect> splitConsequence = splitAndGroundEffect(cc.getConsequence());
+			Precondition complexPrerequisite = splitPrerequisite.getRight();
+			if (complexPrerequisite == null) {
+				// Can compile into an "easy" conditional effect
+				List<Atom> simplePrerequisite = splitPrerequisite.getLeft();
+				ConditionalEffect eff = new ConditionalEffect(simplePrerequisite, splitConsequence.getLeft());
+				condEffList.add(eff);
+				
+			} else {
+				// Add **the whole** cond. effect to complex effects
+				Effect condEff = toEffect(c);
+				complexEffect.add(condEff);
+			}
+		}
+		
+		return new Triple<>(atomList, condEffList, complexEffect);
+	}
+	
+	protected Pair<ConditionSet, ConditionSet> splitCondition(AbstractCondition cond) {
+		
+		ConditionSet simplePartSet = new ConditionSet(ConditionType.conjunction);
+		ConditionSet complexPartSet = new ConditionSet(ConditionType.conjunction);
+		
+		if (cond.getConditionType() == ConditionType.atomic) {
+			simplePartSet.add(cond);
+		
+		} else if (cond.getConditionType() == ConditionType.conjunction) {
+			for (AbstractCondition child : ((ConditionSet) cond).getConditions()) {
+				
+				if (child.getConditionType() == ConditionType.atomic) {
+					simplePartSet.add(child);
+				} else {
+					complexPartSet.add(child);
+				}
+			}
+		
+		} else {
+			complexPartSet.add(cond);
+		}
+		
+		return new Pair<>(simplePartSet, complexPartSet);
 	}
 	
 	/**
@@ -536,65 +629,60 @@ public abstract class BaseGrounder implements Grounder {
 	 * May return <code>trueCondition</code> or <code>falseCondition</code>
 	 * if the condition simplifies to true or false, respectively.
 	 */
-	protected AbstractCondition resolveEqualities(AbstractCondition cond) {
+	protected AbstractCondition resolveEqualities(AbstractCondition abstractCondition) {
 		
-		switch (cond.getConditionType()) {
-		case atomic:
-			Condition atom = (Condition) cond;
-			if (isEqualityCondition(atom)) {
-				if (holdsEqualityCondition(atom)) {
-					return trueCondition;
-				} else {
-					return falseCondition;
+		return abstractCondition.traverse(cond -> {
+			
+			if (cond.getConditionType() == ConditionType.atomic) {
+				
+				Condition atom = (Condition) cond;
+				if (isEqualityCondition(atom)) {
+					if (holdsEqualityCondition(atom)) {
+						return trueCondition;
+					} else {
+						return falseCondition;
+					}
 				}
-			} else {
-				return atom.copy();
-			}
-		case conjunction:
-		case disjunction:
-			ConditionSet set = (ConditionSet) cond;
-			ConditionSet newSet = new ConditionSet(set.getConditionType());
-			for (AbstractCondition c : set.getConditions()) {
-				c = resolveEqualities(c);
-				if (set.getConditionType() == ConditionType.conjunction 
-						&& falseCondition.equals(c)) {
-					// false atom in a conjunction: whole conjunction is false
-					return falseCondition;
-				} else if (set.getConditionType() == ConditionType.disjunction 
-						&& trueCondition.equals(c)) {
-					// true atom in a disjunction: whole disjunction is true
-					return trueCondition;
-				} else if (!trueCondition.equals(c) && !falseCondition.equals(c)) {
-					// only add non-constant valued conditions
-					newSet.add(c);
+				
+			} else if (cond instanceof ConditionSet) {
+				
+				ConditionSet set = (ConditionSet) cond;
+				ConditionSet newSet = new ConditionSet(set.getConditionType());
+				for (AbstractCondition c : set.getConditions()) {
+					if (set.getConditionType() == ConditionType.conjunction 
+							&& falseCondition.equals(c)) {
+						// false atom in a conjunction: whole conjunction is false
+						return falseCondition;
+					} else if (set.getConditionType() == ConditionType.disjunction 
+							&& trueCondition.equals(c)) {
+						// true atom in a disjunction: whole disjunction is true
+						return trueCondition;
+					} else if (!trueCondition.equals(c) && !falseCondition.equals(c)) {
+						// only add non-constant valued conditions
+						newSet.add(c);
+					}
+				}
+				if (newSet.getConditions().isEmpty()) {
+					// Empty conjunction is true, empty disjunction is false
+					return (set.getConditionType() == ConditionType.conjunction ? 
+							trueCondition : falseCondition);
+				}
+				return newSet;
+				
+			} else if (cond.getConditionType() == ConditionType.consequential) {
+				
+				ConsequentialCondition cc = (ConsequentialCondition) cond;
+				AbstractCondition pre = cc.getPrerequisite();
+				if (trueCondition.equals(pre)) {
+					return resolveEqualities(cc.getConsequence());
+				} else if (falseCondition.equals(pre)) {
+					return trueCondition; // essentially forget about the cond. effect
 				}
 			}
-			if (newSet.getConditions().isEmpty()) {
-				// Empty conjunction is true, empty disjunction is false
-				return (set.getConditionType() == ConditionType.conjunction ? 
-						trueCondition : falseCondition);
-			}
-			return newSet;
-		case consequential:
-			ConsequentialCondition cc = (ConsequentialCondition) cond;
-			AbstractCondition pre = resolveEqualities(cc.getPrerequisite());
-			if (trueCondition.equals(pre)) {
-				return resolveEqualities(cc.getConsequence());
-			} else if (falseCondition.equals(pre)) {
-				return trueCondition; // essentially forget about the cond. effect
-			} else {
-				ConsequentialCondition newCC = new ConsequentialCondition();
-				newCC.setPrerequisite(pre);
-				newCC.setConsequence(cc.getConsequence().copy());
-				return newCC;
-			}
-		case numericPrecondition:
-		case numericEffect:
-			return cond.copy();
-		default:
-			throw new IllegalArgumentException("ConditionType " + cond.getConditionType() 
-			+ " has not been eliminated; maybe no preprocessing was done before.");
-		}
+			
+			return cond;
+			
+		}, AbstractCondition.RECURSE_HEAD);
 	}
 		
 	/**
