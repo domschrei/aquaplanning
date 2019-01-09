@@ -1,5 +1,7 @@
 package edu.kit.aquaplanning.model.ground;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 
@@ -11,16 +13,19 @@ public class Action {
 
 	private String name;
 	private int cost;
-	boolean isComplex = false;
 
-	// Properties of a simple (purely conjunctive) action
+	// Properties of a simple (purely conjunctive) action;
+	// For STRIPS planning, only these preconditions and effects
+	// need to be considered.
 	private AtomSet preconditionsPos;
 	private AtomSet preconditionsNeg;
 	private AtomSet effectsPos;
 	private AtomSet effectsNeg;
 	private List<ConditionalEffect> conditionalEffects;
 	
-	// Properties of a complex (disjunctive) action
+	// Properties of a complex (disjunctive) action,
+	// containing all logic which cannot be expressed with bitsets.
+	// Can be zero if the action has no complex parts.
 	private Precondition complexPrecondition;
 	private Effect complexEffect;
 	
@@ -39,7 +44,7 @@ public class Action {
 	}
 
 	/**
-	 * Creates a simple action with the provided properties (alternative constructor).
+	 * Creates a simple action with the provided properties.
 	 */
 	public Action(String name, AtomSet preconditionsPos, AtomSet preconditionsNeg,
 				  AtomSet effectsPos, AtomSet effectsNeg, List<ConditionalEffect> conditionalEffects) {
@@ -52,13 +57,35 @@ public class Action {
 	}
 	
 	/**
-	 * Creates a complex action with the provided properties.
+	 * Creates a "purely" complex action with the provided properties.
 	 */
 	public Action(String name, Precondition complexPrecondition, Effect complexEffect) {
 		this.name = name;
 		this.complexPrecondition = complexPrecondition;
 		this.complexEffect = complexEffect;
-		isComplex = true;
+		// Data structures for simple preconditions / effects remain empty
+		this.preconditionsPos = new AtomSet(Arrays.asList(), true);
+		this.preconditionsNeg = new AtomSet(Arrays.asList(), false);
+		this.effectsPos = new AtomSet(Arrays.asList(), true);
+		this.effectsNeg = new AtomSet(Arrays.asList(), false);
+		this.conditionalEffects = new ArrayList<>();
+	}
+	
+	/**
+	 * Creates a "hybrid" action which may feature simple bitset-style
+	 * preconditions and effects as well as more complex logical
+	 * expressions.
+	 */
+	public Action(String name, List<Atom> simplePre, Precondition complexPre, 
+			List<Atom> simpleEff, List<ConditionalEffect> condEff, Effect complexEff) {
+		this.name = name;
+		this.preconditionsPos = new AtomSet(simplePre, true);
+		this.preconditionsNeg = new AtomSet(simplePre, false);
+		this.complexPrecondition = complexPre;
+		this.effectsPos = new AtomSet(simpleEff, true);
+		this.effectsNeg = new AtomSet(simpleEff, false);
+		this.conditionalEffects = condEff;
+		this.complexEffect = complexEff;
 	}
 
 	/**
@@ -66,10 +93,10 @@ public class Action {
 	 */
 	public boolean isApplicable(State state) {
 		
-		if (isComplex) {
-			return complexPrecondition.holds(state);
-		}
-		
+		// Check complex precondition, if present
+		if (complexPrecondition != null && !complexPrecondition.holds(state))
+			return false;
+		// Check bitset preconditions
 		if (!state.holdsAll(preconditionsPos))
 			return false;
 		if (!state.holdsNone(preconditionsNeg))
@@ -84,10 +111,10 @@ public class Action {
 	 */
 	public boolean isApplicableRelaxed(State state) {
 		
-		if (isComplex) {
-			return complexPrecondition.holdsRelaxed(state);
-		}
-		
+		// Check complex precondition, if present
+		if (complexPrecondition != null && !complexPrecondition.holdsRelaxed(state))
+			return false;
+		// Check bitset preconditions
 		if (!state.holdsAll(preconditionsPos))
 			return false;
 		return true;
@@ -101,16 +128,17 @@ public class Action {
 	 */
 	public State apply(State state) {
 		
-		if (isComplex) {
-			return complexEffect.applyTo(state);
-		}
-		
-		// Apply basic effects
+		// Apply effects
 		State newState = new State(state);
+		if (complexEffect != null) {
+			// Complex effect
+			newState = complexEffect.applyTo(state);
+		}
+		// Bitset effects
 		newState.addAll(effectsPos);
 		newState.removeAll(effectsNeg);
-
-		// Apply conditional effects, if applicable
+		
+		// Apply (simple) conditional effects, if applicable
 		for (ConditionalEffect condEffect : conditionalEffects) {
 			
 			// Are all conditions satisfied?
@@ -136,17 +164,18 @@ public class Action {
 	 */
 	public State applyRelaxed(State state) {
 		
-		if (isComplex) {
-			return complexEffect.applyRelaxedTo(state);
-		}
-		
-		// Apply basic positive effects
+		// Apply positive effects
 		State newState = new State(state);
+		if (complexEffect != null) {
+			// Complex effect
+			newState = complexEffect.applyRelaxedTo(state);
+		}
+		// Bitset effects
 		newState.addAll(effectsPos);
 		
-		// Apply positive conditional effects, if applicable
+		// Apply (simple) positive conditional effects, if applicable
 		for (ConditionalEffect condEffect : conditionalEffects) {
-			
+
 			// Are all POSITIVE conditions satisfied?
 			boolean isActive = state.holdsAll(condEffect.getConditionsPos());
 
@@ -172,41 +201,33 @@ public class Action {
 		if (cost != 0) {			
 			out += "[cost:" + cost + "]";
 		}
-		if (isComplex) {
-			out += " PRE: " + complexPrecondition.toString();
-			out += " ; POST: " + complexEffect.toString();
-		} else {
-			if (preconditionsPos.numAtoms() > 0 || preconditionsNeg.numAtoms() > 0) {
-				out += " PRE: { ";
-				if (preconditionsPos.numAtoms() > 0) {					
-					out += atomSetToString.apply(preconditionsPos) + " "; 
-				}
-				if (preconditionsPos.numAtoms() > 0 && preconditionsNeg.numAtoms() > 0) {
-					out += "; ";
-				}
-				if (preconditionsNeg.numAtoms() > 0) {					
-					out += "NOT " + atomSetToString.apply(preconditionsNeg) + " "; 
-				}
-				out += "}";
-			}
-			if (effectsPos.numAtoms() > 0 || effectsNeg.numAtoms() > 0) {
-				out += " POST: { ";
-				if (effectsPos.numAtoms() > 0) {					
-					out += atomSetToString.apply(effectsPos) + " "; 
-				}
-				if (effectsPos.numAtoms() > 0 && effectsNeg.numAtoms() > 0) {
-					out += "; ";
-				}
-				if (effectsNeg.numAtoms() > 0) {					
-					out += "NOT " + atomSetToString.apply(effectsNeg) + " "; 
-				}
-				out += "}";
-			}
-			for (ConditionalEffect eff : conditionalEffects) {
-				out += eff.toString(atomSetToString) + " ";
-			}
-			out += "}";
+		out += " PRE: { " + (complexPrecondition == null ? "" : complexPrecondition.toString()) + " ";
+		if (preconditionsPos.numAtoms() > 0) {					
+			out += atomSetToString.apply(preconditionsPos) + " "; 
 		}
+		if (preconditionsPos.numAtoms() > 0 && preconditionsNeg.numAtoms() > 0) {
+			out += "; ";
+		}
+		if (preconditionsNeg.numAtoms() > 0) {					
+			out += "NOT " + atomSetToString.apply(preconditionsNeg) + " "; 
+		}
+		out += "}";
+		out += " POST: { " + (complexEffect == null ? "" : complexEffect.toString()) + " ";
+		if (effectsPos.numAtoms() > 0) {					
+			out += atomSetToString.apply(effectsPos) + " "; 
+		}
+		if (effectsPos.numAtoms() > 0 && effectsNeg.numAtoms() > 0) {
+			out += "; ";
+		}
+		if (effectsNeg.numAtoms() > 0) {					
+			out += "NOT " + atomSetToString.apply(effectsNeg) + " "; 
+		}
+		out += "}";
+		for (ConditionalEffect eff : conditionalEffects) {
+			out += eff.toString(atomSetToString) + " ";
+		}
+		out += "}";
+		
 		return out;
 	}
 	

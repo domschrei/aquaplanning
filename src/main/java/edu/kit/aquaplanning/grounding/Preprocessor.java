@@ -2,22 +2,24 @@ package edu.kit.aquaplanning.grounding;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.model.lifted.Operator;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.model.lifted.Quantification;
 import edu.kit.aquaplanning.model.lifted.Quantification.Quantifier;
+import edu.kit.aquaplanning.util.Logger;
 import edu.kit.aquaplanning.model.lifted.AbstractCondition;
 import edu.kit.aquaplanning.model.lifted.AbstractCondition.ConditionType;
+import edu.kit.aquaplanning.model.lifted.NumericExpression.TermType;
 import edu.kit.aquaplanning.model.lifted.Argument;
-import edu.kit.aquaplanning.model.lifted.Condition;
 import edu.kit.aquaplanning.model.lifted.ConditionSet;
 import edu.kit.aquaplanning.model.lifted.ConsequentialCondition;
-import edu.kit.aquaplanning.model.lifted.DerivedCondition;
-import edu.kit.aquaplanning.model.lifted.DerivedPredicate;
-import edu.kit.aquaplanning.model.lifted.Implication;
-import edu.kit.aquaplanning.model.lifted.Negation;
+import edu.kit.aquaplanning.model.lifted.Function;
+import edu.kit.aquaplanning.model.lifted.Axiom;
+import edu.kit.aquaplanning.model.lifted.NumericEffect;
+import edu.kit.aquaplanning.model.lifted.NumericEffect.Type;
 
 /**
  * Provides simplification routines for lifted planning problems,
@@ -45,10 +47,9 @@ public class Preprocessor {
 		
 		this.problem = problem;
 		
-		// Resolve derived predicates
-		if (config.substituteDerivedPredicates) {			
-			resolveDerivedPredicates();
-		}
+		// If necessary and possible, compile away total-cost function
+		// into much simpler per-operator cost attributes
+		extractActionCosts();
 		
 		// Eliminate quantifications,
 		// Simplify structure of logical expressions,
@@ -104,12 +105,24 @@ public class Preprocessor {
 		for (AbstractCondition cond : problem.getGoals()) {
 			goalSet.add(cond);
 		}
-		AbstractCondition newGoal = instantiateQuantifications(goalSet).simplify(false);
+		AbstractCondition newGoal = instantiateQuantifications(goalSet);
+		newGoal = newGoal.simplify(false);
 		if (toDNF) {
 			newGoal = newGoal.getDNF();
 		}
 		problem.getGoals().clear();
 		problem.getGoals().add(newGoal);
+		
+		// Simplify derived conditions
+		Map<String, Axiom> derived = problem.getDerivedPredicates();
+		for (Axiom cond : derived.values()) {
+			AbstractCondition c = cond.getCondition();
+			c = instantiateQuantifications(c).simplify(false);
+			if (toDNF) {
+				c = c.getDNF();
+			}
+			cond.setCondition(c);
+		}
 	}
 	
 	/**
@@ -119,78 +132,43 @@ public class Preprocessor {
 	 * Quantified variables in nested conditions are resolved for each
 	 * possible constant defined in the problem.
 	 */
-	private AbstractCondition instantiateQuantifications(AbstractCondition cond) {
+	private AbstractCondition instantiateQuantifications(AbstractCondition abstractCondition) {
 		
-		switch (cond.getConditionType()) {
-		
-		// All cases besides quantification: just propagating down
-		case atomic:
-			if (cond instanceof DerivedCondition) {
-				cond = cond.copy();
-				AbstractCondition inner = ((DerivedCondition) cond).getPredicate().getCondition();
-				((DerivedCondition) cond).getPredicate().setCondition(
-					instantiateQuantifications(inner)
-				);
-				return cond;
-			}
-			return cond.copy();
-		case negation:
-			Negation n = new Negation();
-			n.setChildCondition(instantiateQuantifications(
-					((Negation) cond).getChildCondition()));
-			return n;
-		case conjunction:
-		case disjunction:
-			ConditionSet set = new ConditionSet(cond.getConditionType());
-			for (AbstractCondition c : ((ConditionSet) cond).getConditions()) {
-				set.add(instantiateQuantifications(c));
-			}
-			return set;
-		case consequential:
-			ConsequentialCondition condCC = (ConsequentialCondition) cond;
-			ConsequentialCondition cc = new ConsequentialCondition();
-			cc.setPrerequisite(instantiateQuantifications(condCC.getPrerequisite()));
-			cc.setConsequence(instantiateQuantifications(condCC.getConsequence()));
-			return cc;
-		case implication:
-			Implication condImp = (Implication) cond;
-			Implication i = new Implication();
-			i.setIfCondition(instantiateQuantifications(condImp.getIfCondition()));
-			i.setThenCondition(instantiateQuantifications(condImp.getThenCondition()));
-			return i;
+		return abstractCondition.traverse(cond -> {
 			
-		case quantification:
-			Quantification q = (Quantification) cond;
-			
-			// Instantiate inner quantifications FIRST
-			AbstractCondition innerCondition = instantiateQuantifications(q.getCondition());
-			
-			// New, dequantified condition
-			ConditionType type = null;
-			if (q.getQuantifier().equals(Quantifier.universal)) {
-				type = ConditionType.conjunction; // forall: big AND
-			} else {
-				type = ConditionType.disjunction; // exists: big OR
-			}
-			ConditionSet dequantifiedSet = new ConditionSet(type);
-			
-			// For each quantified variable, replace its occurrences 
-			// with all possible constants
-			List<List<Argument>> eligibleArgs = 
-			ArgumentCombination.getEligibleArguments(q.getVariables(), 
-					problem, problem.getConstants());
-			ArgumentCombination.iterator(eligibleArgs).forEachRemaining(args -> {
+			// Only apply some change for quantifications
+			if (cond.getConditionType() == ConditionType.quantification) {
+				Quantification q = (Quantification) cond;
 				
-				AbstractCondition deq = innerCondition.getConditionBoundToArguments(
-						q.getVariables(), args);
-				dequantifiedSet.add(deq);
-			});
+				// Inner condition is already instantiated (head recursion)
+				AbstractCondition innerCondition = q.getCondition();
+				
+				// New, dequantified condition
+				ConditionType type = null;
+				if (q.getQuantifier().equals(Quantifier.universal)) {
+					type = ConditionType.conjunction; // forall: big AND
+				} else {
+					type = ConditionType.disjunction; // exists: big OR
+				}
+				ConditionSet dequantifiedSet = new ConditionSet(type);
+				
+				// For each quantified variable, replace its occurrences 
+				// with all possible constants
+				List<List<Argument>> eligibleArgs = 
+				ArgumentCombination.getEligibleArguments(q.getVariables(), 
+						problem, problem.getConstants());
+				ArgumentCombination.iterator(eligibleArgs).forEachRemaining(args -> {
+					
+					AbstractCondition deq = innerCondition.getConditionBoundToArguments(
+							q.getVariables(), args);
+					dequantifiedSet.add(deq);
+				});
+				
+				return dequantifiedSet;
+			}
+			return cond;
 			
-			return dequantifiedSet;
-			
-		default:
-			return null;
-		}
+		}, AbstractCondition.RECURSE_HEAD);
 	}
 	
 	/**
@@ -293,81 +271,100 @@ public class Preprocessor {
 		return splitConds;
 	}
 	
-	private void resolveDerivedPredicates() {
+	/**
+	 * Removes all occurrences of the numeric fluent (total-cost) 
+	 * and instead defines the cost attributes of operators.
+	 */
+	private void extractActionCosts() {
 		
-		// Resolve derived predicates in operator preconditions
-		// and conditional effects
+		// Is there a total-cost function?
+		Map<String, Function> functions = problem.getFunctions();
+		if (!functions.containsKey("total-cost")) {
+			return;
+		}
+		
+		// For each operator:
+		Function totalCost = functions.get("total-cost");
+		List<Integer> costs = new ArrayList<>();
+		boolean error = false;
 		for (Operator op : problem.getOperators()) {
-			AbstractCondition cond = op.getPrecondition();
-			op.setPrecondition(resolveDerivedPredicates(cond));
-			cond = op.getEffect();
-			op.setEffect(resolveDerivedPredicates(cond));
-		}
-		
-		// Resolve derived predicates in goals
-		List<AbstractCondition> newGoals = new ArrayList<>();
-		for (AbstractCondition goal : problem.getGoals()) {
-			newGoals.add(resolveDerivedPredicates(goal));
-		}
-		problem.getGoals().clear();
-		problem.getGoals().addAll(newGoals);
-	}
-	
-	private AbstractCondition resolveDerivedPredicates(AbstractCondition cond) {
-		
-		switch (cond.getConditionType()) {
-		
-		// All cases besides atomic: just propagating down
-		case atomic:
-			if (cond instanceof DerivedCondition) {
-				// Return the condition which is inside the derived predicate
-				DerivedPredicate p = ((DerivedCondition) cond).getPredicate();
-				AbstractCondition innerCondition = ((DerivedPredicate) 
-					((Condition) cond).getPredicate()
-				).getCondition();
-				innerCondition = innerCondition.getConditionBoundToArguments(
-						p.getArguments(), ((Condition) cond).getArguments());
-				// There may be nested derived predicates
-				return resolveDerivedPredicates(innerCondition);
-			} else {				
-				return cond.copy();
-			}
-		case negation:
-			Negation n = new Negation();
-			n.setChildCondition(resolveDerivedPredicates(
-					((Negation) cond).getChildCondition()));
-			return n;
-		case conjunction:
-		case disjunction:
-			ConditionSet set = new ConditionSet(cond.getConditionType());
-			for (AbstractCondition c : ((ConditionSet) cond).getConditions()) {
-				set.add(resolveDerivedPredicates(c));
-			}
-			return set;
-		case consequential:
-			ConsequentialCondition condCC = (ConsequentialCondition) cond;
-			ConsequentialCondition cc = new ConsequentialCondition();
-			cc.setPrerequisite(resolveDerivedPredicates(condCC.getPrerequisite()));
-			cc.setConsequence(resolveDerivedPredicates(condCC.getConsequence()));
-			return cc;
-		case implication:
-			Implication condImp = (Implication) cond;
-			Implication i = new Implication();
-			i.setIfCondition(resolveDerivedPredicates(condImp.getIfCondition()));
-			i.setThenCondition(resolveDerivedPredicates(condImp.getThenCondition()));
-			return i;
+			int cost = 0;
 			
-		case quantification:
-			Quantification q = (Quantification) cond;
-			Quantification qNew = new Quantification(q.getQuantifier());
-			for (Argument arg : q.getVariables()) {
-				qNew.addVariable(arg);
+			// Check precondition
+			AbstractCondition precond = op.getPrecondition();
+			if (precond.toString().contains("(total-cost)")) {
+				Logger.log(Logger.WARN, "(total-cost) is used in an operator precondition.");
+				error = true;
+				break;
 			}
-			qNew.setCondition(resolveDerivedPredicates(q.getCondition()));
-			return qNew;
 			
-		default:
-			return null;
+			// Traverse effect, and extract cost increases
+			List<AbstractCondition> effects = new ArrayList<>();
+			effects.add(op.getEffect());
+			while (!effects.isEmpty()) {
+				AbstractCondition c = effects.remove(0);
+				
+				if (c.getConditionType() == ConditionType.numericEffect) {
+					NumericEffect eff = (NumericEffect) c;
+					if (eff.getFunction().equals(totalCost)) {
+						if (eff.getType() != Type.increase) {
+							Logger.log(Logger.WARN, "(total-cost) function is defined "
+									+ "using operators other than \"increase\".");
+							error = true;
+						} else if (eff.getExpression().getType() != TermType.constant) {
+							Logger.log(Logger.WARN, "(total-cost) function is increased "
+									+ "by a non-atomic and/or non-constant value.");
+							error = true;
+						} else {							
+							cost += eff.getExpression().getValue();
+						}
+					}
+				} else if (c.getConditionType() == ConditionType.conjunction) {
+					// Process children as well
+					effects.addAll(((ConditionSet) c).getConditions());
+				} else if (c.getConditionType() == ConditionType.consequential) {
+					// Check if total-cost occurs here
+					if (c.toString().contains("(total-cost)")) {
+						Logger.log(Logger.WARN, "(total-cost) function appears "
+								+ "in a conditional effect.");
+						error = true;
+					}
+				} 
+			}
+			// Can total-cost be compiled away here?
+			if (error) {
+				// -- no
+				Logger.log(Logger.WARN, "The (total-cost) function will be kept "
+						+ "as a full-featured numeric fluent in the problem "
+						+ "definition. This can affect performance.");
+				return;
+			}
+			// Remember found cost for this operator
+			costs.add(cost);
 		}
+		
+		// Remove all total-cost numeric effects from the operators
+		for (int i = 0; i < problem.getOperators().size(); i++) {
+			Operator op = problem.getOperators().get(i);
+			op.setCost(costs.get(i));
+			AbstractCondition cond = op.getEffect();
+			
+			// Traverse effect condition, removing all total-cost effects
+			cond = cond.traverse((c -> {
+				if (c.getConditionType() == ConditionType.numericEffect) {
+					NumericEffect numEff = (NumericEffect) c;
+					if (numEff.getFunction().equals(totalCost)) {
+						return null;
+					}
+				}
+				return c;
+			}), AbstractCondition.RECURSE_HEAD);
+			
+			op.setEffect(cond);
+		}
+		
+		// Remove total-cost from functions
+		problem.getFunctions().remove("total-cost");
+		problem.getInitialFunctionValues().remove(totalCost);
 	}
 }

@@ -1,6 +1,7 @@
 package edu.kit.aquaplanning.model.lifted;
 
 import java.util.List;
+import java.util.function.Function;
 
 public class Negation extends AbstractCondition {
 
@@ -49,9 +50,32 @@ public class Negation extends AbstractCondition {
 	}
 	
 	@Override
-	public AbstractCondition copy() {
+	public Negation copy() {
 		Negation n = new Negation();
 		n.setChildCondition(condition.copy());
 		return n;
+	}
+	
+	@Override
+	public AbstractCondition traverse(Function<AbstractCondition, AbstractCondition> map, int recurseMode) {
+		
+		Negation result;
+		
+		// Apply the inner function, if tail recursion is done
+		if (recurseMode == AbstractCondition.RECURSE_TAIL) {
+			result = (Negation) map.apply(this);
+		} else {
+			result = copy();
+		}
+		
+		// Recurse
+		result.setChildCondition(result.getChildCondition().traverse(map, recurseMode));
+		
+		// Apply the inner function, if head recursion is done
+		if (recurseMode == AbstractCondition.RECURSE_HEAD) {
+			return map.apply(result);
+		}
+		
+		return result;
 	}
 }

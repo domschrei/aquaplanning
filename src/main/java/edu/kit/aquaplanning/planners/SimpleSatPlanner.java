@@ -146,7 +146,6 @@ public class SimpleSatPlanner extends Planner {
 	 * @param solver
 	 */
 	private void addInitialStateClauses(GroundPlanningProblem problem, SatSolver solver) {
-		System.out.println(problem.getInitialState().getAtomSet().toString());
 		for (int atomid = 0; atomid < problem.getNumAtoms(); atomid++) {
 			int atomSatId = getAtomSatVariable(atomid, 0);
 			if (problem.getInitialState().getAtomSet().get(atomid)) {

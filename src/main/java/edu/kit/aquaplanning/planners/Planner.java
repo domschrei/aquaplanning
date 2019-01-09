@@ -3,6 +3,7 @@ package edu.kit.aquaplanning.planners;
 import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
+import edu.kit.aquaplanning.util.Logger;
 
 /**
  * Blueprint for a planner operating on a fully grounded planning problem.
@@ -23,6 +24,9 @@ public abstract class Planner {
 	 * If false is returned, the planner should stop.
 	 */
 	protected boolean withinComputationalBounds(int iterations) {
+		
+		if (Thread.interrupted())
+			return false;
 		
 		boolean withinIterations = false;
 		boolean withinTime = false;
@@ -49,7 +53,7 @@ public abstract class Planner {
 	public abstract Plan findPlan(GroundPlanningProblem problem);
 	
 	/**
-	 * Constructs a planner object fitting the provided configuration.
+	 * Constructs a planner object according to the provided configuration.
 	 */
 	public static Planner getPlanner(Configuration config) {
 		
@@ -58,6 +62,10 @@ public abstract class Planner {
 			return new ForwardSearchPlanner(config);
 		case satBased:
 			return new SimpleSatPlanner(config);
+		case parallel:
+			Logger.log(Logger.INFO, "Doing parallel planning with up to " 
+						+ config.numThreads + " threads.");
+			return new SimpleParallelPlanner(config);
 		}
 		return null;
 	}
