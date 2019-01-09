@@ -9,6 +9,7 @@ import edu.kit.aquaplanning.model.lifted.Operator;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.model.lifted.Quantification;
 import edu.kit.aquaplanning.model.lifted.Quantification.Quantifier;
+import edu.kit.aquaplanning.util.Logger;
 import edu.kit.aquaplanning.model.lifted.AbstractCondition;
 import edu.kit.aquaplanning.model.lifted.AbstractCondition.ConditionType;
 import edu.kit.aquaplanning.model.lifted.NumericExpression.TermType;
@@ -292,7 +293,7 @@ public class Preprocessor {
 			// Check precondition
 			AbstractCondition precond = op.getPrecondition();
 			if (precond.toString().contains("(total-cost)")) {
-				System.out.println("Warning: (total-cost) is used in an operator precondition.");
+				Logger.log(Logger.WARN, "(total-cost) is used in an operator precondition.");
 				error = true;
 				break;
 			}
@@ -307,11 +308,11 @@ public class Preprocessor {
 					NumericEffect eff = (NumericEffect) c;
 					if (eff.getFunction().equals(totalCost)) {
 						if (eff.getType() != Type.increase) {
-							System.out.println("Warning: (total-cost) function is defined "
+							Logger.log(Logger.WARN, "(total-cost) function is defined "
 									+ "using operators other than \"increase\".");
 							error = true;
 						} else if (eff.getExpression().getType() != TermType.constant) {
-							System.out.println("Warning: (total-cost) function is increased "
+							Logger.log(Logger.WARN, "(total-cost) function is increased "
 									+ "by a non-atomic and/or non-constant value.");
 							error = true;
 						} else {							
@@ -324,7 +325,7 @@ public class Preprocessor {
 				} else if (c.getConditionType() == ConditionType.consequential) {
 					// Check if total-cost occurs here
 					if (c.toString().contains("(total-cost)")) {
-						System.out.println("Warning: (total-cost) function appears "
+						Logger.log(Logger.WARN, "(total-cost) function appears "
 								+ "in a conditional effect.");
 						error = true;
 					}
@@ -333,7 +334,7 @@ public class Preprocessor {
 			// Can total-cost be compiled away here?
 			if (error) {
 				// -- no
-				System.out.println("The (total-cost) function will be kept "
+				Logger.log(Logger.WARN, "The (total-cost) function will be kept "
 						+ "as a full-featured numeric fluent in the problem "
 						+ "definition. This can affect performance.");
 				return;

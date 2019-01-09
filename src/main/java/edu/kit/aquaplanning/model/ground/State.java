@@ -134,8 +134,6 @@ public class State {
 			Boolean value = derivedAtoms.get(derivedAtom);
 			if (value == null) {
 				// Derived atom is currently open: No gain of knowledge
-				System.out.println("Concluding that " + derivedAtom.getName() 
-					+ " must be FALSE.");
 				return false;
 			} else {
 				// value is known: return it

@@ -14,6 +14,7 @@ import edu.kit.aquaplanning.model.lifted.Operator;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.model.lifted.Quantification;
 import edu.kit.aquaplanning.model.lifted.AbstractCondition.ConditionType;
+import edu.kit.aquaplanning.util.Logger;
 
 /**
  * A structure representing a (delete-)relaxed planning graph of a planning
@@ -73,9 +74,10 @@ public class RelaxedPlanningGraph {
 		// Add all actions which are applicable
 		List<Operator> newActions = getLiftedActionsReachableFrom(state);
 		liftedActions.add(newActions);
-		System.out.println("Layer " + getCurrentLayer() + ": " 
+		Logger.log(Logger.INFO_V, "Layer " + getCurrentLayer() 
+							+ " of relaxed planning graph: " 
 							+ state.size() + " atoms and "
-							+ newActions.size() + " actions reachable");
+							+ newActions.size() + " actions reachable.");
 		
 		// Apply actions into new state
 		Set<Condition> newState = new HashSet<>();

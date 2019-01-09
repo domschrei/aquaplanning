@@ -7,6 +7,7 @@ import edu.kit.aquaplanning.model.ground.Action;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
 import edu.kit.aquaplanning.model.ground.State;
+import edu.kit.aquaplanning.util.Logger;
 
 /**
  * A very simple plan optimizer which finds and removes loops in state space,
@@ -54,7 +55,7 @@ public class SimplePlanOptimizer extends PlanOptimizer {
 				}
 				// Check if there is still time left!
 				if (!clock.hasTimeLeft()) {
-					System.out.println("TIMEOUT");
+					Logger.log(Logger.INFO, "TIMEOUT: Plan optimizer terminating.");
 					return plan;
 				}
 			}

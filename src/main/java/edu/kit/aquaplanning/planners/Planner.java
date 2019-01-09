@@ -3,6 +3,7 @@ package edu.kit.aquaplanning.planners;
 import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
+import edu.kit.aquaplanning.util.Logger;
 
 /**
  * Blueprint for a planner operating on a fully grounded planning problem.
@@ -62,7 +63,7 @@ public abstract class Planner {
 		case satBased:
 			return new SimpleSatPlanner(config);
 		case parallel:
-			System.out.println("Doing parallel planning with up to " 
+			Logger.log(Logger.INFO, "Doing parallel planning with up to " 
 						+ config.numThreads + " threads.");
 			return new SimpleParallelPlanner(config);
 		}

@@ -1,6 +1,7 @@
 package edu.kit.aquaplanning;
 
 import edu.kit.aquaplanning.planners.SearchStrategy;
+import edu.kit.aquaplanning.util.Logger;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
@@ -48,6 +49,15 @@ public class Configuration {
 	@Option(paramLabel = "numThreads", names = {"-T", "--threads"}, 
 			description = "The amount of threads to spawn (where applicable)", defaultValue = "1")
 	public int numThreads;
+	
+	/* Output */
+	
+	@Option(paramLabel = "verbosityLevel", names = {"-v", "--verbosity"}, 
+			description = "How verbose output should be "
+					+ "(0: errors only, 1: warnings, 2: brief information, etc.) " + USAGE_DEFAULT, 
+			defaultValue = (Logger.INFO + ""))
+	public int verbosityLevel;
+	
 	
 	
 	/*

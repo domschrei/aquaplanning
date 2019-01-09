@@ -30,6 +30,7 @@ import edu.kit.aquaplanning.model.lifted.NumericExpression;
 import edu.kit.aquaplanning.model.lifted.Operator;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.model.lifted.Predicate;
+import edu.kit.aquaplanning.util.Logger;
 import edu.kit.aquaplanning.util.Pair;
 import edu.kit.aquaplanning.util.Triple;
 import edu.kit.aquaplanning.model.lifted.AbstractCondition.ConditionType;
@@ -628,7 +629,7 @@ public abstract class BaseGrounder implements Grounder {
 	}
 	
 	private void error(String msg) {
-		System.err.println("An error during grounding occurred.");
-		throw new IllegalArgumentException(msg);
+		Logger.log(Logger.ERROR, "An error during grounding occurred: " + msg);
+		throw new RuntimeException(msg);
 	}
 }
