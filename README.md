@@ -25,9 +25,7 @@ At the end of the pipeline, a tiny plan validator can be employed to ensure the 
 ## Building and installing
 
 The framework is written from scratch and thus does not rely on any Planning-related frameworks. It does depend on antlr4 (for the parsing of PDDL files), Picocli for argument parsing, and sat4j as a SAT solver backend. We use [Maven](https://maven.apache.org/) as a build system to resolve these dependencies (package `maven` in Debian-based Linux distributions). 
-In the base directory, run `mvn package` which will run the included JUnit tests and create a runnable jar file in `target/aquaplanning-<version>-jar-with-dependencies.jar`. You can launch the application with `java -jar <runnable-jar> <domain-file> <problem-file>`.
-
-Using the Eclipse IDE, the project can be directly imported as a Maven project and then built and/or installed.
+In the base directory, run `mvn package` which will create a runnable jar file in `target/aquaplanning-<version>-jar-with-dependencies.jar`. You can launch the application with `java -jar <runnable-jar>`. JUnit tests are disabled by default (as they potentially take a long time); you can re-enable them by appending `-DskipTests=false` to the build command.
 
 ## Usage
 
