@@ -5,11 +5,14 @@ import java.io.IOException;
 
 import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.Configuration.HeuristicType;
+import edu.kit.aquaplanning.Configuration.PlannerType;
 import edu.kit.aquaplanning.grounding.Grounder;
 import edu.kit.aquaplanning.grounding.RelaxedPlanningGraphGrounder;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
+import edu.kit.aquaplanning.optimization.Clock;
+import edu.kit.aquaplanning.optimization.SimplePlanOptimizer;
 import edu.kit.aquaplanning.parsing.ProblemParser;
 import edu.kit.aquaplanning.planners.ForwardSearchPlanner;
 import edu.kit.aquaplanning.planners.Planner;
@@ -54,6 +57,30 @@ public class TestPlanners extends TestCase {
 		fullTest("testfiles/adl/domain1.pddl", "testfiles/adl/p1.pddl", config);
 		
 		fullTest("testfiles/adl/domain2.pddl", "testfiles/adl/p2.pddl");
+	}
+	
+	public void testPlanOptimization() throws FileNotFoundException, IOException {
+		
+		Configuration config = new Configuration();
+		config.optimizePlan = true;
+		config.revisitStates = true;
+		config.searchStrategy = Mode.randomChoice;
+		config.seed = 1337;
+		config.plannerType = PlannerType.forwardSSS;
+		config.domainFile = "testfiles/gripper/domain.pddl";
+		config.problemFile = "testfiles/gripper/p01.pddl";
+		PlanningProblem pp = new ProblemParser().parse(config.domainFile, config.problemFile);
+		GroundPlanningProblem gpp = new RelaxedPlanningGraphGrounder(config).ground(pp);
+		Plan plan = Planner.getPlanner(config).findPlan(gpp);
+		assertTrue(Validator.planIsValid(gpp, plan));
+		System.out.println("Initial plan length: " + plan.getLength());
+		System.out.println(plan);
+		Plan newPlan = new SimplePlanOptimizer(gpp).improvePlan(plan, new Clock(5000));
+		assertTrue(Validator.planIsValid(gpp, newPlan));
+		System.out.println("New plan length: " + newPlan.getLength());
+		System.out.println(newPlan);
+		assertTrue("The plan optimization somehow worsened the plan.",
+				plan.getLength() >= newPlan.getLength());
 	}
 	
 	public void testDefaultDomains() throws FileNotFoundException, IOException {

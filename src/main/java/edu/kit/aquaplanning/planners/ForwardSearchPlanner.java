@@ -105,7 +105,7 @@ public class ForwardSearchPlanner extends Planner {
 		if (frontier.isEmpty()) {
 			System.out.println("Search space exhausted.");
 		} else {
-			System.out.println("Computational resources exhausted.");
+			System.out.println("Interrupted and/or computational resources exhausted.");
 		}
 		long timeStop = System.nanoTime();
 		System.out.println("Visited " + iteration + " nodes in total. Search time: " 
