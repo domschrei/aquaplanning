@@ -102,12 +102,12 @@ public class TestPlanners extends TestCase {
 		
 		System.out.println("Testing domain \"" + domainFile 
 				+ "\", problem \"" + problemFile + "\".");
-			
+		
 		System.out.println("Parsing ...");
 		pp = new ProblemParser().parse(domainFile, problemFile);
 		String out = pp.toString();
 		assertTrue("String representation of problem is null", out != null);
-				
+		
 		System.out.println("Grounding ...");
 		Grounder grounder = new RelaxedPlanningGraphGrounder(new Configuration());
 		gpp = grounder.ground(pp);

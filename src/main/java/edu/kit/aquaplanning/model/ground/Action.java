@@ -184,7 +184,7 @@ public class Action {
 		if (cost != 0) {			
 			out += "[cost:" + cost + "]";
 		}
-		out += " PRE: { " + complexPrecondition.toString() + " ";
+		out += " PRE: { " + (complexPrecondition == null ? "" : complexPrecondition.toString()) + " ";
 		if (preconditionsPos.numAtoms() > 0) {					
 			out += atomSetToString.apply(preconditionsPos) + " "; 
 		}
@@ -195,7 +195,7 @@ public class Action {
 			out += "NOT " + atomSetToString.apply(preconditionsNeg) + " "; 
 		}
 		out += "}";
-		out += " POST: { " + complexEffect.toString() + " ";
+		out += " POST: { " + (complexEffect == null ? "" : complexEffect.toString()) + " ";
 		if (effectsPos.numAtoms() > 0) {					
 			out += atomSetToString.apply(effectsPos) + " "; 
 		}
