@@ -219,7 +219,7 @@ public abstract class BaseGrounder implements Grounder {
 		
 		for (AbstractCondition c : simpleSet.getConditions()) {
 			if (c.getConditionType() != ConditionType.atomic) {
-				// TODO ERROR
+				error("A simple set of conditions contains non-atomic condition " + c + ".");
 			}
 			Condition liftedAtom = (Condition) c;
 			atomList.add(atom(liftedAtom.getPredicate(), liftedAtom.getArguments(), liftedAtom.isNegated()));
@@ -244,9 +244,7 @@ public abstract class BaseGrounder implements Grounder {
 		
 		for (AbstractCondition c : simpleSet.getConditions()) {
 			if (c.getConditionType() != ConditionType.atomic) {
-				// TODO ERROR
-				System.err.println("Error: Condition " + c + " is not atomic.");
-				System.exit(1);
+				error("A simple set of conditions contains non-atomic condition " + c + ".");
 			}
 			Condition liftedAtom = (Condition) c;
 			atomList.add(atom(liftedAtom.getPredicate(), liftedAtom.getArguments(), liftedAtom.isNegated()));
@@ -259,8 +257,7 @@ public abstract class BaseGrounder implements Grounder {
 			if (c.getConditionType() == ConditionType.conjunction) {
 				complexSetList.addAll(((ConditionSet) c).getConditions());
 			} else if (c.getConditionType() != ConditionType.consequential) {
-				System.out.print("Error: Condition " + c + " is inside an effect.");
-				System.exit(1);
+				error("Condition " + c + " (type " + c.getConditionType() + ") is part of an effect.");
 			} else {
 				ConsequentialCondition cc = (ConsequentialCondition) c;
 				Pair<List<Atom>, Precondition> splitPrerequisite = splitAndGroundPrecondition(cc.getPrerequisite());
@@ -314,7 +311,7 @@ public abstract class BaseGrounder implements Grounder {
 	 */
 	protected Precondition toPrecondition(AbstractCondition cond, boolean negated) {
 		
-		Precondition pre;
+		Precondition pre = null;
 		ConditionSet set;
 		switch (cond.getConditionType()) {
 		case atomic:
@@ -366,7 +363,7 @@ public abstract class BaseGrounder implements Grounder {
 			pre.setExpRight(toGroundNumExp(numCond.getExpRight()));
 			break;
 		default:
-			throw new IllegalArgumentException("Invalid precondition type: " + cond.getConditionType());
+			error("Invalid precondition type: " + cond.getConditionType());
 		}
 		
 		// Negated conjunction / disjunction / implication: 
@@ -405,7 +402,7 @@ public abstract class BaseGrounder implements Grounder {
 				effect.setAtom(atom(c.getPredicate(), c.getArguments(), negated));
 				return effect;
 			} else {
-				throw new IllegalArgumentException("Negation inside an effect on a non-atomic level.");
+				error("Negation inside an effect on a non-atomic level.");
 			}
 		case conjunction:
 			effect = new Effect(EffectType.conjunction);
@@ -440,8 +437,9 @@ public abstract class BaseGrounder implements Grounder {
 			effect.setExpression(goalExp);
 			return effect;
 		default:
-			throw new IllegalArgumentException("Invalid effect type \"" 
+			error("Invalid effect type \"" 
 					+ cond.getConditionType() + "\".");
+			return null;
 		}
 	}
 	
@@ -466,8 +464,9 @@ public abstract class BaseGrounder implements Grounder {
 			}
 			return gExp;
 		default:
-			throw new IllegalArgumentException("Invalid numeric expression type \"" 
+			error("Invalid numeric expression type \"" 
 					+ exp.getType() + "\".");
+			return null;
 		}
 	}
 	
@@ -617,7 +616,7 @@ public abstract class BaseGrounder implements Grounder {
 	private boolean holdsEqualityCondition(Condition cond) {
 		
 		if (!isEqualityCondition(cond)) {
-			throw new IllegalArgumentException("The provided condition does not represent an equality");
+			error("The provided condition does not represent an equality.");
 		}
 		
 		if (cond.getNumArgs() == 2) {
@@ -676,9 +675,23 @@ public abstract class BaseGrounder implements Grounder {
 					AbstractCondition cond = da.getLiftedCondition();
 					cond = resolveEqualities(cond);
 					da.setCondition(toPrecondition(cond, false));
+					
+					if (trueCondition.equals(cond)) {
+						// TODO Derived predicate simplifies to true;
+						// remove it from all places
+					} else if (falseCondition.equals(cond)) {
+						// TODO Derived predicate simplifies to false;
+						// remove it from all places
+					}
+					
 					change = true;
 				}
 			}
 		}
+	}
+	
+	private void error(String msg) {
+		System.err.println("An error during grounding occurred.");
+		throw new IllegalArgumentException(msg);
 	}
 }

@@ -76,8 +76,10 @@ public class Action {
 	 */
 	public boolean isApplicable(State state) {
 		
+		// Check complex precondition, if present
 		if (complexPrecondition != null && !complexPrecondition.holds(state))
 			return false;
+		// Check bitset preconditions
 		if (!state.holdsAll(preconditionsPos))
 			return false;
 		if (!state.holdsNone(preconditionsNeg))
@@ -92,8 +94,10 @@ public class Action {
 	 */
 	public boolean isApplicableRelaxed(State state) {
 		
+		// Check complex precondition, if present
 		if (complexPrecondition != null && !complexPrecondition.holdsRelaxed(state))
 			return false;
+		// Check bitset preconditions
 		if (!state.holdsAll(preconditionsPos))
 			return false;
 		return true;
@@ -110,12 +114,14 @@ public class Action {
 		// Apply effects
 		State newState = new State(state);
 		if (complexEffect != null) {
+			// Complex effect
 			newState = complexEffect.applyTo(state);
 		}
+		// Bitset effects
 		newState.addAll(effectsPos);
 		newState.removeAll(effectsNeg);
 		
-		// Apply conditional effects, if applicable
+		// Apply (simple) conditional effects, if applicable
 		for (ConditionalEffect condEffect : conditionalEffects) {
 			
 			// Are all conditions satisfied?
@@ -141,14 +147,16 @@ public class Action {
 	 */
 	public State applyRelaxed(State state) {
 		
-		// Apply basic positive effects
+		// Apply positive effects
 		State newState = new State(state);
-		if (complexEffect != null) {			
+		if (complexEffect != null) {
+			// Complex effect
 			newState = complexEffect.applyRelaxedTo(state);
 		}
+		// Bitset effects
 		newState.addAll(effectsPos);
 		
-		// Apply positive conditional effects, if applicable
+		// Apply (simple) positive conditional effects, if applicable
 		for (ConditionalEffect condEffect : conditionalEffects) {
 
 			// Are all POSITIVE conditions satisfied?
