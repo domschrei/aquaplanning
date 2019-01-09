@@ -113,8 +113,7 @@ public class TestPlanners extends TestCase {
 		assertTrue(plan.getLength() > 0);
 		assertTrue(Validator.planIsValid(gpp, plan));	
 	}
-
-
+	
 	public void testCustomDomains() throws FileNotFoundException, IOException {
 
 		fullTest("testfiles/RPG/domain.pddl", "testfiles/RPG/p01.pddl");
@@ -130,12 +129,12 @@ public class TestPlanners extends TestCase {
 		
 		System.out.println("Testing domain \"" + domainFile 
 				+ "\", problem \"" + problemFile + "\".");
-			
+		
 		System.out.println("Parsing ...");
 		pp = new ProblemParser().parse(domainFile, problemFile);
 		String out = pp.toString();
 		assertTrue("String representation of problem is null", out != null);
-				
+		
 		System.out.println("Grounding ...");
 		Grounder grounder = new RelaxedPlanningGraphGrounder(new Configuration());
 		gpp = grounder.ground(pp);

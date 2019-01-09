@@ -15,10 +15,16 @@ Aquaplanning supports PDDL (Planning Domain Description Language) files as an in
 * Action costs (in its basic form `(:function total-cost - number)`, with constant positive cost per operator)
 * Derived predicates (as long as the resulting ground axioms are not directly recursing on themselves)
 
-For planning problems using these features (or any subset), a full representation of the read problem is available in the form of Java objects after parsing, as well as a separate representation after grounding the problem.
+In addition, Aquaplanning supports the following aspects of **numeric planning**:
+
+* Numeric fluents (a.k.a. functions), e.g. `(capacity ?truck)`
+* Numeric expressions in preconditions, e.g. `(> (capacity ?truck) 0)`
+* Numeric effects, e.g. `(decrease (capacity ?truck) 1)`
+
+For planning problems using these features (or any subset), a full representation of the read problem is available in the form of Java objects after parsing, as well as a separate ground representation after grounding the problem.
 For grounding purposes, Aquaplanning traverses the problem's (delete-)relaxed planning graph, resulting in a reasonable amount of atoms and actions in most cases.
 
-A generic state space forward search is provided as a planner. As of now, a few common search strategies (BFS, DFS, A\*, Weighted A\*, Best-first, random choice) are implemented, as well as a couple of simple heuristics to guide the A\* and Best-first searches.  
+A generic state space forward search is provided as a planner. As of now, a few common search strategies (BFS, DFS, A\*, Weighted A\*, Best-first, random choice) are implemented, as well as a couple of simple heuristics to guide the A\* and Best-first searches.
 
 At the end of the pipeline, a tiny plan validator can be employed to ensure the planner's correctness.
 

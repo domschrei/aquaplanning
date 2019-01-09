@@ -1,10 +1,7 @@
 package edu.kit.aquaplanning.grounding;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.model.ground.Action;
@@ -12,6 +9,8 @@ import edu.kit.aquaplanning.model.ground.Atom;
 import edu.kit.aquaplanning.model.ground.ConditionalEffect;
 import edu.kit.aquaplanning.model.ground.DerivedAtom;
 import edu.kit.aquaplanning.model.ground.Effect;
+import edu.kit.aquaplanning.model.ground.GroundNumericExpression;
+import edu.kit.aquaplanning.model.ground.NumericAtom;
 import edu.kit.aquaplanning.model.ground.Effect.EffectType;
 import edu.kit.aquaplanning.model.ground.Precondition;
 import edu.kit.aquaplanning.model.ground.Precondition.PreconditionType;
@@ -21,15 +20,21 @@ import edu.kit.aquaplanning.model.lifted.Argument;
 import edu.kit.aquaplanning.model.lifted.Condition;
 import edu.kit.aquaplanning.model.lifted.ConditionSet;
 import edu.kit.aquaplanning.model.lifted.ConsequentialCondition;
-import edu.kit.aquaplanning.model.lifted.Axiom;
+import edu.kit.aquaplanning.model.lifted.Function;
 import edu.kit.aquaplanning.model.lifted.Implication;
 import edu.kit.aquaplanning.model.lifted.Negation;
+import edu.kit.aquaplanning.model.lifted.NumericCondition;
+import edu.kit.aquaplanning.model.lifted.NumericEffect;
+import edu.kit.aquaplanning.model.lifted.NumericEffect.Type;
+import edu.kit.aquaplanning.model.lifted.NumericExpression;
 import edu.kit.aquaplanning.model.lifted.Operator;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.model.lifted.Predicate;
+import edu.kit.aquaplanning.util.Pair;
+import edu.kit.aquaplanning.util.Triple;
 import edu.kit.aquaplanning.model.lifted.AbstractCondition.ConditionType;
+import edu.kit.aquaplanning.model.lifted.NumericExpression.TermType;
 
-@SuppressWarnings("unchecked") // needed for return type of getSimpleAtoms
 /**
  * Abstract base class which all grounders should inherit from.
  * Provides a basic data structure for grounding and retrieval
@@ -38,211 +43,183 @@ import edu.kit.aquaplanning.model.lifted.AbstractCondition.ConditionType;
  */
 public abstract class BaseGrounder implements Grounder {
 
+	protected AtomTable atomTable;
+	
 	protected PlanningProblem problem;
 	protected Configuration config;
 	
-	protected List<Argument> constants;
-	protected Map<String, Atom> atoms;
-	protected Map<Integer, String> atomNames;
-	
-	protected Map<String, DerivedAtom> derivedAtoms;
-	protected Map<Integer, String> derivedAtomNames;
-	
+	protected List<Argument> constants;	
 	protected List<Action> actions;
 	
 	public BaseGrounder(Configuration config) {
 		this.config = config;
-		
-		atoms = new HashMap<>();
-		atomNames = new HashMap<>();
-		derivedAtoms = new HashMap<>();
-		derivedAtomNames = new HashMap<>();
+		this.atomTable = new AtomTable();
 	}
 	
 	/**
-	 * Retrieves a copy of the atom corresponding to the provided predicate 
-	 * and constant arguments. If this atom has not been grounded before,
-	 * it will be created.
+	 * Converts the provided precondition (with all constant arguments)
+	 * into a pair of a flat atom list and a complex precondition object.
+	 * The complex precondition may be null if the condition does not
+	 * contain any complex parts.
 	 */
-	protected Atom atom(Predicate p, List<Argument> constants) {
+	protected Pair<List<Atom>, Precondition> splitAndGroundPrecondition(AbstractCondition cond) {
 		
-		// Check if predicate is simple
-		if (p.isDerived()) {
-			throw new IllegalArgumentException("Attempted to create simple atom "
-					+ "of a derived predicate.\nPredicate: " + p + "; constants: " + constants);
+		Pair<ConditionSet, ConditionSet> split = splitCondition(cond);
+		ConditionSet simpleSet = split.getLeft();
+		ConditionSet complexSet = split.getRight();
+		
+		List<Atom> atomList = new ArrayList<>();
+		Precondition complexPrecondition = new Precondition(PreconditionType.conjunction);
+		boolean hasComplexPart = false;
+		
+		for (AbstractCondition c : simpleSet.getConditions()) {
+			if (c.getConditionType() != ConditionType.atomic) {
+				error("A simple set of conditions contains non-atomic condition " + c + ".");
+			}
+			Condition liftedAtom = (Condition) c;
+			if (liftedAtom.getPredicate().isDerived()) {
+				Precondition derived = new Precondition(PreconditionType.derived);
+				derived.setDerivedAtom(atomTable.derivedAtom(liftedAtom.getPredicate(), 
+						liftedAtom.getArguments()));
+				if (liftedAtom.isNegated()) {
+					Precondition negated = new Precondition(PreconditionType.negation);
+					negated.add(derived);
+					complexPrecondition.add(negated);
+				} else {					
+					complexPrecondition.add(derived);
+				}
+				hasComplexPart = true;
+			} else {				
+				atomList.add(atomTable.atom(liftedAtom.getPredicate(), 
+						liftedAtom.getArguments(), liftedAtom.isNegated()));
+			}
 		}
-		// Key: name of atom
-		String atomName = getAtomName(p, constants);
-		// Does the action already exists?
-		if (!atoms.containsKey(atomName)) {
-			// -- no: create new atom
-			int atomId = atoms.size();
-			atoms.put(atomName, new Atom(atomId, atomName, true));
-			atomNames.put(atomId, atomName);
+		
+		for (AbstractCondition c : complexSet.getConditions()) {
+			complexPrecondition.add(toPrecondition(c, false));
+			hasComplexPart = true;
 		}
-		// Return copy of atom
-		return atoms.get(atomName).copy();
+		
+		return new Pair<>(atomList, hasComplexPart ? complexPrecondition : null);
 	}
 	
 	/**
-	 * Retrieves the derived atom corresponding to the provided
-	 * derived predicate and constant arguments. If this atom has not 
-	 * been grounded before, it will be created. Note that the original
-	 * object is returned and changes to it will be reflected in the
-	 * original data structure.
+	 * Converts the provided effect (with all constant arguments)
+	 * into a flat atom list, a list of simple conditional effects,
+	 * and a complex effect object.
+	 * The complex effect may be null if the condition does not
+	 * contain any complex parts.
 	 */
-	protected DerivedAtom derivedAtom(Predicate p, List<Argument> constants) {
+	protected Triple<List<Atom>, List<ConditionalEffect>, Effect> splitAndGroundEffect(
+			AbstractCondition cond) {
 		
-		// Check if predicate is simple
-		if (!p.isDerived()) {
-			throw new IllegalArgumentException("Attempted to create derived atom "
-					+ "of a simple predicate.\nPredicate: " + p + "; constants: " + constants);
+		Pair<ConditionSet, ConditionSet> split = splitCondition(cond);
+		ConditionSet simpleSet = split.getLeft();
+		ConditionSet complexSet = split.getRight();
+		
+		List<Atom> atomList = new ArrayList<>();
+		List<ConditionalEffect> condEffList = new ArrayList<>();
+		Effect complexEffect = new Effect(EffectType.conjunction);
+		
+		for (AbstractCondition c : simpleSet.getConditions()) {
+			if (c.getConditionType() != ConditionType.atomic) {
+				error("A simple set of conditions contains non-atomic condition " + c + ".");
+			}
+			Condition liftedAtom = (Condition) c;
+			atomList.add(atomTable.atom(liftedAtom.getPredicate(), liftedAtom.getArguments(), 
+					liftedAtom.isNegated()));
 		}
-		// Key: name of atom
-		String atomName = getAtomName(p, constants);
-		// Does the action already exists?
-		if (!derivedAtoms.containsKey(atomName)) {
-			// -- no: create new atom
-			int atomId = - (atoms.size() + derivedAtoms.size());
-			Axiom axiom = problem.getDerivedPredicates().get(p.getName());
-			AbstractCondition cond = axiom.getCondition().getConditionBoundToArguments(
-					axiom.getArguments(), constants);
-			derivedAtoms.put(atomName, new DerivedAtom(atomId, atomName, cond));
-			derivedAtomNames.put(atomId, atomName);
-		}
-		// Return derived atom
-		return derivedAtoms.get(atomName);
-	}
-	
-	/**
-	 * Retrieves a copy of the atom corresponding to the provided predicate 
-	 * and constant arguments. If this atom has not been grounded before,
-	 * it will be created.
-	 */
-	protected Atom atom(Predicate p, List<Argument> constants, boolean negated) {
 		
-		Atom atom = atom(p, constants);
-		atom.set(!negated);
-		return atom;
-	}
-	
-	/**
-	 * Assembles the name of an atom with a given predicate and a list
-	 * of constant arguments.
-	 */
-	protected String getAtomName(Predicate p, List<Argument> args) {
-		
-		String atomName = "(" + p.getName() + " ";
-		for (Argument c : args) {
-			atomName += c.getName() + " ";
-		}
-		atomName = atomName.substring(0, atomName.length()-1) + ")";
-		return atomName;
-	}
-	
-	/**
-	 * Assembles the name of an action corresponding to the provided 
-	 * operator with the provided list of constant arguments.
-	 */
-	protected String getActionName(Operator op, List<Argument> args) {
-		
-		String atomName = "(" + op.getName() + " ";
-		for (Argument c : args) {
-			atomName += c.getName() + " ";
-		}
-		atomName = atomName.substring(0, atomName.length()-1) + ")";
-		return atomName;
-	}
-	
-	/**
-	 * Creates a State object corresponding to the provided set
-	 * of constant conditions.
-	 */
-	protected State getState(List<Condition> constantConditions) {
-		
-		List<Object> result = getSimpleAtoms(constantConditions);
-		return new State((List<Atom>) result.get(0));
-	}
-	
-	/**
-	 * Processes all conditions in the provided list
-	 * and returns ground atoms and conditional effects. 
-	 * The first element in the returned list is a List<\Atom> consisting of all atoms,
-	 * and the second element is a List<\ConditionalEffect> with all conditional effects.
-	 * <br/>This method only works for simple, i.e. conjunctive conditions.
-	 */
-	protected List<Object> getSimpleAtoms(List<? extends AbstractCondition> conditions) {
-		
-		List<Atom> atoms = new ArrayList<>();
-		List<ConditionalEffect> condEffects = new ArrayList<>();
-				
-		// As long as conditions are left to process ...
-		List<AbstractCondition> conditionsToProcess = new ArrayList<>();
-		conditionsToProcess.addAll(conditions);
-		for (int i = 0; i < conditionsToProcess.size(); i++) {
-			AbstractCondition c = conditionsToProcess.get(i);
+		List<AbstractCondition> complexSetList = new ArrayList<>();
+		complexSetList.addAll(complexSet.getConditions());
+		boolean hasComplexEffect = false;
+		while (!complexSetList.isEmpty()) {
+			AbstractCondition c = complexSetList.remove(0);
 			
-			if (c.getConditionType() == ConditionType.atomic) {
-									
-				// Atomic condition
-				Condition cond = (Condition) c;
-				Atom atom = atom(cond.getPredicate(), cond.getArguments());
-				atom.set(!cond.isNegated());
-				atoms.add(atom);
-				
-			} else if (c.getConditionType() == ConditionType.negation) {
-				
-				// Negated atomic condition
-				boolean negated = false;
-				while (c.getConditionType() == ConditionType.negation) {
-					c = ((Negation) c).getChildCondition();
-					negated = !negated;
-				}
-				if (c.getConditionType() != ConditionType.atomic) {
-					throw new IllegalArgumentException("Negation surrounds non-atomic condition, "
-							+ "but the condition was identified as simple.");
-				}
-				Condition cond = (Condition) c;
-				Atom atom = atom(cond.getPredicate(), cond.getArguments());
-				if (cond.isNegated()) negated = !negated;
-				atom.set(!negated);
-				atoms.add(atom);
-				
-			} else if (c.getConditionType() == ConditionType.conjunction) {
-				
-				ConditionSet set = (ConditionSet) c;
-				for (AbstractCondition child : set.getConditions()) {
-					conditionsToProcess.add(child);
-				}
-				
-			} else if (c.getConditionType() == ConditionType.consequential) {
-				
+			switch (c.getConditionType()) {
+			case atomic:
+				Condition condition = (Condition) c;
+				atomList.add(atomTable.atom(condition.getPredicate(), 
+						condition.getArguments(), condition.isNegated()));
+				break;
+			case numericEffect:
+				complexEffect.add(toEffect(c));
+				hasComplexEffect = true;
+				break;
+			case conjunction:
+				complexSetList.addAll(((ConditionSet) c).getConditions());
+				break;
+			case consequential:
 				ConsequentialCondition cc = (ConsequentialCondition) c;
-				List<Object> resultsPre = getSimpleAtoms(Arrays.asList(cc.getPrerequisite()));
-				List<Object> resultsCons = getSimpleAtoms(Arrays.asList(cc.getConsequence()));
-				List<Atom> pre = new ArrayList<>();
-				pre.addAll((List<Atom>) resultsPre.get(0));
-				List<Atom> cons = new ArrayList<>();
-				cons.addAll((List<Atom>) resultsCons.get(0));
-				ConditionalEffect effect = new ConditionalEffect(pre, cons);
-				condEffects.add(effect);
+				
+				// Split prerequisite and consequence into simple and complex part
+				Pair<List<Atom>, Precondition> splitPrerequisite = splitAndGroundPrecondition(
+						cc.getPrerequisite());
+				Triple<List<Atom>, List<ConditionalEffect>, Effect> splitConsequence 
+						= splitAndGroundEffect(cc.getConsequence());
+				
+				Precondition complexPrerequisite = splitPrerequisite.getRight();
+				if (complexPrerequisite == null) {
+					// Can compile into an "easy" conditional effect
+					// (the consequence may never have complex parts)
+					List<Atom> simplePrerequisite = splitPrerequisite.getLeft();
+					ConditionalEffect eff = new ConditionalEffect(simplePrerequisite, 
+							splitConsequence.getLeft());
+					condEffList.add(eff);
+				} else {
+					// Add **the whole** cond. effect to complex effects
+					Effect condEff = toEffect(c);
+					complexEffect.add(condEff);
+					hasComplexEffect = true;
+				}	
+				break;
+			default:
+				throw new IllegalArgumentException("Condition " + c 
+						+ " (type " + c.getConditionType() 
+						+ ") is inside an effect.");				
+			}
+		}
+		
+		return new Triple<>(atomList, condEffList, hasComplexEffect ? complexEffect : null);
+	}
+	
+	/**
+	 * Splits the given condition (with all constant arguments)
+	 * into two sets of conditions whereas the first set only
+	 * consists of conjunctive atomic conditions and the second
+	 * set contains all other (i.e. more complex) expressions.
+	 */
+	protected Pair<ConditionSet, ConditionSet> splitCondition(AbstractCondition cond) {
+		
+		ConditionSet simplePartSet = new ConditionSet(ConditionType.conjunction);
+		ConditionSet complexPartSet = new ConditionSet(ConditionType.conjunction);
+		
+		List<AbstractCondition> condList = new ArrayList<>();
+		condList.add(cond);
+		while (!condList.isEmpty()) {
+			
+			cond = condList.remove(0);
+			if (cond.getConditionType() == ConditionType.atomic) {
+				simplePartSet.add(cond);
+				
+			} else if (cond.getConditionType() == ConditionType.conjunction) {
+				condList.addAll(((ConditionSet) cond).getConditions());
 				
 			} else {
-				throw new IllegalArgumentException("A complex condition is attempted "
-						+ "to be ground into a simple atom list. Condition: " + c);
+				complexPartSet.add(cond);
 			}
-		};
+		}
 		
-		return Arrays.asList(atoms, condEffects);
+		return new Pair<>(simplePartSet, complexPartSet);
 	}
 	
 	/**
 	 * Converts a lifted condition into a ground precondition.
-	 * Set the negated argument to "false" for a usual top-level call.
+	 * Set the 2nd argument, "negated", to "false" for a usual top-level call.
 	 */
 	protected Precondition toPrecondition(AbstractCondition cond, boolean negated) {
 		
-		Precondition pre;
+		Precondition pre = null;
 		ConditionSet set;
 		switch (cond.getConditionType()) {
 		case atomic:
@@ -251,7 +228,7 @@ public abstract class BaseGrounder implements Grounder {
 				// Derived condition: Do not ground the derived meaning,
 				// but only add a placeholder derived atom
 				pre = new Precondition(PreconditionType.derived);
-				pre.setDerivedAtom(derivedAtom(c.getPredicate(), c.getArguments()));
+				pre.setDerivedAtom(atomTable.derivedAtom(c.getPredicate(), c.getArguments()));
 				if (c.isNegated() != negated) {
 					// Add enclosing negation around atom
 					Precondition neg = new Precondition(PreconditionType.negation);
@@ -260,7 +237,8 @@ public abstract class BaseGrounder implements Grounder {
 				}
 			} else {
 				pre = new Precondition(PreconditionType.atom);
-				pre.setAtom(atom(c.getPredicate(), c.getArguments(), c.isNegated() != negated));
+				pre.setAtom(atomTable.atom(c.getPredicate(), c.getArguments(), 
+						c.isNegated() != negated));
 			}
 			return pre;
 		case negation:
@@ -286,8 +264,15 @@ public abstract class BaseGrounder implements Grounder {
 			pre.add(toPrecondition(i.getIfCondition(), true));
 			pre.add(toPrecondition(i.getThenCondition(), false));
 			break;
+		case numericPrecondition:
+			pre = new Precondition(PreconditionType.numeric);
+			NumericCondition numCond = (NumericCondition) cond;
+			pre.setComparator(numCond.getComparator());
+			pre.setExpLeft(toGroundNumExp(numCond.getExpLeft()));
+			pre.setExpRight(toGroundNumExp(numCond.getExpRight()));
+			break;
 		default:
-			throw new IllegalArgumentException("Invalid precondition type: " + cond.getConditionType());
+			error("Invalid precondition type: " + cond.getConditionType());
 		}
 		
 		// Negated conjunction / disjunction / implication: 
@@ -312,7 +297,7 @@ public abstract class BaseGrounder implements Grounder {
 		case atomic:
 			effect = new Effect(EffectType.atom);
 			c = (Condition) cond;
-			effect.setAtom(atom(c.getPredicate(), c.getArguments()));
+			effect.setAtom(atomTable.atom(c.getPredicate(), c.getArguments(), c.isNegated()));
 			return effect;
 		case negation:
 			boolean negated = false;
@@ -323,10 +308,10 @@ public abstract class BaseGrounder implements Grounder {
 			if (cond.getConditionType() == ConditionType.atomic) {
 				effect = new Effect(EffectType.atom);
 				c = (Condition) cond;
-				effect.setAtom(atom(c.getPredicate(), c.getArguments(), negated));
+				effect.setAtom(atomTable.atom(c.getPredicate(), c.getArguments(), negated));
 				return effect;
 			} else {
-				throw new IllegalArgumentException("Negation inside an effect on a non-atomic level.");
+				error("Negation inside an effect on a non-atomic level.");
 			}
 		case conjunction:
 			effect = new Effect(EffectType.conjunction);
@@ -341,8 +326,56 @@ public abstract class BaseGrounder implements Grounder {
 			effect.setCondition(toPrecondition(cc.getPrerequisite(), false));
 			effect.add(toEffect(cc.getConsequence()));
 			return effect;
+		case numericEffect:
+			effect = new Effect(EffectType.numeric);
+			NumericEffect numEffect = (NumericEffect) cond;
+			NumericAtom atom = atomTable.numericAtom(numEffect.getFunction(), Float.NaN);
+			GroundNumericExpression goalExp = toGroundNumExp(numEffect.getExpression());
+			Type type = numEffect.getType();
+			if (type != Type.assign) {
+				TermType termType = type == Type.increase ? TermType.addition : 
+					type == Type.decrease ? TermType.subtraction : 
+					type == Type.scaleUp ? TermType.multiplication : 
+					/*type == Type.scaleDown ? */TermType.division;
+				GroundNumericExpression composite = new GroundNumericExpression(termType);
+				composite.add(new GroundNumericExpression(atom));
+				composite.add(goalExp);
+				goalExp = composite;
+			}
+			effect.setFunction(atom);
+			effect.setExpression(goalExp);
+			return effect;
 		default:
-			throw new IllegalArgumentException("Invalid effect type \"" + cond.getConditionType() + ".");
+			error("Invalid effect type \"" 
+					+ cond.getConditionType() + "\".");
+			return null;
+		}
+	}
+	
+	protected GroundNumericExpression toGroundNumExp(NumericExpression exp) {
+		GroundNumericExpression gExp;
+		switch (exp.getType()) {
+		case constant:
+			return new GroundNumericExpression(exp.getValue());
+		case function:
+			return new GroundNumericExpression(atomTable.numericAtom(exp.getFunction(), Float.NaN));
+		case negation:
+			gExp = new GroundNumericExpression(TermType.negation);
+			gExp.add(gExp);
+			return gExp;
+		case addition:
+		case subtraction:
+		case multiplication:
+		case division:
+			gExp = new GroundNumericExpression(exp.getType());
+			for (NumericExpression child : exp.getChildren()) {
+				gExp.add(toGroundNumExp(child));
+			}
+			return gExp;
+		default:
+			error("Invalid numeric expression type \"" 
+					+ exp.getType() + "\".");
+			return null;
 		}
 	}
 	
@@ -363,33 +396,43 @@ public abstract class BaseGrounder implements Grounder {
 		}
 		
 		// Assemble action name
-		String actionName = getActionName(liftedAction, liftedAction.getArguments());
+		String actionName = atomTable.getActionName(liftedAction, liftedAction.getArguments());
 		
-		if (isConditionConjunctive(liftedAction.getPrecondition(), false) &&
-				isConditionConjunctive(liftedAction.getEffect(), false)) {
-			
-			// Simple action
-
-			// Assemble preconditions and effects
-			List<Object> results = getSimpleAtoms(Arrays.asList(liftedAction.getPrecondition()));
-			List<Atom> preconditions = (List<Atom>) results.get(0);
-			results = getSimpleAtoms(Arrays.asList(liftedAction.getEffect()));
-			List<Atom> effects = (List<Atom>) results.get(0);
-			List<ConditionalEffect> conditionalEffects = (List<ConditionalEffect>) results.get(1);
-			
-			// Assemble action
-			action = new Action(actionName, preconditions, effects, conditionalEffects);
+		// Create ground preconditions and effects,
+		// split into simple and complex parts
+		Pair<List<Atom>, Precondition> pre = splitAndGroundPrecondition(liftedAction.getPrecondition());
+		Triple<List<Atom>, List<ConditionalEffect>, Effect> eff = splitAndGroundEffect(liftedAction.getEffect());
 		
-		} else {
-			
-			// Complex action
-			Precondition precond = toPrecondition(liftedAction.getPrecondition(), false);
-			Effect effect = toEffect(liftedAction.getEffect());
-			action = new Action(actionName, precond, effect);
-		}
-		
-		action.setCost(liftedAction.getCost());
+		// Assemble action
+		action = new Action(actionName, pre.getLeft(), pre.getRight(), eff.getLeft(), eff.getMid(), eff.getRight());
+		action.setCost(liftedAction.getCost());		
 		return action;
+	}
+	
+	/**
+	 * Grounds and returns the initial state.
+	 */
+	protected State getInitialState() {
+		
+		List<Atom> initialStateAtoms = new ArrayList<>();
+		problem.getInitialState().forEach(cond -> {
+			if (cond.getConditionType() == ConditionType.atomic) {
+				Condition c = (Condition) cond;
+				initialStateAtoms.add(atomTable.atom(c.getPredicate(), 
+						c.getArguments(), c.isNegated()));
+			}
+		});
+		
+		initialStateAtoms.add(atomTable.atom(trueCondition.getPredicate(), 
+				trueCondition.getArguments(), false));
+		
+		State initialState = new State(initialStateAtoms);
+		for (Function f : problem.getInitialFunctionValues().keySet()) {
+			NumericAtom atom = atomTable.numericAtom(f, 
+					problem.getInitialFunctionValues().get(f));
+			initialState.set(atom);
+		}
+		return initialState;
 	}
 	
 	// Constant conditions
@@ -441,103 +484,61 @@ public abstract class BaseGrounder implements Grounder {
 	 * May return <code>trueCondition</code> or <code>falseCondition</code>
 	 * if the condition simplifies to true or false, respectively.
 	 */
-	protected AbstractCondition resolveEqualities(AbstractCondition cond) {
+	private AbstractCondition resolveEqualities(AbstractCondition abstractCondition) {
 		
-		switch (cond.getConditionType()) {
-		case atomic:
-			Condition atom = (Condition) cond;
-			if (isEqualityCondition(atom)) {
-				if (holdsEqualityCondition(atom)) {
-					return trueCondition;
-				} else {
-					return falseCondition;
+		// Traverse expression tree
+		return abstractCondition.traverse(cond -> {
+			
+			if (cond.getConditionType() == ConditionType.atomic) {
+				// Check and replace equality conditions
+				Condition atom = (Condition) cond;
+				if (isEqualityCondition(atom)) {
+					if (holdsEqualityCondition(atom)) {
+						return trueCondition;
+					} else {
+						return falseCondition;
+					}
 				}
-			} else {
-				return atom.copy();
-			}
-		case conjunction:
-		case disjunction:
-			ConditionSet set = (ConditionSet) cond;
-			ConditionSet newSet = new ConditionSet(set.getConditionType());
-			for (AbstractCondition c : set.getConditions()) {
-				c = resolveEqualities(c);
-				if (set.getConditionType() == ConditionType.conjunction 
-						&& falseCondition.equals(c)) {
-					// false atom in a conjunction: whole conjunction is false
-					return falseCondition;
-				} else if (set.getConditionType() == ConditionType.disjunction 
-						&& trueCondition.equals(c)) {
-					// true atom in a disjunction: whole disjunction is true
-					return trueCondition;
-				} else if (!trueCondition.equals(c) && !falseCondition.equals(c)) {
-					// only add non-constant valued conditions
-					newSet.add(c);
+				
+			} else if (cond instanceof ConditionSet) {
+				// Propagate simplifications upwards
+				ConditionSet set = (ConditionSet) cond;
+				ConditionSet newSet = new ConditionSet(set.getConditionType());
+				for (AbstractCondition c : set.getConditions()) {
+					if (set.getConditionType() == ConditionType.conjunction 
+							&& falseCondition.equals(c)) {
+						// false atom in a conjunction: whole conjunction is false
+						return falseCondition;
+					} else if (set.getConditionType() == ConditionType.disjunction 
+							&& trueCondition.equals(c)) {
+						// true atom in a disjunction: whole disjunction is true
+						return trueCondition;
+					} else if (!trueCondition.equals(c) && !falseCondition.equals(c)) {
+						// only add non-constant valued conditions
+						newSet.add(c);
+					}
+				}
+				if (newSet.getConditions().isEmpty()) {
+					// Empty conjunction is true, empty disjunction is false
+					return (set.getConditionType() == ConditionType.conjunction ? 
+							trueCondition : falseCondition);
+				}
+				return newSet;
+				
+			} else if (cond.getConditionType() == ConditionType.consequential) {
+				// Simplify conditional effects
+				ConsequentialCondition cc = (ConsequentialCondition) cond;
+				AbstractCondition pre = cc.getPrerequisite();
+				if (trueCondition.equals(pre)) {
+					return resolveEqualities(cc.getConsequence());
+				} else if (falseCondition.equals(pre)) {
+					return trueCondition; // essentially forget about the cond. effect
 				}
 			}
-			if (newSet.getConditions().isEmpty()) {
-				// Empty conjunction is true, empty disjunction is false
-				return (set.getConditionType() == ConditionType.conjunction ? 
-						trueCondition : falseCondition);
-			}
-			return newSet;
-		case consequential:
-			ConsequentialCondition cc = (ConsequentialCondition) cond;
-			AbstractCondition pre = resolveEqualities(cc.getPrerequisite());
-			if (trueCondition.equals(pre)) {
-				return resolveEqualities(cc.getConsequence());
-			} else if (falseCondition.equals(pre)) {
-				return trueCondition; // essentially forget about the cond. effect
-			} else {
-				ConsequentialCondition newCC = new ConsequentialCondition();
-				newCC.setPrerequisite(pre);
-				newCC.setConsequence(cc.getConsequence().copy());
-				return newCC;
-			}
-		default:
-			throw new IllegalArgumentException("ConditionType " + cond.getConditionType() 
-			+ " has not been eliminated; maybe no preprocessing was done before.");
-		}
-	}
-		
-	/**
-	 * Checks whether a given simplified condition is conjunctive (i.e. "simple").
-	 * If calling this method for some top-level condition, do it with false, false
-	 * as 2nd and 3rd argument.
-	 */
-	protected boolean isConditionConjunctive(AbstractCondition cond, 
-				boolean insideConditionalEffect) {
-		
-		switch (cond.getConditionType()) {
-		case atomic:
-			return !((Condition) cond).getPredicate().isDerived();
-		case negation:
-			return ((Negation) cond).getChildCondition().getConditionType() == ConditionType.atomic;
-		case conjunction:
-			for (AbstractCondition c : ((ConditionSet) cond).getConditions()) {
-				// In a conjunction, all elements must be conjunctive, too
-				if (!isConditionConjunctive(c, insideConditionalEffect))
-					return false;
-			}
-			return true;
-		case disjunction:
-		case implication:
-			// Disjunctions and implications are not conjunctive 
-			// (at least not in this form)
-			return false;
-		case consequential:
-			if (insideConditionalEffect)
-				// Nested conditional effect (generally not allowed)
-				return false;
-			ConsequentialCondition cc = (ConsequentialCondition) cond;
-			// Prerequisite and consequence must both be conjunctive
-			if (!isConditionConjunctive(cc.getPrerequisite(), true))
-				return false;
-			if (!isConditionConjunctive(cc.getConsequence(), true))
-				return false;
-			return true;
-		default:
-			throw new IllegalArgumentException("Invalid condition type " + cond.getConditionType());
-		}
+			
+			return cond;
+			
+		}, AbstractCondition.RECURSE_HEAD);
 	}
 	
 	/**
@@ -554,7 +555,7 @@ public abstract class BaseGrounder implements Grounder {
 	private boolean holdsEqualityCondition(Condition cond) {
 		
 		if (!isEqualityCondition(cond)) {
-			throw new IllegalArgumentException("The provided condition does not represent an equality");
+			error("The provided condition does not represent an equality.");
 		}
 		
 		if (cond.getNumArgs() == 2) {
@@ -573,12 +574,13 @@ public abstract class BaseGrounder implements Grounder {
 	 * is the name of the atom of ID i, and returns the list.
 	 */
 	public List<String> extractAtomNames() {
-		
-		List<String> atomNames = new ArrayList<>();
-		for (int i = 0; i < atoms.size(); i++) {
-			atomNames.add(this.atomNames.get(i));
-		}
-		return atomNames;
+		return atomTable.extractAtomNames();
+	}
+	/**
+	 * Compiles all numeric atom names into a flat list.
+	 */
+	public List<String> extractNumericAtomNames() {
+		return atomTable.extractNumericAtomNames();
 	}
 	
 	/**
@@ -593,11 +595,11 @@ public abstract class BaseGrounder implements Grounder {
 			
 			// Retrieve all relevant derived atoms
 			List<String> derivedAtomNames = new ArrayList<>();
-			derivedAtomNames.addAll(derivedAtoms.keySet());
+			derivedAtomNames.addAll(atomTable.getDerivedAtoms().keySet());
 			
 			// For each derived atom
 			for (String derivedAtomName : derivedAtomNames) {
-				DerivedAtom da = derivedAtoms.get(derivedAtomName);
+				DerivedAtom da = atomTable.getDerivedAtoms().get(derivedAtomName);
 				
 				// Is the inner condition still missing?
 				if (da.getCondition() == null) {
@@ -605,9 +607,28 @@ public abstract class BaseGrounder implements Grounder {
 					AbstractCondition cond = da.getLiftedCondition();
 					cond = resolveEqualities(cond);
 					da.setCondition(toPrecondition(cond, false));
+					
+					if (trueCondition.equals(cond)) {
+						// TODO Derived predicate simplifies to true;
+						// remove it from all places
+					} else if (falseCondition.equals(cond)) {
+						// TODO Derived predicate simplifies to false;
+						// remove it from all places
+					}
+					
 					change = true;
 				}
 			}
 		}
+	}
+	
+	public void setProblem(PlanningProblem problem) {
+		this.problem = problem;
+		atomTable.setProblem(problem);
+	}
+	
+	private void error(String msg) {
+		System.err.println("An error during grounding occurred.");
+		throw new IllegalArgumentException(msg);
 	}
 }
