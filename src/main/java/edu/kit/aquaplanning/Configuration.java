@@ -60,9 +60,6 @@ public class Configuration {
 	@Option(names = {"-q", "--keep-equalities"}, description = "Do not resolve equality conditions, "
 			+ "but add them as explicit atoms to the initial state")
 	public boolean keepEqualities;
-	@Option(names = {"-D", "--resolve-derived-predicates"}, description = "Do not keep derived predicates "
-			+ "during grounding and planning, but substitute them with their inner condition")
-	public boolean substituteDerivedPredicates;
 	
 	
 	/* 
