@@ -1,5 +1,7 @@
 package edu.kit.aquaplanning.model.ground;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 
@@ -12,14 +14,18 @@ public class Action {
 	private String name;
 	private int cost;
 
-	// Properties of a simple (purely conjunctive) action
+	// Properties of a simple (purely conjunctive) action;
+	// For STRIPS planning, only these preconditions and effects
+	// need to be considered.
 	private AtomSet preconditionsPos;
 	private AtomSet preconditionsNeg;
 	private AtomSet effectsPos;
 	private AtomSet effectsNeg;
 	private List<ConditionalEffect> conditionalEffects;
 	
-	// Properties of a complex (disjunctive) action
+	// Properties of a complex (disjunctive) action,
+	// containing all logic which cannot be expressed with bitsets.
+	// Can be zero if the action has no complex parts.
 	private Precondition complexPrecondition;
 	private Effect complexEffect;
 	
@@ -38,7 +44,7 @@ public class Action {
 	}
 
 	/**
-	 * Creates a simple action with the provided properties (alternative constructor).
+	 * Creates a simple action with the provided properties.
 	 */
 	public Action(String name, AtomSet preconditionsPos, AtomSet preconditionsNeg,
 				  AtomSet effectsPos, AtomSet effectsNeg, List<ConditionalEffect> conditionalEffects) {
@@ -51,14 +57,25 @@ public class Action {
 	}
 	
 	/**
-	 * Creates a complex action with the provided properties.
+	 * Creates a "purely" complex action with the provided properties.
 	 */
 	public Action(String name, Precondition complexPrecondition, Effect complexEffect) {
 		this.name = name;
 		this.complexPrecondition = complexPrecondition;
 		this.complexEffect = complexEffect;
+		// Data structures for simple preconditions / effects remain empty
+		this.preconditionsPos = new AtomSet(Arrays.asList(), true);
+		this.preconditionsNeg = new AtomSet(Arrays.asList(), false);
+		this.effectsPos = new AtomSet(Arrays.asList(), true);
+		this.effectsNeg = new AtomSet(Arrays.asList(), false);
+		this.conditionalEffects = new ArrayList<>();
 	}
 	
+	/**
+	 * Creates a "hybrid" action which may feature simple bitset-style
+	 * preconditions and effects as well as more complex logical
+	 * expressions.
+	 */
 	public Action(String name, List<Atom> simplePre, Precondition complexPre, 
 			List<Atom> simpleEff, List<ConditionalEffect> condEff, Effect complexEff) {
 		this.name = name;
