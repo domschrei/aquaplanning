@@ -92,7 +92,7 @@ public class SimpleSatPlanner extends Planner {
 
 		// find the plan
 		int step = 0;
-		while (true) {
+		while (withinComputationalBounds(step+1)) {
 			
 			// add the universal clauses for this step
 			addUniversalClauses(problem, solver, step);
@@ -111,6 +111,10 @@ public class SimpleSatPlanner extends Planner {
 				step++;
 			}
 		}
+		
+		if (!withinComputationalBounds(step+1))
+			// No plan found in the given computational bounds
+			return new Plan();
 		
 		// Decode the plan
 		Plan plan = new Plan();
