@@ -33,7 +33,7 @@ public class ForwardSearchPlanner extends Planner {
 	 */
 	@Override
 	public Plan findPlan(GroundPlanningProblem problem) {
-		
+		startSearch();		
 		// Important objects from the planning problem
 		State initState = problem.getInitialState();
 		Goal goal = problem.getGoal();

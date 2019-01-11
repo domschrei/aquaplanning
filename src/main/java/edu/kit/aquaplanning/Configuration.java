@@ -46,6 +46,10 @@ public class Configuration {
 			description = "Maximum total runtime in seconds", defaultValue = "0")
 	public int maxTimeSeconds;
 	
+	@Option(paramLabel = "searchSeconds", names = {"-st", "--search-seconds"}, 
+			description = "Maximum search time in seconds", defaultValue = "0")
+	public int searchTimeSeconds;
+	
 	@Option(paramLabel = "numThreads", names = {"-T", "--threads"}, 
 			description = "The amount of threads to spawn (where applicable)", defaultValue = "1")
 	public int numThreads;
@@ -87,7 +91,7 @@ public class Configuration {
 	/* Forward search space planning */
 	
 	public enum HeuristicType {
-		manhattanGoalDistance, relaxedPathLength;
+		manhattanGoalDistance, relaxedPathLength, actionInterferenceRelaxation;
 	}
 	@Option(paramLabel = "heuristicClass", names = {"-H", "--heuristic"}, 
 			description = "Heuristic for forward search: " + USAGE_OPTIONS_AND_DEFAULT, 
@@ -148,6 +152,7 @@ public class Configuration {
 		config.seed = seed;
 		config.optimizePlan = optimizePlan;
 		config.startTimeMillis = startTimeMillis;
+		config.searchTimeSeconds = searchTimeSeconds;
 		return config;
 	}
 	

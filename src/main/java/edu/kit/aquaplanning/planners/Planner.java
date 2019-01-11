@@ -13,9 +13,14 @@ import edu.kit.aquaplanning.util.Logger;
 public abstract class Planner {
 	
 	protected Configuration config;
+	protected long searchStartMillis = 0;
 	
 	public Planner(Configuration config) {
 		this.config = config;
+	}
+	
+	protected void startSearch() {
+		searchStartMillis = System.currentTimeMillis();
 	}
 	
 	/**
@@ -28,23 +33,26 @@ public abstract class Planner {
 		if (Thread.interrupted())
 			return false;
 		
-		boolean withinIterations = false;
-		boolean withinTime = false;
 
-		if (config.maxIterations <= 0) {
-			withinIterations = true; // no bound specified
-		} else {
-			withinIterations = (iterations <= config.maxIterations);
+		if (config.maxIterations > 0 && iterations >= config.maxIterations) {
+			return false;
 		}
-		if (config.maxTimeSeconds <= 0) {
-			withinTime = true; // no bound specified
-		} else {
-			long timeMillis = System.currentTimeMillis();
-			long expired = timeMillis - config.startTimeMillis;
-			withinTime = (expired / 1000 < config.maxTimeSeconds);			
+		
+		if (config.searchTimeSeconds > 0) {
+			long searchTime = System.currentTimeMillis() - searchStartMillis;
+			if (searchTime > config.searchTimeSeconds * 1000) {
+				return false;
+			}
 		}
 
-		return withinIterations && withinTime;
+		if (config.maxTimeSeconds > 0) {
+			long totalTime = System.currentTimeMillis() - config.startTimeMillis;
+			if (totalTime > config.maxTimeSeconds * 1000) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 	
 	/**

@@ -10,6 +10,7 @@ public class GroundPlanningProblem {
 
 	private State initialState;
 	private List<Action> actions;
+	
 	private Goal goal;
 	private boolean hasActionCosts;
 	private List<String> atomNames;
@@ -27,8 +28,23 @@ public class GroundPlanningProblem {
 		this.numericAtomNames = numericAtomNames;
 	}
 	
+
+	public GroundPlanningProblem(GroundPlanningProblem other) {
+		super();
+		this.initialState = other.initialState;
+		this.actions = other.actions;
+		this.goal = other.goal;
+		this.hasActionCosts = other.hasActionCosts;
+		this.atomNames = other.atomNames;
+		this.numericAtomNames = other.numericAtomNames;
+	}
+
 	public State getInitialState() {
 		return initialState;
+	}
+	
+	public void setInitialState(State s) {
+		this.initialState = s;
 	}
 	
 	public List<Action> getActions() {
