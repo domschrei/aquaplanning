@@ -1,6 +1,7 @@
 package edu.kit.aquaplanning.model.ground;
 
 import java.util.List;
+import java.util.ArrayList;
 import java.util.LinkedList;
 
 public class Goal {
@@ -25,6 +26,20 @@ public class Goal {
 	public Goal(Precondition complexCondition) {
 		isComplex = true;
 		this.complexCondition = complexCondition;
+	}
+	
+	/**
+	 * Copies the provided goal into a new object.
+	 */
+	public Goal(Goal other) {
+		if (other.isComplex) {
+			this.isComplex = true;
+			this.complexCondition = new Precondition(other.complexCondition);
+		}
+		else {
+			this.atoms = new ArrayList<Atom>(other.atoms);
+			this.positiveAtoms = new LinkedList<Atom>(other.positiveAtoms);
+		}
 	}
 	
 	/**

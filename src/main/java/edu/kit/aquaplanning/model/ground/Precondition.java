@@ -38,6 +38,19 @@ public class Precondition {
 		this.children = new ArrayList<>();
 	}
 	
+	/**
+	 * Copies the provided precondition into a new object.
+	 */
+	public Precondition(Precondition other) {
+		this.type = other.type;
+		this.atom = new Atom(other.atom);
+		this.derivedAtom = new DerivedAtom(other.derivedAtom);
+		this.children = new ArrayList<Precondition>(other.children);
+		this.comparator = other.comparator;
+		this.expLeft = new GroundNumericExpression(other.expLeft);
+		this.expRight = new GroundNumericExpression(other.expRight);
+	}
+	
 	public void add(Precondition pre) {
 		this.children.add(pre);
 	}
