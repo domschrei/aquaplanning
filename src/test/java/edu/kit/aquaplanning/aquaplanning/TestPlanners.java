@@ -25,9 +25,9 @@ import junit.framework.TestCase;
 public class TestPlanners extends TestCase {
 	
 	public static final String[] DEFAULT_TEST_DOMAINS = {"barman", "rover", "childsnack", 
-			"gripper", "zenotravel", "nurikabe", "petrinetalignment", "settlers"};
+			"gripper", "zenotravel", "nurikabe", "petrinetalignment", "settlers", "GED", "floortile"};
 	public static final String[] SAT_TEST_DOMAINS = {"barman", "rover", "childsnack", 
-			"gripper", "zenotravel", "nurikabe"};
+			"gripper", "zenotravel", "nurikabe", "GED", "floortile"};
 	public static final String[] ADL_TEST_DOMAINS = {"openstacks"};
 	
 	private PlanningProblem pp;

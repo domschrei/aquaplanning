@@ -121,12 +121,18 @@ public class ProblemParser extends PddlBaseListener {
 	public PlanningProblem parse(String domainFile, String problemFile) 
 			throws FileNotFoundException, IOException {
 		
+		// Initialize basic data structures
 		conditionStack = new Stack<>();
 		expressionStack = new Stack<>();
 		predicates = new HashMap<>();
 		derivedPredicates = new HashMap<>();
 		functions = new HashMap<>();
 
+		// Initialize typing
+		types = new HashMap<>();
+		supertype = new Type("_root_type"); // virtual supertype
+		types.put("_root_type",  supertype);
+		
 		// Get domain
         ANTLRInputStream in = new ANTLRInputStream(new FileInputStream(domainFile));
         PddlLexer lexer = new PddlLexer(in);
@@ -195,7 +201,7 @@ public class ProblemParser extends PddlBaseListener {
 		// is actually needed, or if features from an unspecified requirement
 		// are used. It is only checked to give an immediate error when an 
 		// explicit requirement is unsupported.
-		for (int childIdx = 2; childIdx+1 < ctx.getChildCount(); childIdx++) {
+		for (int childIdx = 3; childIdx+1 < ctx.getChildCount(); childIdx++) {
 			String requirement = ctx.getChild(childIdx).getText();
 			
 			if (PddlRequirement.isSupported(requirement)) {				
@@ -216,18 +222,13 @@ public class ProblemParser extends PddlBaseListener {
 	public void enterTypesDef(TypesDefContext ctx) {
 		
 		context = ParseContext.typeDefs;
-		types = new HashMap<>();
-
-		// Create a virtual supertype for general predicate "="
-		supertype = new Type("_root_type");
-		types.put("_root_type",  supertype);
 	}
 
 	@Override
 	public void enterTypedNameList(TypedNameListContext ctx) {
 		
 		if (ctx.children == null) {
-			// Empty constants definition - just skip it
+			// Empty definition - just skip it
 			return;
 		}
 		
@@ -240,13 +241,25 @@ public class ProblemParser extends PddlBaseListener {
 				// A subtype definition begins here
 				break;
 			} else {
-				// Primitive type: add, if not already contained
-				String typeName = ctx.children.get(childIdx).getText().toLowerCase();
-				if (!types.containsKey(typeName)) {
-					types.put(typeName, new Type(typeName));
-					supertype.addSubtype(typeName);
-				} else {
-					error("Type \"" + typeName + "\" is defined multiple times.");
+				
+				String name = ctx.children.get(childIdx).getText().toLowerCase();
+				
+				if (context == ParseContext.typeDefs) {
+					
+					// Primitive type: add, if not already contained
+					if (!types.containsKey(name)) {
+						types.put(name, new Type(name));
+						supertype.addSubtype(name);
+					} else {
+						error("Type \"" + name + "\" is defined multiple times.");
+					}
+					
+				} else if (context == ParseContext.constantDefs 
+						|| context == ParseContext.objectDefs) {
+					
+					// An object (!) is declared, without an explicit type
+					Argument constant = new Argument(name, supertype);
+					constants.add(constant);
 				}
 			}
 		}
@@ -429,7 +442,8 @@ public class ProblemParser extends PddlBaseListener {
 	}
 	
 	/**
-	 * Parsing of structures of the form <code>singleTypeVarList* variable*</code>.
+	 * Parsing of structures of the form <code>variable*</code> or 
+	 * <code>singleTypeVarList* variable*</code>.
 	 * SingleTypeVarLists are handled in another method, so here only the isolated
 	 * variables at the end are processed. 
 	 */
@@ -460,25 +474,47 @@ public class ProblemParser extends PddlBaseListener {
 			// Read variables from right to left until a SingleTypeVarList is hit
 			if (ctx.children == null) {
 				// Empty variable list
-			} else {				
-				for (int childIdx = ctx.children.size()-1; childIdx >= 0; childIdx--) {
-					if (ctx.children.get(childIdx).getChildCount() > 1) {
-						// Typed definition
-						break;
-					}
-					
-					// We don't know the type of this argument, 
-					// so we assume the supertype
-					if (context == ParseContext.predicateDefs) {						
-						predicate.addArgumentType(supertype);
-					} else if (context == ParseContext.derivedPredicateDef) {
+				return;
+			} 		
+			
+			for (int childIdx = ctx.children.size()-1; childIdx >= 0; childIdx--) {
+				if (ctx.children.get(childIdx).getChildCount() > 1) {
+					// Typed definition
+					break;
+				}
+				
+				// We don't know the type of this argument, 
+				// so we assume the supertype
+				if (context == ParseContext.predicateDefs) {						
+					predicate.addArgumentType(supertype);
+				} else if (context == ParseContext.derivedPredicateDef) {
 
-						String varName = ctx.children.get(childIdx).getText().toLowerCase();
-						derivedPredicates.get(predicate.getName()).addArgument(new Argument(varName, supertype));
-					}
+					String varName = ctx.children.get(childIdx).getText().toLowerCase();
+					derivedPredicates.get(predicate.getName()).addArgument(new Argument(varName, supertype));
 				}
 			}
 			
+		} else if (context == ParseContext.actionDef) {
+			// Action parameter definition
+			
+			if (ctx.children == null) {
+				return;
+			}
+			
+			// Read variables from left to right until a SingleTypeVarList is hit
+			for (int childIdx = ctx.children.size()-1; childIdx >= 0; childIdx--) {
+				
+				if (ctx.children.get(childIdx).getChildCount() > 1) {
+					// A typed definition begins here
+					break;
+				} else {
+					// Variable (general supertype)
+					String varName = ctx.children.get(childIdx).getText().toLowerCase();
+					Type type = supertype;
+					Argument arg = new Argument(varName, type);
+					currentOperator().addArgument(arg);
+				}
+			}
 		}
 	}
 	
@@ -505,7 +541,7 @@ public class ProblemParser extends PddlBaseListener {
 			operators = new ArrayList<>();
 		
 		// Create new, empty operator
-		String opName = ctx.children.get(2).getText().toLowerCase();
+		String opName = ctx.children.get(3).getText().toLowerCase();
 		Operator op = new Operator(opName);
 		operators.add(op);
 	}
@@ -518,7 +554,7 @@ public class ProblemParser extends PddlBaseListener {
 	public void enterActionDefBody(ActionDefBodyContext ctx) {
 		
 		// Precondition definition?
-		if (ctx.children.get(0).getText().equalsIgnoreCase(":precondition")) {
+		if (ctx.children.get(1).getText().equalsIgnoreCase("precondition")) {
 			
 			// Empty precondition?
 			if (ctx.children.size() > 2 &&
@@ -534,7 +570,7 @@ public class ProblemParser extends PddlBaseListener {
 				context = ParseContext.actionPre;
 			}
 			
-		} else if (ctx.children.get(0).getText().equalsIgnoreCase(":effect")) {
+		} else if (ctx.children.get(1).getText().equalsIgnoreCase("effect")) {
 			
 			// Parse effects now (in the case that there are no preconds)
 			context = ParseContext.actionEff;
@@ -543,7 +579,7 @@ public class ProblemParser extends PddlBaseListener {
 	
 	@Override
 	public void exitActionDef(ActionDefContext ctx) {
-		Operator op = operators.get(operators.size()-1);
+		Operator op = currentOperator();
 		if (op.getPrecondition() == null) {
 			op.setPrecondition(new ConditionSet(ConditionType.conjunction));
 		}
@@ -756,7 +792,7 @@ public class ProblemParser extends PddlBaseListener {
 		NumericExpression exp = null;
 		
 		if (ctx.children.get(0).getText().equals("(")) {
-			if (ctx.children.get(0).getText().equals("-")) {
+			if (ctx.children.get(1).getText().equals("-") && ctx.children.size() == 4) {
 				// Case 3 (negative fExp)
 				exp = new NumericExpression(TermType.negation);
 			} else {
@@ -1037,8 +1073,8 @@ public class ProblemParser extends PddlBaseListener {
 		
 		if (hasActionCosts) {
 			
-			if (!ctx.children.get(2).getText().equals("minimize") 
-					|| !ctx.children.get(3).getText().equals("(total-cost)")) {
+			if (!ctx.children.get(3).getText().equalsIgnoreCase("minimize") 
+					|| !ctx.children.get(4).getText().equalsIgnoreCase("(total-cost)")) {
 				error("Invalid metric specification. (Expected \"minimize (total-cost)\".)");
 			}
 			
