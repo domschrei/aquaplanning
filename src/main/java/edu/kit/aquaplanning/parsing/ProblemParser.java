@@ -541,6 +541,17 @@ public class ProblemParser extends PddlBaseListener {
 		}
 	}
 	
+	@Override
+	public void exitActionDef(ActionDefContext ctx) {
+		Operator op = operators.get(operators.size()-1);
+		if (op.getPrecondition() == null) {
+			op.setPrecondition(new ConditionSet(ConditionType.conjunction));
+		}
+		if (op.getEffect() == null) {
+			op.setEffect(new ConditionSet(ConditionType.conjunction));
+		}
+	}
+	
 	
 	
 	/**
