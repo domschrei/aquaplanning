@@ -58,6 +58,8 @@ public abstract class Planner {
 			return new ForwardSearchPlanner(config);
 		case satBased:
 			return new SimpleSatPlanner(config);
+		case hegemannSat:
+			return new HegemannsSatPlanner(config);
 		}
 		return null;
 	}
