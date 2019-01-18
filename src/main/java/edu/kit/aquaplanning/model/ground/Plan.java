@@ -56,4 +56,16 @@ public class Plan implements Iterable<Action> {
 		
 		return actions.iterator();
 	}
+	
+	public Action get(int index) {
+		return actions.get(index);
+	}
+	
+	public Plan copy() {
+		Plan newPlan = new Plan();
+		for (Action a : actions) {
+			newPlan.appendAtBack(a);
+		}
+		return newPlan;
+	}
 }

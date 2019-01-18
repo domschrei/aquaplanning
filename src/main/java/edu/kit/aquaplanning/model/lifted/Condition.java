@@ -2,6 +2,7 @@ package edu.kit.aquaplanning.model.lifted;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 public class Condition extends AbstractCondition {
 
@@ -154,5 +155,8 @@ public class Condition extends AbstractCondition {
 		return true;
 	}
 	
-	
+	@Override
+	public AbstractCondition traverse(Function<AbstractCondition, AbstractCondition> map, int recurseMode) {
+		return map.apply(this);
+	}
 }

@@ -1,6 +1,7 @@
 package edu.kit.aquaplanning.model.lifted;
 
 import java.util.List;
+import java.util.function.Function;
 
 public class Implication extends AbstractCondition {
 
@@ -65,5 +66,29 @@ public class Implication extends AbstractCondition {
 		i.setIfCondition(ifCondition.copy());
 		i.setThenCondition(thenCondition.copy());
 		return i;
+	}
+	
+	@Override
+	public AbstractCondition traverse(Function<AbstractCondition, AbstractCondition> map, int recurseMode) {
+		
+		Implication result;
+		
+		// Apply the inner function, if tail recursion is done
+		if (recurseMode == AbstractCondition.RECURSE_TAIL) {
+			result = (Implication) map.apply(this);
+		} else {
+			result = copy();
+		}
+		
+		// Recurse
+		result.ifCondition = (result.ifCondition.traverse(map, recurseMode));
+		result.thenCondition = (result.thenCondition.traverse(map, recurseMode));
+		
+		// Apply the inner function, if head recursion is done
+		if (recurseMode == AbstractCondition.RECURSE_HEAD) {
+			return map.apply(result);
+		}
+		
+		return result;
 	}
 }

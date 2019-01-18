@@ -2,6 +2,7 @@ package edu.kit.aquaplanning.model.lifted;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 public class Quantification extends AbstractCondition {
 
@@ -130,5 +131,28 @@ public class Quantification extends AbstractCondition {
 		q.condition = condition.copy();
 		q.variables.addAll(variables);
 		return q;
+	}
+	
+	@Override
+	public AbstractCondition traverse(Function<AbstractCondition, AbstractCondition> map, int recurseMode) {
+		
+		Quantification result;
+		
+		// Apply the inner function, if tail recursion is done
+		if (recurseMode == AbstractCondition.RECURSE_TAIL) {
+			result = (Quantification) map.apply(this);
+		} else {
+			result = copy();
+		}
+		
+		// Recurse
+		result.condition = (result.condition.traverse(map, recurseMode));
+		
+		// Apply the inner function, if head recursion is done
+		if (recurseMode == AbstractCondition.RECURSE_HEAD) {
+			return map.apply(result);
+		}
+		
+		return result;
 	}
 }

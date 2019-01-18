@@ -10,13 +10,11 @@ import edu.kit.aquaplanning.model.lifted.Argument;
 import edu.kit.aquaplanning.model.lifted.Condition;
 import edu.kit.aquaplanning.model.lifted.ConditionSet;
 import edu.kit.aquaplanning.model.lifted.ConsequentialCondition;
-import edu.kit.aquaplanning.model.lifted.DerivedCondition;
-import edu.kit.aquaplanning.model.lifted.Implication;
-import edu.kit.aquaplanning.model.lifted.Negation;
 import edu.kit.aquaplanning.model.lifted.Operator;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.model.lifted.Quantification;
 import edu.kit.aquaplanning.model.lifted.AbstractCondition.ConditionType;
+import edu.kit.aquaplanning.util.Logger;
 
 /**
  * A structure representing a (delete-)relaxed planning graph of a planning
@@ -76,9 +74,10 @@ public class RelaxedPlanningGraph {
 		// Add all actions which are applicable
 		List<Operator> newActions = getLiftedActionsReachableFrom(state);
 		liftedActions.add(newActions);
-		System.out.println("Layer " + getCurrentLayer() + ": " 
+		Logger.log(Logger.INFO_V, "Layer " + getCurrentLayer() 
+							+ " of relaxed planning graph: " 
 							+ state.size() + " atoms and "
-							+ newActions.size() + " actions reachable");
+							+ newActions.size() + " actions reachable.");
 		
 		// Apply actions into new state
 		Set<Condition> newState = new HashSet<>();
@@ -135,7 +134,7 @@ public class RelaxedPlanningGraph {
 				boolean addArguments = true;
 						
 				// Does the precondition hold with these arguments in a relaxed sense?
-				boolean holds = holdsCondition(op.getPrecondition(), op, args, liftedState, true);												
+				boolean holds = holdsCondition(op.getPrecondition(), op, args, liftedState);												
 				if (!holds) {
 					// -- no
 					addArguments = false;
@@ -182,7 +181,7 @@ public class RelaxedPlanningGraph {
 				
 				// Does this prerequisite hold in a relaxed sense?
 				if (!holdsCondition(cond.getPrerequisite(), liftedAction, 
-						liftedAction.getArguments(), liftedState, true)) {
+						liftedAction.getArguments(), liftedState)) {
 					// -- no; dismiss this conditional effect
 					applyEffects = false;
 				}
@@ -212,7 +211,7 @@ public class RelaxedPlanningGraph {
 	 * the provided list of arguments.
 	 */
 	private boolean holdsCondition(AbstractCondition abstractCond, Operator op, 
-				List<Argument> opArgs, Set<Condition> liftedState, boolean deleteRelaxed) {
+				List<Argument> opArgs, Set<Condition> liftedState) {
 		
 		switch (abstractCond.getConditionType()) {
 		
@@ -227,15 +226,12 @@ public class RelaxedPlanningGraph {
 				return groundCond.isNegated() != holdsEqualityCondition(groundCond);
 			}
 			
-			// If derived condition, check its meaning
-			if (groundCond instanceof DerivedCondition) {
-				return groundCond.isNegated() != holdsCondition(
-						((DerivedCondition) groundCond).getPredicate().getCondition(), 
-						op, opArgs, liftedState, deleteRelaxed);
+			if (groundCond.getPredicate().isDerived()) {
+				return true; // derived predicate: just assume that it holds
 			}
 			
 			// When delete-relaxed: negation is dismissed, so it "holds"
-			if (deleteRelaxed && groundCond.isNegated()) {
+			if (groundCond.isNegated()) {
 				return true;
 			}
 			
@@ -249,25 +245,21 @@ public class RelaxedPlanningGraph {
 				// if the condition is negated, then it holds; else, not
 				return cond.isNegated();
 			}
-		
-		case negation:
-			if (deleteRelaxed)
-				return true;
 			
-			return !holdsCondition(((Negation) abstractCond).getChildCondition(), 
-					op, opArgs, liftedState, deleteRelaxed);
+		case negation:
+			return true;
 			
 		case quantification:
 			AbstractCondition condition = ArgumentCombination.resolveQuantification(
 					(Quantification) abstractCond, problem, constants);
-			if (!holdsCondition(condition, op, opArgs, liftedState, deleteRelaxed)) {
+			if (!holdsCondition(condition, op, opArgs, liftedState)) {
 				return false;
 			}
 			return true;
 			
 		case conjunction:
 			for (AbstractCondition c : ((ConditionSet) abstractCond).getConditions()) {
-				if (!holdsCondition(c, op, opArgs, liftedState, deleteRelaxed)) {
+				if (!holdsCondition(c, op, opArgs, liftedState)) {
 					return false;
 				}
 			}
@@ -275,21 +267,17 @@ public class RelaxedPlanningGraph {
 			
 		case disjunction:
 			for (AbstractCondition c : ((ConditionSet) abstractCond).getConditions()) {
-				if (holdsCondition(c, op, opArgs, liftedState, deleteRelaxed)) {
+				if (holdsCondition(c, op, opArgs, liftedState)) {
 					return true;
 				}
 			}
 			return false;
 			
 		case implication:
-			if (deleteRelaxed || !holdsCondition(((Implication) abstractCond).getIfCondition(), 
-					op, opArgs, liftedState, deleteRelaxed)) {
-				return true;
-			}
-			if (holdsCondition(((Implication) abstractCond).getThenCondition(), op, opArgs, liftedState, deleteRelaxed)) {
-				return true;
-			}
-			return false;
+			return true;
+		
+		case numericPrecondition:
+			return true; // TODO better relaxation
 		
 		default:
 			throw new IllegalArgumentException("Illegal condition type.");

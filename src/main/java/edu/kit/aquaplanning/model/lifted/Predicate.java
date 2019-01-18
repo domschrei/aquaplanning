@@ -7,6 +7,13 @@ public class Predicate {
 
 	protected String name;
 	private List<Type> argumentTypes;
+	private boolean derived;
+	
+	public Predicate(String name, boolean derived) {
+		this.name = name;
+		this.argumentTypes = new ArrayList<>();
+		this.derived = derived;
+	}
 	
 	public Predicate(String name) {
 		this.name = name;
@@ -27,6 +34,10 @@ public class Predicate {
 	
 	public int getNumArgs() {
 		return argumentTypes.size();
+	}
+	
+	public boolean isDerived() {
+		return derived;
 	}
 	
 	@Override

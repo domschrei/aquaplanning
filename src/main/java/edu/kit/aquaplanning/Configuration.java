@@ -1,6 +1,7 @@
 package edu.kit.aquaplanning;
 
 import edu.kit.aquaplanning.planners.SearchStrategy;
+import edu.kit.aquaplanning.util.Logger;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
@@ -45,6 +46,23 @@ public class Configuration {
 			description = "Maximum total runtime in seconds", defaultValue = "0")
 	public int maxTimeSeconds;
 	
+	@Option(paramLabel = "searchSeconds", names = {"-st", "--search-seconds"}, 
+			description = "Maximum search time in seconds", defaultValue = "0")
+	public int searchTimeSeconds;
+	
+	@Option(paramLabel = "numThreads", names = {"-T", "--threads"}, 
+			description = "The amount of threads to spawn (where applicable)", defaultValue = "1")
+	public int numThreads;
+	
+	/* Output */
+	
+	@Option(paramLabel = "verbosityLevel", names = {"-v", "--verbosity"}, 
+			description = "How verbose output should be "
+					+ "(0: errors only, 1: warnings, 2: brief information, etc.) " + USAGE_DEFAULT, 
+			defaultValue = (Logger.INFO + ""))
+	public int verbosityLevel;
+	
+	
 	
 	/*
 	 * Preprocessing and grounding configuration
@@ -56,9 +74,6 @@ public class Configuration {
 	@Option(names = {"-q", "--keep-equalities"}, description = "Do not resolve equality conditions, "
 			+ "but add them as explicit atoms to the initial state")
 	public boolean keepEqualities;
-	@Option(names = {"-D", "--resolve-derived-predicates"}, description = "Do not keep derived predicates "
-			+ "during grounding and planning, but substitute them with their inner condition")
-	public boolean substituteDerivedPredicates;
 	
 	
 	/* 
@@ -66,7 +81,7 @@ public class Configuration {
 	 */
 	
 	public enum PlannerType {
-		forwardSSS, satBased, hegemannSat
+		forwardSSS, satBased, hegemannSat, parallel
 	}
 	@Option(paramLabel = "plannerType", names = {"-p", "--planner"}, 
 			description = "Planner type to use: " + USAGE_OPTIONS_AND_DEFAULT, 
@@ -76,7 +91,7 @@ public class Configuration {
 	/* Forward search space planning */
 	
 	public enum HeuristicType {
-		manhattanGoalDistance, relaxedPathLength;
+		manhattanGoalDistance, relaxedPathLength, actionInterferenceRelaxation;
 	}
 	@Option(paramLabel = "heuristicClass", names = {"-H", "--heuristic"}, 
 			description = "Heuristic for forward search: " + USAGE_OPTIONS_AND_DEFAULT, 
@@ -96,6 +111,18 @@ public class Configuration {
 			+ "even when the state has been reached before")
 	public boolean revisitStates;
 	
+	@Option(names = {"-S", "--seed"}, description = "Random seed to use for randomized search strategies",
+			defaultValue = "1337")
+	public int seed;
+	
+	
+	/* 
+	 * Post-processing 
+	 */
+	
+	@Option(names = {"-O", "--optimize"}, description = "Optimize plan during postprocessing")
+	public boolean optimizePlan;
+	
 	
 	/**
 	 * currentTimeMillis() time when the application was launched.
@@ -105,4 +132,29 @@ public class Configuration {
 	public Configuration() {
 		startTimeMillis = System.currentTimeMillis();
 	}
+
+	public Configuration copy() {
+		
+		Configuration config = new Configuration();
+		config.domainFile = domainFile;
+		config.problemFile = problemFile;
+		config.planOutputFile = planOutputFile;
+		config.maxIterations = maxIterations;
+		config.maxTimeSeconds = maxTimeSeconds;
+		config.numThreads = numThreads;
+		config.keepDisjunctions = keepDisjunctions;
+		config.keepEqualities = keepEqualities;
+		config.plannerType = plannerType;
+		config.heuristic = heuristic;
+		config.heuristicWeight = heuristicWeight;
+		config.searchStrategy = searchStrategy;
+		config.revisitStates = revisitStates;
+		config.seed = seed;
+		config.optimizePlan = optimizePlan;
+		config.startTimeMillis = startTimeMillis;
+		config.searchTimeSeconds = searchTimeSeconds;
+		return config;
+	}
+	
+	
 }

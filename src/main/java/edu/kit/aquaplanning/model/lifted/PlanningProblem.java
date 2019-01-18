@@ -11,16 +11,19 @@ public class PlanningProblem {
 	private Map<String, Type> types;
 	private List<Argument> constants; // both from domain and problem
 	private Map<String, Predicate> predicates;
-	private Map<String, DerivedPredicate> derivedPredicates;
+	private Map<String, Axiom> derivedPredicates;
+	private Map<String, Function> functions;
 	private List<Operator> operators;
 	private List<Condition> initialState;
+	private Map<Function, Float> initialFunctionValues;
 	private List<AbstractCondition> goals;
 	private boolean hasActionCosts;
 	
 	public PlanningProblem(String domainName, String problemName, Map<String, Type> types, 
 			List<Argument> constants, Map<String, Predicate> predicates, 
-			Map<String, DerivedPredicate> derivedPredicates,
+			Map<String, Axiom> derivedPredicates, Map<String, Function> functions,
 			List<Operator> operators, List<Condition> initialState, 
+			Map<Function, Float> initialFunctionValues,
 			List<AbstractCondition> goals, boolean hasActionCosts) {
 		super();
 		this.domainName = domainName;
@@ -29,8 +32,10 @@ public class PlanningProblem {
 		this.constants = constants;
 		this.predicates = predicates;
 		this.derivedPredicates = derivedPredicates;
+		this.functions = functions;
 		this.operators = operators;
 		this.initialState = initialState;
+		this.initialFunctionValues = initialFunctionValues;
 		this.goals = goals;
 		this.hasActionCosts = hasActionCosts;
 	}
@@ -87,8 +92,12 @@ public class PlanningProblem {
 		return predicates;
 	}
 	
-	public Map<String, DerivedPredicate> getDerivedPredicates() {
+	public Map<String, Axiom> getDerivedPredicates() {
 		return derivedPredicates;
+	}
+	
+	public Map<String, Function> getFunctions() {
+		return functions;
 	}
 	
 	public List<Operator> getOperators() {
@@ -97,6 +106,10 @@ public class PlanningProblem {
 	
 	public List<Condition> getInitialState() {
 		return initialState;
+	}
+	
+	public Map<Function, Float> getInitialFunctionValues() {
+		return initialFunctionValues;
 	}
 	
 	public List<AbstractCondition> getGoals() {
@@ -128,8 +141,8 @@ public class PlanningProblem {
 			//if (p.toString().charAt(0) != '_' && p.toString().charAt(0) != '=')
 				str.append("  " + p + "\n");
 		}
-		for (DerivedPredicate p : derivedPredicates.values()) {
-			str.append("  " + p + "\n");
+		for (Axiom c : derivedPredicates.values()) {
+			str.append("  " + c.getPredicate() + " := " + c.getCondition() + "\n");
 		}
 		str.append("Operators:\n");
 		for (Operator o : operators) {
