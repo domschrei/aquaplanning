@@ -3,6 +3,8 @@ package edu.kit.aquaplanning.model.lifted;
 import java.util.ArrayList;
 import java.util.List;
 
+import edu.kit.aquaplanning.model.lifted.AbstractCondition.ConditionType;
+
 public class Operator {
 
 	private String name;
@@ -15,6 +17,10 @@ public class Operator {
 		this.name = name;
 		arguments = new ArrayList<>();
 		this.cost = 0;
+		
+		// Initialize empty precondition and effect
+		precondition = new ConditionSet(ConditionType.conjunction);
+		effect = new ConditionSet(ConditionType.conjunction);
 	}
 	
 	public void addArgument(Argument arg) {
