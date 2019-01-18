@@ -340,7 +340,7 @@ public class ProblemParser extends PddlBaseListener {
 	@Override
 	public void enterFunctionList(FunctionListContext ctx) {
 		
-		if (ctx.getText().toLowerCase().contains("(total-cost)-number")) {
+		if (ctx.getText().toLowerCase().contains("(total-cost)")) {
 			// Metric function detected
 			hasActionCosts = true;
 		}
