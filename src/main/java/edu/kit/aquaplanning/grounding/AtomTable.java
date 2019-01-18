@@ -1,0 +1,200 @@
+package edu.kit.aquaplanning.grounding;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import edu.kit.aquaplanning.model.ground.Atom;
+import edu.kit.aquaplanning.model.ground.DerivedAtom;
+import edu.kit.aquaplanning.model.ground.NumericAtom;
+import edu.kit.aquaplanning.model.lifted.AbstractCondition;
+import edu.kit.aquaplanning.model.lifted.Argument;
+import edu.kit.aquaplanning.model.lifted.Axiom;
+import edu.kit.aquaplanning.model.lifted.Function;
+import edu.kit.aquaplanning.model.lifted.Operator;
+import edu.kit.aquaplanning.model.lifted.PlanningProblem;
+import edu.kit.aquaplanning.model.lifted.Predicate;
+
+/**
+ * 
+ */
+public class AtomTable {
+
+	private PlanningProblem problem;
+	
+	private Map<String, Atom> atoms;
+	private Map<Integer, String> atomNames;
+	private Map<String, DerivedAtom> derivedAtoms;
+	private Map<Integer, String> derivedAtomNames;
+	private Map<String, NumericAtom> numericAtoms;
+	private Map<Integer, String> numericAtomNames;
+	
+	public AtomTable() {
+		atoms = new HashMap<>();
+		atomNames = new HashMap<>();
+		derivedAtoms = new HashMap<>();
+		derivedAtomNames = new HashMap<>();
+		numericAtoms = new HashMap<>();
+		numericAtomNames = new HashMap<>();
+	}
+	
+	public void setProblem(PlanningProblem problem) {
+		this.problem = problem;
+	}
+	
+	/**
+	 * Retrieves a copy of the atom corresponding to the provided predicate 
+	 * and constant arguments. If this atom has not been grounded before,
+	 * it will be created.
+	 */
+	private Atom atom(Predicate p, List<Argument> constants) {
+		
+		// Check if predicate is simple
+		if (p.isDerived()) {
+			throw new IllegalArgumentException("Attempted to create simple atom "
+					+ "of a derived predicate.\nPredicate: " + p + "; constants: " + constants);
+		}
+		// Key: name of atom
+		String atomName = getAtomName(p, constants);
+		// Does the action already exists?
+		if (!atoms.containsKey(atomName)) {
+			// -- no: create new atom
+			int atomId = atoms.size();
+			atoms.put(atomName, new Atom(atomId, atomName, true));
+			atomNames.put(atomId, atomName);
+		}
+		// Return copy of atom
+		return atoms.get(atomName).copy();
+	}
+	
+	/**
+	 * Retrieves the derived atom corresponding to the provided
+	 * derived predicate and constant arguments. If this atom has not 
+	 * been grounded before, it will be created. Note that the original
+	 * object is returned and changes to it will be reflected in the
+	 * original data structure.
+	 */
+	public DerivedAtom derivedAtom(Predicate p, List<Argument> constants) {
+		
+		// Check if predicate is simple
+		if (!p.isDerived()) {
+			throw new IllegalArgumentException("Attempted to create derived atom "
+					+ "of a simple predicate.\nPredicate: " + p + "; constants: " + constants);
+		}
+		// Key: name of atom
+		String atomName = getAtomName(p, constants);
+		// Does the action already exists?
+		if (!derivedAtoms.containsKey(atomName)) {
+			// -- no: create new atom
+			Axiom axiom = problem.getDerivedPredicates().get(p.getName());
+			int atomId = - (atoms.size() + derivedAtoms.size());
+			AbstractCondition cond = axiom.getCondition().getConditionBoundToArguments(
+					axiom.getArguments(), constants);
+			derivedAtoms.put(atomName, new DerivedAtom(atomId, atomName, cond));
+			derivedAtomNames.put(atomId, atomName);
+		}
+		// Return derived atom
+		return derivedAtoms.get(atomName);
+	}
+	
+	public NumericAtom numericAtom(Function f, float value) {
+		
+		String atomName = getAtomName(f);
+		if (!numericAtoms.containsKey(atomName)) {
+			int atomId = numericAtoms.size();
+			NumericAtom atom = new NumericAtom(atomId, atomName, Float.NaN);
+			numericAtoms.put(atomName, atom);
+			numericAtomNames.put(atomId, atomName);
+		}
+		NumericAtom valuedAtom = numericAtoms.get(atomName).copy();
+		valuedAtom.setValue(value);
+		return valuedAtom;
+	}
+	
+	/**
+	 * Retrieves a copy of the atom corresponding to the provided predicate 
+	 * and constant arguments. If this atom has not been grounded before,
+	 * it will be created.
+	 */
+	public Atom atom(Predicate p, List<Argument> constants, boolean negated) {
+		
+		Atom atom = atom(p, constants);
+		atom.set(!negated);
+		return atom;
+	}
+	
+	/**
+	 * Assembles the name of an atom with a given predicate and a list
+	 * of constant arguments.
+	 */
+	public String getAtomName(Predicate p, List<Argument> args) {
+		
+		String atomName = "(" + p.getName() + " ";
+		for (Argument c : args) {
+			atomName += c.getName() + " ";
+		}
+		atomName = atomName.substring(0, atomName.length()-1) + ")";
+		return atomName;
+	}
+	
+	/**
+	 * Assembles the name of an atom with a given predicate and a list
+	 * of constant arguments.
+	 */
+	public String getAtomName(Function f) {
+		
+		String atomName = "(" + f.getName() + " ";
+		for (Argument c : f.getArguments()) {
+			atomName += c.getName() + " ";
+		}
+		atomName = atomName.substring(0, atomName.length()-1) + ")";
+		return atomName;
+	}
+	
+	/**
+	 * Assembles the name of an action corresponding to the provided 
+	 * operator with the provided list of constant arguments.
+	 */
+	public String getActionName(Operator op, List<Argument> args) {
+		
+		String atomName = "(" + op.getName() + " ";
+		for (Argument c : args) {
+			atomName += c.getName() + " ";
+		}
+		atomName = atomName.substring(0, atomName.length()-1) + ")";
+		return atomName;
+	}
+	
+	/**
+	 * Compiles all atom names into a flat list, where the ith item
+	 * is the name of the atom of ID i, and returns the list.
+	 */
+	public List<String> extractAtomNames() {
+		
+		List<String> atomNames = new ArrayList<>();
+		for (int i = 0; i < atoms.size(); i++) {
+			atomNames.add(this.atomNames.get(i));
+		}
+		return atomNames;
+	}
+	/**
+	 * Compiles all numeric atom names into a flat list.
+	 */
+	public List<String> extractNumericAtomNames() {
+		
+		List<String> atomNames = new ArrayList<>();
+		for (int i = 0; i < numericAtoms.size(); i++) {
+			atomNames.add(this.numericAtomNames.get(i));
+		}
+		return atomNames;
+	}
+	
+	/**
+	 * Returns the collected map of derived atoms.
+	 * Keys are the atom names as retrieved by getDerivedAtomName().
+	 */
+	public Map<String, DerivedAtom> getDerivedAtoms() {
+		return derivedAtoms;
+	}
+}

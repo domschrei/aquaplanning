@@ -4,7 +4,7 @@ This is a Java framework for Automated Planning, developed by Tomáš Balyo and 
 
 ## Features
 
-Aquaplanning supports PDDL (Planning Domain Description Language) files as an input for planning domains and problems. The following features are implemented as of now (i.e. problems with these features can be parsed, grounded, and solved):
+Aquaplanning supports PDDL (Planning Domain Description Language) files as an input for planning domains and problems. The supported subset of PDDL is roughly **on par with [Fast Downward](http://www.fast-downward.org/)**, today's prototypical state-of-the-art classical planner. This means that the following features are implemented as of now (i.e. problems with these features can be parsed, grounded, and solved):
 
 * Basic STRIPS planning with typing
 * Negative conditions (preconditions / effects / goals)
@@ -13,20 +13,25 @@ Aquaplanning supports PDDL (Planning Domain Description Language) files as an in
 * Universal and existential quantifications
 * All ADL features, i.e. disjunctive conditions with `or`, `imply`, and non-atomic `not` expressions
 * Action costs (in its basic form `(:function total-cost - number)`, with constant positive cost per operator)
+* Derived predicates (as long as the resulting ground axioms are not directly recursing on themselves)
 
-For planning problems using these features (or any subset), a full representation of the read problem is available in the form of Java objects after parsing, as well as a separate representation after grounding the problem.
+In addition, Aquaplanning supports the following aspects of **numeric planning**:
+
+* Numeric fluents (a.k.a. functions), e.g. `(capacity ?truck)`
+* Numeric expressions in preconditions, e.g. `(> (capacity ?truck) 0)`
+* Numeric effects, e.g. `(decrease (capacity ?truck) 1)`
+
+For planning problems using these features (or any subset), a full representation of the read problem is available in the form of Java objects after parsing, as well as a separate ground representation after grounding the problem.
 For grounding purposes, Aquaplanning traverses the problem's (delete-)relaxed planning graph, resulting in a reasonable amount of atoms and actions in most cases.
 
-A generic state space forward search is provided as a planner. As of now, a few common search strategies (BFS, DFS, A\*, Weighted A\*, Best-first, random choice) are implemented, as well as a couple of simple heuristics to guide the A\* and Best-first searches.  
+A generic state space forward search is provided as a planner. As of now, a few common search strategies (BFS, DFS, A\*, Weighted A\*, Best-first, random choice) are implemented, as well as a couple of simple heuristics to guide the A\* and Best-first searches.
 
 At the end of the pipeline, a tiny plan validator can be employed to ensure the planner's correctness.
 
 ## Building and installing
 
 The framework is written from scratch and thus does not rely on any Planning-related frameworks. It does depend on antlr4 (for the parsing of PDDL files), Picocli for argument parsing, and sat4j as a SAT solver backend. We use [Maven](https://maven.apache.org/) as a build system to resolve these dependencies (package `maven` in Debian-based Linux distributions). 
-In the base directory, run `mvn package` which will run the included JUnit tests and create a runnable jar file in `target/aquaplanning-<version>-jar-with-dependencies.jar`. You can launch the application with `java -jar <runnable-jar> <domain-file> <problem-file>`.
-
-Using the Eclipse IDE, the project can be directly imported as a Maven project and then built and/or installed.
+In the base directory, run `mvn package` which will create a runnable jar file in `target/aquaplanning-<version>-jar-with-dependencies.jar`. You can launch the application with `java -jar <runnable-jar>`. JUnit tests are disabled by default (as they potentially take a long time); you can re-enable them by appending `-DskipTests=false` to the build command.
 
 ## Usage
 

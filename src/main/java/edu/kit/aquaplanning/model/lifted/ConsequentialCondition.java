@@ -1,6 +1,7 @@
 package edu.kit.aquaplanning.model.lifted;
 
 import java.util.List;
+import java.util.function.Function;
 
 public class ConsequentialCondition extends AbstractCondition {
 
@@ -112,5 +113,29 @@ public class ConsequentialCondition extends AbstractCondition {
 		cc.setPrerequisite(prerequisite.copy());
 		cc.setConsequence(consequence.copy());
 		return cc;
+	}
+	
+	@Override
+	public AbstractCondition traverse(Function<AbstractCondition, AbstractCondition> map, int recurseMode) {
+		
+		ConsequentialCondition result;
+		
+		// Apply the inner function, if tail recursion is done
+		if (recurseMode == AbstractCondition.RECURSE_TAIL) {
+			result = (ConsequentialCondition) map.apply(this);
+		} else {
+			result = copy();
+		}
+		
+		// Recurse
+		result.prerequisite = (result.prerequisite.traverse(map, recurseMode));
+		result.consequence = (result.consequence.traverse(map, recurseMode));
+		
+		// Apply the inner function, if head recursion is done
+		if (recurseMode == AbstractCondition.RECURSE_HEAD) {
+			return map.apply(result);
+		}
+		
+		return result;
 	}
 }

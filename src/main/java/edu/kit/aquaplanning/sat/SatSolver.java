@@ -10,8 +10,8 @@ import org.sat4j.specs.TimeoutException;
 
 public class SatSolver {
 	
-	private ISolver solver;
-	private int[] model;
+	protected ISolver solver;
+	protected int[] model;
 	
 	public SatSolver() {
 		solver = SolverFactory.newDefault();
