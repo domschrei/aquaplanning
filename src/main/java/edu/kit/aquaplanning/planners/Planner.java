@@ -70,6 +70,8 @@ public abstract class Planner {
 			return new ForwardSearchPlanner(config);
 		case satBased:
 			return new SimpleSatPlanner(config);
+		case hegemannSat:
+			return new HegemannsSatPlanner(config);
 		case parallel:
 			Logger.log(Logger.INFO, "Doing parallel planning with up to " 
 						+ config.numThreads + " threads.");

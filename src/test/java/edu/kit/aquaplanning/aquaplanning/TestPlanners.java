@@ -15,6 +15,7 @@ import edu.kit.aquaplanning.optimization.Clock;
 import edu.kit.aquaplanning.optimization.SimplePlanOptimizer;
 import edu.kit.aquaplanning.parsing.ProblemParser;
 import edu.kit.aquaplanning.planners.ForwardSearchPlanner;
+import edu.kit.aquaplanning.planners.HegemannsSatPlanner;
 import edu.kit.aquaplanning.planners.Planner;
 import edu.kit.aquaplanning.planners.SearchStrategy.Mode;
 import edu.kit.aquaplanning.planners.SimpleSatPlanner;
@@ -94,7 +95,6 @@ public class TestPlanners extends TestCase {
 	}
 	
 	public void testSatPlan() throws FileNotFoundException, IOException {
-		
 		Grounder grounder = new RelaxedPlanningGraphGrounder(new Configuration());
 		for (String domain : SAT_TEST_DOMAINS) {
 			System.out.println("Testing domain \"" + domain + "\" with SAT.");
@@ -102,6 +102,7 @@ public class TestPlanners extends TestCase {
 					"testfiles/" + domain + "/p01.pddl");
 			gpp = grounder.ground(pp);
 			testSatPlan(gpp);
+			testHegemannsSatPlan(gpp);
 		}
 	}
 	
@@ -109,11 +110,20 @@ public class TestPlanners extends TestCase {
 		Planner planner = new SimpleSatPlanner(new Configuration());
 		Plan plan = planner.findPlan(gpp);
 		System.out.println(plan);
-		assertTrue(plan != null);
+		assertNotNull(plan);
 		assertTrue(plan.getLength() > 0);
 		assertTrue(Validator.planIsValid(gpp, plan));	
 	}
-	
+
+	private void testHegemannsSatPlan(GroundPlanningProblem gpp) {
+		Planner planner = new HegemannsSatPlanner(new Configuration());
+		Plan plan = planner.findPlan(gpp);
+		System.out.println(plan);
+		assertNotNull(plan);
+		assertTrue(plan.getLength() > 0);
+		assertTrue(Validator.planIsValid(gpp, plan));
+	}
+
 	public void testCustomDomains() throws FileNotFoundException, IOException {
 
 		fullTest("testfiles/RPG/domain.pddl", "testfiles/RPG/p01.pddl");
