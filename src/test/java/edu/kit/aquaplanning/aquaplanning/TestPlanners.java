@@ -123,7 +123,7 @@ public class TestPlanners extends TestCase {
 		assertTrue(plan.getLength() > 0);
 		assertTrue(Validator.planIsValid(gpp, plan));
 	}
-	
+
 	public void testCustomDomains() throws FileNotFoundException, IOException {
 
 		fullTest("testfiles/RPG/domain.pddl", "testfiles/RPG/p01.pddl");
