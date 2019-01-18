@@ -15,6 +15,16 @@ public class DerivedAtom {
 		this.liftedCondition = liftedCondition;
 	}
 	
+	/**
+	 * Copies the provided derived atom into a new object.
+	 */
+	public DerivedAtom(DerivedAtom other) {
+		this.id = other.id;
+		this.name = new String(other.name);
+		this.liftedCondition = other.liftedCondition.copy();
+		this.condition = new Precondition(other.condition);
+	}
+	
 	public void setCondition(Precondition condition) {
 		this.condition = condition;
 	}

@@ -29,6 +29,16 @@ public class GroundNumericExpression {
 		this.atom = atom;
 	}
 	
+	/**
+	 * Copies the provided ground numeric expression into a new object.
+	 */
+	public GroundNumericExpression(GroundNumericExpression other) {
+		this.type = other.type;
+		this.value = other.value;
+		this.atom = other.atom.copy();
+		this.children = new ArrayList<GroundNumericExpression>(other.children);
+	}
+	
 	public void add(GroundNumericExpression exp) {
 		this.children.add(exp);
 	}

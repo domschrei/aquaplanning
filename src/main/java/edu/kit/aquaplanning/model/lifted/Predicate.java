@@ -20,6 +20,15 @@ public class Predicate {
 		this.argumentTypes = new ArrayList<>();
 	}
 	
+	/**
+	 * Copies the provided predicate into a new object.
+	 */
+	public Predicate(Predicate other) {
+		this.name = new String(other.name);
+		this.argumentTypes = new ArrayList<Type>(other.argumentTypes);
+		this.derived = other.derived;
+	}
+	
 	public void addArgumentType(Type type) {
 		this.argumentTypes.add(type);
 	}
