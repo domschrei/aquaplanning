@@ -53,11 +53,9 @@ public class AtomSet {
 	 * are also contained in this AtomSet.
 	 */
 	public boolean all(AtomSet other) {
-		for (int i = other.atoms.nextSetBit(0); i >= 0; i = other.atoms.nextSetBit(i+1)) {
-			if (!atoms.get(i))
-				return false;
-		}
-		return true;
+		BitSet bs = (BitSet) other.atoms.clone();
+		bs.andNot(atoms);
+		return bs.isEmpty();
 	}
 	
 	/**
