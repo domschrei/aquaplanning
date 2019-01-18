@@ -55,6 +55,10 @@ public class GroundPlanningProblem {
 		return goal;
 	}
 	
+	public void setGoal(Goal g) {
+		this.goal = g;
+	}
+	
 	public boolean hasActionCosts() {
 		return hasActionCosts;
 	}
