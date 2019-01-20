@@ -23,6 +23,8 @@ public abstract class Heuristic {
 			return new ManhattanGoalDistanceHeuristic(p);
 		case actionInterferenceRelaxation:
 			return new SatAbstractionHeuristic(p, config);
+		case ffTrautmann:
+			return new TrautmannsHeuristic(p);
 		default:
 			break;
 		}
