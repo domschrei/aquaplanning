@@ -25,6 +25,8 @@ public abstract class Heuristic {
 			return new SatAbstractionHeuristic(p, config);
 		case ffTrautmann:
 			return new TrautmannsHeuristic(p);
+		case froleyks:
+			return new FroleyksHeuristic(p);
 		default:
 			break;
 		}

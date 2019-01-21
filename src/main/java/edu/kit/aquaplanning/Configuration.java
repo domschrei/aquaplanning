@@ -91,7 +91,7 @@ public class Configuration {
 	/* Forward search space planning */
 	
 	public enum HeuristicType {
-		manhattanGoalDistance, relaxedPathLength, actionInterferenceRelaxation, ffTrautmann;
+		manhattanGoalDistance, relaxedPathLength, actionInterferenceRelaxation, ffTrautmann, froleyks;
 	}
 	@Option(paramLabel = "heuristicClass", names = {"-H", "--heuristic"}, 
 			description = "Heuristic for forward search: " + USAGE_OPTIONS_AND_DEFAULT, 
