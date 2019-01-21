@@ -1,7 +1,5 @@
 package edu.kit.aquaplanning.planners;
 
-import java.util.List;
-
 import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.model.ground.Action;
 import edu.kit.aquaplanning.model.ground.Goal;
@@ -37,7 +35,7 @@ public class ForwardSearchPlanner extends Planner {
 		// Important objects from the planning problem
 		State initState = problem.getInitialState();
 		Goal goal = problem.getGoal();
-		List<Action> actions = problem.getActions();		
+		ActionIndex aindex = new ActionIndex(problem);
 		
 		// Initialize forward search
 		SearchQueue frontier;
@@ -75,19 +73,14 @@ public class ForwardSearchPlanner extends Planner {
 			}
 			
 			// Expand node: iterate over operators
-			for (Action action : actions) {
+			for (Action action : aindex.getApplicableActions(node.state)) {
+				// Create new node by applying the operator
+				State newState = action.apply(node.state);
 				
-				// Can this operator be applied to this state?
-				if (action.isApplicable(node.state)) {
-					
-					// Create new node by applying the operator
-					State newState = action.apply(node.state);
-					
-					// Add new node to frontier
-					SearchNode newNode = new SearchNode(node, newState);
-					newNode.lastAction = action;
-					frontier.add(newNode);
-				}
+				// Add new node to frontier
+				SearchNode newNode = new SearchNode(node, newState);
+				newNode.lastAction = action;
+				frontier.add(newNode);
 			}
 			
 			iteration++;

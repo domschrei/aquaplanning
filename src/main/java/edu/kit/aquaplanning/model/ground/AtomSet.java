@@ -33,6 +33,15 @@ public class AtomSet {
 		}
 	}
 	
+
+	/**
+	 * Get the index of first true atom or -1 if none is true
+	 * @return
+	 */
+	public int getFirstTrueAtom() {
+		return atoms.nextSetBit(0);
+	}
+
 	/**
 	 * True iff the provided atom is contained in this set
 	 * (or, if the atom has a value of false, it is *not* contained).
