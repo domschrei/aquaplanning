@@ -39,6 +39,13 @@ public class Main {
 			System.exit(0);
 		}
 		
+		try {
+			Thread.sleep(7000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 		// Parse arguments
 		cmd.parse(args);
 		

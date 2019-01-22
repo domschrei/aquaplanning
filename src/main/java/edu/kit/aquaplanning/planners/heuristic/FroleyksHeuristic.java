@@ -3,14 +3,10 @@ package edu.kit.aquaplanning.planners.heuristic;
 import java.util.List;
 import java.util.ArrayList;
 import edu.kit.aquaplanning.model.ground.Action;
-import edu.kit.aquaplanning.model.ground.AtomSet;
-import edu.kit.aquaplanning.model.ground.Atom;
 import edu.kit.aquaplanning.model.ground.Plan;
-import edu.kit.aquaplanning.model.ground.Goal;
 import edu.kit.aquaplanning.model.ground.State;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.planners.GroundRelaxedPlanningGraph;
-import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.planners.SearchNode;
 
 /**
