@@ -155,6 +155,16 @@ public class Configuration {
 		config.searchTimeSeconds = searchTimeSeconds;
 		return config;
 	}
-	
+
+	@Override
+	public String toString() {
+		return "Configuration \n domainFile=" + domainFile + "\n problemFile=" + problemFile + "\n planOutputFile="
+				+ planOutputFile + "\n maxIterations=" + maxIterations + "\n maxTimeSeconds=" + maxTimeSeconds
+				+ "\n searchTimeSeconds=" + searchTimeSeconds + "\n numThreads=" + numThreads + "\n verbosityLevel="
+				+ verbosityLevel + "\n keepDisjunctions=" + keepDisjunctions + "\n keepEqualities=" + keepEqualities
+				+ "\n plannerType=" + plannerType + "\n heuristic=" + heuristic + "\n heuristicWeight=" + heuristicWeight
+				+ "\n searchStrategy=" + searchStrategy + "\n revisitStates=" + revisitStates + "\n seed=" + seed
+				+ "\n optimizePlan=" + optimizePlan + "\n startTimeMillis=" + startTimeMillis + "\n";
+	}
 	
 }

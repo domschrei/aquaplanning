@@ -10,6 +10,7 @@ public class Logger {
 	public static final int ESSENTIAL = -1;
 	
 	private static int verbosity;
+	private static long startTime = System.nanoTime(); 
 	
 	public static void init(int verbosityLevel) {
 		Logger.verbosity = verbosityLevel;
@@ -17,7 +18,8 @@ public class Logger {
 	
 	public static void log(int verbosityLevel, String msg) {
 		if (verbosityLevel <= verbosity) {
-			System.out.println(msg);
+			long time = System.nanoTime() - startTime;
+			System.out.println(String.format("[%.3f] ", time/1e9f) + msg);
 		}
 	}
 }

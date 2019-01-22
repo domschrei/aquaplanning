@@ -31,7 +31,8 @@ public class ForwardSearchPlanner extends Planner {
 	 */
 	@Override
 	public Plan findPlan(GroundPlanningProblem problem) {
-		startSearch();		
+		startSearch();
+		Logger.log(Logger.INFO, "Starting forward search with " + config.toString());
 		// Important objects from the planning problem
 		State initState = problem.getInitialState();
 		Goal goal = problem.getGoal();
@@ -89,7 +90,7 @@ public class ForwardSearchPlanner extends Planner {
 			if ((iteration << visitedNodesPrintInterval) == 0) {
 				double elapsedMillis = ((System.nanoTime() - timeStart) * 0.001 * 0.001);
 				int nodesPerSecond = (int) (iteration / (0.001 * elapsedMillis));
-				Logger.log(Logger.INFO_V, "Visited " + iteration + " nodes. (" + nodesPerSecond + " nodes/s)");
+				Logger.log(Logger.INFO, "Visited " + iteration + " nodes. (" + nodesPerSecond + " nodes/s)");
 				visitedNodesPrintInterval--;
 			}
 		}

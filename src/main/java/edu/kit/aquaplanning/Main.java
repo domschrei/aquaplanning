@@ -2,6 +2,7 @@ package edu.kit.aquaplanning;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.InetAddress;
 
 import edu.kit.aquaplanning.grounding.Grounder;
 import edu.kit.aquaplanning.grounding.RelaxedPlanningGraphGrounder;
@@ -88,6 +89,7 @@ public class Main {
 		
 		// Welcome message
 		Logger.log(Logger.INFO, "This is Aquaplanning - QUick Automated Planning.");
+		Logger.log(Logger.INFO, "Running on " + InetAddress.getLocalHost().getHostName());
 		
 		// Configuration defaults are editable in Configuration.java.
 		// For debugging, you can also override the configuration here, e.g.
