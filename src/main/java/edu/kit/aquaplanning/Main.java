@@ -70,7 +70,7 @@ public class Main {
 			Logger.log(Logger.INFO, "Plan written to " + config.planOutputFile + ".");
 		} else {
 			// No output file => Always output plan to stdout
-			Logger.log(Logger.ESSENTIAL, plan.toString());
+			Logger.log(Logger.ESSENTIAL, "Found plan:\n" + plan.toString());
 		}
 	}
 	
