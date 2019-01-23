@@ -1,16 +1,12 @@
 package edu.kit.aquaplanning.grounding;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
-import java.util.TreeSet;
-
-import org.abego.treelayout.internal.util.java.lang.string.StringUtil;
 
 import edu.kit.aquaplanning.model.lifted.AbstractCondition;
 import edu.kit.aquaplanning.model.lifted.Argument;
@@ -54,6 +50,8 @@ public class OperatorIndex {
 				case atomic:
 					Condition cond = (Condition) pre;
 					if (cond.isNegated())
+						break;
+					if (cond.getPredicate().isDerived())
 						break;
 					if (!predicateOperatorMap.containsKey(cond.getPredicate())) {
 						predicateOperatorMap.put(cond.getPredicate(), new ArrayList<>());
@@ -114,6 +112,9 @@ public class OperatorIndex {
 					negated ^= opCond.isNegated();
 					if (negated) {
 						// Negated condition
+						break;
+					} else if (opCond.getPredicate().isDerived()) {
+						// Derived predicate -- ignore
 						break;
 					} else {
 						flatPreconds.add(opCond);
@@ -269,45 +270,5 @@ public class OperatorIndex {
 		}
 		
 		return applicableOps;
-	}
-	
-	private List<ArgumentAssignment> replaceVariableArguments(Operator op, List<ArgumentAssignment> assignments) {
-		
-		List<ArgumentAssignment> finalAssignments = new ArrayList<>();
-		for (int assignmentIdx = 0; assignmentIdx < assignments.size(); assignmentIdx++) {
-			ArgumentAssignment assignment = assignments.get(assignmentIdx);
-			boolean containsVar = false;
-			for (int argIdx = 0; argIdx < assignment.size(); argIdx++) {
-				Argument arg = assignment.get(argIdx);
-				if (arg == null || !arg.isConstant()) {
-					containsVar = true;
-					
-					for (Argument constArg : p.getConstants()) {
-						if (p.isArgumentOfType(constArg, op.getArgumentTypes().get(argIdx))) {
-							ArgumentAssignment newAssignment = new ArgumentAssignment(assignment);
-							newAssignment.set(argIdx, constArg);
-							finalAssignments.add(newAssignment);
-						}
-					}
-				}
-			}
-			if (!containsVar) {
-				finalAssignments.add(assignment);
-			}
-		}
-		return finalAssignments;
-	}
-	
-	private void print(Argument[] assignment) {
-		for (Argument arg : assignment) {
-			System.out.print("  " + arg);															
-		}
-		System.out.println();
-	}
-	
-	private void print(List<Argument[]> assignments) {
-		for (Argument[] a : assignments) {
-			print(a);
-		}
 	}
 }

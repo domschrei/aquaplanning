@@ -94,8 +94,9 @@ public class Action {
 	public boolean isApplicable(State state) {
 		
 		// Check complex precondition, if present
-		if (complexPrecondition != null && !complexPrecondition.holds(state))
+		if (complexPrecondition != null && !complexPrecondition.holds(state)) {
 			return false;
+		}
 		// Check bitset preconditions
 		if (!state.holdsAll(preconditionsPos))
 			return false;

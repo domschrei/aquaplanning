@@ -22,7 +22,7 @@ public class LiftedState {
 				this.conditions.put(p, new HashSet<>());
 			}
 			this.conditions.get(p).add(c);
-		}		
+		}
 	}
 	
 	public LiftedState(List<Condition> conditions) {

@@ -44,9 +44,19 @@ public class ActionIndex {
 	}
 	
 	public Collection<Action> getApplicableActions(State state) {
-		AtomSet stateAtoms = state.getAtomSet();
+		
 		HashSet<Action> result = new HashSet<>();
-		result.addAll(noPrecondActions);
+		
+		// Add actions without any (simple) preconditions
+		for (Action candidate : noPrecondActions) {
+			// Still check applicability (derived predicates etc.)
+			if (candidate.isApplicable(state)) {				
+				result.add(candidate);
+			}
+		}
+		
+		// Add actions with preconditions
+		AtomSet stateAtoms = state.getAtomSet();
 		for (int atomId = 0; atomId < stateAtoms.size(); atomId++) {
 			int index = stateAtoms.get(atomId) ? atomId+1 : -atomId-1;
 			if (!atomActionMap.containsKey(index)) {
@@ -58,7 +68,7 @@ public class ActionIndex {
 				}
 			}
 		}
+		
 		return result;
 	}
-
 }
