@@ -29,6 +29,8 @@ public class RelaxedPlanningGraph {
 	private List<Set<Condition>> liftedStates;
 	private List<List<Operator>> liftedActions;
 	
+	private OperatorIndex opIndex;
+	
 	/**
 	 * Initialized a relaxed planning graph of the specified planning problem.
 	 * The graph's layers are computed successively by calling hasNextLayer
@@ -40,6 +42,8 @@ public class RelaxedPlanningGraph {
 		this.liftedActions = new ArrayList<>();
 		this.liftedStates = new ArrayList<>();
 				
+		this.opIndex = new OperatorIndex(problem);
+		
 		constants = new ArrayList<>();
 		constants.addAll(problem.getConstants());
 		
@@ -120,6 +124,11 @@ public class RelaxedPlanningGraph {
 	 */
 	protected List<Operator> getLiftedActionsReachableFrom(Set<Condition> liftedState) {
 		
+		LiftedState s = new LiftedState(liftedState);
+		List<Operator> reachableOps = opIndex.getRelaxedApplicableLiftedActions(s);
+		return reachableOps;		
+		
+		/*
 		List<Operator> reachableOperators = new ArrayList<>();
 		
 		// For each operator
@@ -148,7 +157,7 @@ public class RelaxedPlanningGraph {
 			});
 		}
 		
-		return reachableOperators;
+		return reachableOperators;*/
 	}
 	
 	/**

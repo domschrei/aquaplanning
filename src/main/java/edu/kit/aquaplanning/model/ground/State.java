@@ -90,7 +90,6 @@ public class State {
 	}
 	
 	public float get(NumericAtom atom) {
-		
 		return numericAtoms.get(atom.getId());
 	}
 	

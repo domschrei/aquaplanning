@@ -197,4 +197,8 @@ public class AtomTable {
 	public Map<String, DerivedAtom> getDerivedAtoms() {
 		return derivedAtoms;
 	}
+
+	public Map<String, NumericAtom> getNumericAtoms() {
+		return numericAtoms;
+	}
 }

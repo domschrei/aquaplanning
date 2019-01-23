@@ -67,7 +67,14 @@ public class Operator {
 	public Operator getOperatorWithGroundArguments(List<Argument> args) {
 		
 		Operator op = new Operator(name);
-		args.forEach(arg -> op.addArgument(arg));
+		for (int argIdx = 0; argIdx < args.size(); argIdx++) {
+			Argument arg = args.get(argIdx);
+			if (arg == null) {
+				arg = this.getArguments().get(argIdx);
+				args.set(argIdx, arg);
+			}
+			op.addArgument(arg);
+		}
 		AbstractCondition pre = precondition.getConditionBoundToArguments(arguments, args);
 		op.setPrecondition(pre);
 		AbstractCondition eff = effect.getConditionBoundToArguments(arguments, args);

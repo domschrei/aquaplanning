@@ -1,0 +1,102 @@
+package edu.kit.aquaplanning.grounding;
+
+import java.util.Arrays;
+import java.util.List;
+
+import edu.kit.aquaplanning.model.lifted.Argument;
+
+public class ArgumentAssignment {
+
+	private Argument[] args;
+	private int decisionLevel;
+	private Integer hashCode = null;
+	
+	public ArgumentAssignment(Argument[] args) {
+		this.args = args;
+		decisionLevel = 0;
+	}
+	
+	public ArgumentAssignment(int size) {
+		this.args = new Argument[size];
+		decisionLevel = 0;
+	}
+	
+	public ArgumentAssignment(ArgumentAssignment other) {
+		this.args = Arrays.copyOf(other.args, other.args.length);
+		this.decisionLevel = other.decisionLevel+1;
+	}
+	
+	public void set(int i, Argument a) {
+		args[i] = a;
+		hashCode = null;
+	}
+	
+	public Argument get(int i) {
+		return args[i];
+	}
+	
+	public List<Argument> toList() {
+		return Arrays.asList(args);
+	}
+	
+	public int size() {
+		return args.length;
+	}
+	
+	public int getDecisionLevel() {
+		return decisionLevel;
+	}
+
+	public ArgumentAssignment mergeIfPossible(ArgumentAssignment a) {
+		
+		Argument[] assignment = this.args;
+		Argument[] newAssignment = a.args;
+		Argument[] match = new Argument[assignment.length];
+		for (int argIdx = 0; argIdx < assignment.length; argIdx++) {
+			if (assignment[argIdx] == null) {
+				// match
+				match[argIdx] = newAssignment[argIdx];
+			} else if (newAssignment[argIdx] == null) {
+				// match
+				match[argIdx] = assignment[argIdx];
+			} else if (assignment[argIdx].getName().equals(newAssignment[argIdx].getName())) {
+				// match
+				match[argIdx] = newAssignment[argIdx];
+			} else {
+				// no match
+				match = null;
+				break;
+			}
+		}
+		
+		if (match == null)
+			return null;
+		else
+			return new ArgumentAssignment(match);
+	}
+	
+	@Override
+	public int hashCode() {
+		if (hashCode == null) {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + Arrays.hashCode(args);
+			hashCode = result;
+		}
+		return hashCode;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		ArgumentAssignment other = (ArgumentAssignment) obj;
+		if (!Arrays.equals(args, other.args))
+			return false;
+		return true;
+	}
+}

@@ -1,7 +1,9 @@
 package edu.kit.aquaplanning.grounding;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.model.ground.Action;
@@ -406,7 +408,7 @@ public abstract class BaseGrounder implements Grounder {
 		
 		// Assemble action
 		action = new Action(actionName, pre.getLeft(), pre.getRight(), eff.getLeft(), eff.getMid(), eff.getRight());
-		action.setCost(liftedAction.getCost());		
+		action.setCost(liftedAction.getCost());	
 		return action;
 	}
 	
@@ -426,12 +428,24 @@ public abstract class BaseGrounder implements Grounder {
 		
 		initialStateAtoms.add(atomTable.atom(trueCondition.getPredicate(), 
 				trueCondition.getArguments(), false));
-		
 		State initialState = new State(initialStateAtoms);
-		for (Function f : problem.getInitialFunctionValues().keySet()) {
+		
+		// Define numeric atoms by initial state
+		Set<NumericAtom> definedNumericAtoms = new HashSet<>();
+		for (Function f : problem.getInitialFunctionValues().keySet()) {			
 			NumericAtom atom = atomTable.numericAtom(f, 
 					problem.getInitialFunctionValues().get(f));
 			initialState.set(atom);
+			definedNumericAtoms.add(atom);
+		}
+		// Any undefined numeric atoms?
+		for (NumericAtom atom : atomTable.getNumericAtoms().values()) {			
+			if (!definedNumericAtoms.contains(atom)) {
+				Logger.log(Logger.WARN, "Fluent " + atom + " has no initial value; defaulting to zero.");
+				atom = atom.copy();
+				atom.setValue(0);
+				initialState.set(atom);
+			}
 		}
 		return initialState;
 	}

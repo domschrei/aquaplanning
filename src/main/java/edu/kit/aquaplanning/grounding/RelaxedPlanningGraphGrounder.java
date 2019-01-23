@@ -1,7 +1,9 @@
 package edu.kit.aquaplanning.grounding;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.model.ground.Action;
@@ -15,6 +17,7 @@ import edu.kit.aquaplanning.model.lifted.Argument;
 import edu.kit.aquaplanning.model.lifted.Operator;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.model.lifted.Predicate;
+import edu.kit.aquaplanning.util.Logger;
 import edu.kit.aquaplanning.util.Pair;
 import edu.kit.aquaplanning.model.lifted.AbstractCondition.ConditionType;
 import edu.kit.aquaplanning.model.lifted.Condition;
@@ -66,19 +69,22 @@ public class RelaxedPlanningGraphGrounder extends BaseGrounder {
 		
 		// Traverse delete-relaxed state space
 		RelaxedPlanningGraph graph = new RelaxedPlanningGraph(problem);
-		actions = new ArrayList<>();
 		int iteration = 0;
 		while (graph.hasNextLayer()) {
 			graph.computeNextLayer();
-			// Ground new operators
-			for (Operator op : graph.getLiftedActions(iteration)) {
-				Action a = getAction(op); // actual grounding
-				if (a != null && !actions.contains(a)) {
-					actions.add(a);
-				}
-			}
 			iteration++;
 		}
+		// Generate action objects
+		Logger.log(Logger.INFO_V, "Generating ground action objects ...");
+		Set<Action> actionSet = new HashSet<>();
+		for (Operator op : graph.getLiftedActions(iteration-1)) {
+			Action a = getAction(op); // actual grounding
+			if (a != null) {
+				actionSet.add(a);
+			}
+		}
+		actions = new ArrayList<>();
+		actions.addAll(actionSet);
 		
 		// Extract initial state
 		State initialState = getInitialState();
