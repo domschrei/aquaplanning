@@ -252,12 +252,13 @@ public class OperatorIndex {
 			Map<String, Integer> argIndices = operatorArgPositions.get(op.getName());
 			
 			// Find a suitable order of which arguments to instantiate first
-			// (sort arguments decreasingly by the amount of occurrences in preconditions)
 			int[] orderedArgIndices = new int[op.getArguments().size()];
 			List<Argument> args = new ArrayList<>();
 			args.addAll(op.getArguments());
 			String opStr = op.getPrecondition().toString();
 			args.sort((arg1, arg2) -> {
+				// Sort arguments in decreasing order by the amount 
+				// of occurrences in the operator's preconditions
 				int occ1 = opStr.length() - opStr.replace(arg1.getName(), "").length();
 				int occ2 = opStr.length() - opStr.replace(arg2.getName(), "").length();
 				return occ1 - occ2;
@@ -292,7 +293,7 @@ public class OperatorIndex {
 					
 				} else {
 					
-					// Assignment is not complete yet
+					// Assignment is not complete yet: decide on next argument
 					int argPos = orderedArgIndices[decisionLevel];
 					for (Argument arg : eligibleArguments.get(argPos)) {
 						ArgumentAssignment newAssignment = new ArgumentAssignment(partialAssignment);
@@ -326,6 +327,7 @@ public class OperatorIndex {
 							}
 						}
 						if (holds) {
+							// Remember partial assignment for further exploration
 							assignmentStack.push(newAssignment);
 						}				
 					}
