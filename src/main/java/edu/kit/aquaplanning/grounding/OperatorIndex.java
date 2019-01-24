@@ -8,8 +8,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
-import javax.swing.plaf.synth.SynthSpinnerUI;
-
 import edu.kit.aquaplanning.model.lifted.AbstractCondition;
 import edu.kit.aquaplanning.model.lifted.Argument;
 import edu.kit.aquaplanning.model.lifted.Condition;
@@ -17,7 +15,6 @@ import edu.kit.aquaplanning.model.lifted.ConditionSet;
 import edu.kit.aquaplanning.model.lifted.Negation;
 import edu.kit.aquaplanning.model.lifted.Operator;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
-import edu.kit.aquaplanning.model.lifted.Predicate;
 
 /**
  * Lookup structure for applicable actions given a state in a lifted setting.
@@ -223,7 +220,10 @@ public class OperatorIndex {
 							if (unconstrainedArgs[pos] || eligibleArgs.get(pos).contains(constant)) {
 								// This constant is eligible at this position
 								eligibleArgumentSets.get(pos).add(constant);
-							} else if (pre.getArguments().contains(op.getArguments().get(pos))) {
+							} else if (pre.getArguments().contains(op.getArguments().get(pos)) 
+									&& !predicateName.equals("=")) {
+								// The operator argument at this position is constrained by the precondition,
+								// but this constant is not part of the eligible arguments:
 								// This constant cannot occur at this position
 								ineligibleArgumentSets.get(pos).add(constant);
 							}

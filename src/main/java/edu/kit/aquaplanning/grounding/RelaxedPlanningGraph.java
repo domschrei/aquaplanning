@@ -80,8 +80,8 @@ public class RelaxedPlanningGraph {
 		liftedActions.add(newActions);
 		Logger.log(Logger.INFO_V, "Layer " + getCurrentLayer() 
 							+ " of relaxed planning graph: " 
-							+ state.size() + " atoms and "
-							+ newActions.size() + " actions reachable.");
+							+ state.size() + " atoms, "
+							+ newActions.size() + " new actions reachable.");
 		
 		// Apply actions into new state
 		Set<Condition> newState = new HashSet<>();
