@@ -86,8 +86,11 @@ public class RelaxedPlanningGraph {
 		// Apply actions into new state
 		Set<Condition> newState = new HashSet<>();
 		newState.addAll(state);
-		for (Operator op : newActions) {
-			applyPositiveEffects(op, newState);
+		// Apply all operators seen so far to the state
+		for (List<Operator> ops : liftedActions) {			
+			for (Operator op : ops) {
+				applyPositiveEffects(op, newState);
+			}
 		}
 		liftedStates.add(newState);
 	}
@@ -112,9 +115,13 @@ public class RelaxedPlanningGraph {
 	/**
 	 * Returns all actions applicable at the provided layer.
 	 */
-	public List<Operator> getLiftedActions(int layer) {
+	public List<Operator> getLiftedActions() {
 		
-		return liftedActions.get(layer);
+		List<Operator> allOps = new ArrayList<>();
+		for (List<Operator> ops : liftedActions) {
+			allOps.addAll(ops);
+		}
+		return allOps;
 	}
 	
 	/**

@@ -15,23 +15,48 @@ import edu.kit.aquaplanning.model.lifted.ConditionSet;
 import edu.kit.aquaplanning.model.lifted.Negation;
 import edu.kit.aquaplanning.model.lifted.Operator;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
-import edu.kit.aquaplanning.model.lifted.Predicate;
 
+/**
+ * Lookup structure for applicable actions given a state in a lifted setting.
+ */
 public class OperatorIndex {
 
-	private Map<Predicate, List<Operator>> predicateOperatorMap;
+	/**
+	 * Maps the name of an operator to the arguments with which it has
+	 * already been instantiated.
+	 */
+	private Map<String, ArgumentNode> instantiatedOperators;
+	/**
+	 * Maps the name of a predicate to operators which may become applicable
+	 * if some condition of that predicate becomes true.
+	 */
+	private Map<String, List<Operator>> predicateOperatorMap;
+	/**
+	 * List of operators which have no preconditions at all, or
+	 * no simple (i.e. conjunctive) preconditions.
+	 */
 	private List<Operator> operatorsWithoutPreconditions;
-	private Map<Operator, Map<String, Integer>> operatorArgPositions;
+	/**
+	 * Maps the name of an operator to a mapping of (argument names
+	 * to their position within the operator's parameters).
+	 */
+	private Map<String, Map<String, Integer>> operatorArgPositions;
+	/**
+	 * Maps each constant in the problem to a positive ID.
+	 */
+	private Map<String, Integer> argumentIds;
 	
 	private PlanningProblem p;
 	
 	public OperatorIndex(PlanningProblem p) {
 		
+		this.instantiatedOperators = new HashMap<>();
 		this.predicateOperatorMap = new HashMap<>();
 		this.operatorsWithoutPreconditions = new ArrayList<>();
 		this.operatorArgPositions = new HashMap<>();
 		this.p = p;
 		
+		// For each operator
 		opLoop: for (Operator op : p.getOperators()) {
 			
 			// Process arguments
@@ -39,7 +64,7 @@ public class OperatorIndex {
 			for (int i = 0; i < op.getArguments().size(); i++) {
 				argPositions.put(op.getArguments().get(i).getName(), i);
 			}
-			operatorArgPositions.put(op, argPositions);
+			operatorArgPositions.put(op.getName(), argPositions);
 			
 			// Process preconditions
 			List<AbstractCondition> preconds = new ArrayList<>();
@@ -53,10 +78,10 @@ public class OperatorIndex {
 						break;
 					if (cond.getPredicate().isDerived())
 						break;
-					if (!predicateOperatorMap.containsKey(cond.getPredicate())) {
-						predicateOperatorMap.put(cond.getPredicate(), new ArrayList<>());
+					if (!predicateOperatorMap.containsKey(cond.getPredicate().getName())) {
+						predicateOperatorMap.put(cond.getPredicate().getName(), new ArrayList<>());
 					}
-					predicateOperatorMap.get(cond.getPredicate()).add(op);
+					predicateOperatorMap.get(cond.getPredicate().getName()).add(op);
 					continue opLoop;
 				case negation:
 					break;
@@ -72,19 +97,31 @@ public class OperatorIndex {
 			// add operator to operators without precondition
 			operatorsWithoutPreconditions.add(op);			
 		}
+		
+		// Initialize argument IDs
+		argumentIds = new HashMap<>();
+		int id = 1;
+		for (Argument constant : p.getConstants()) {
+			argumentIds.put(constant.getName(), id++);
+		}
 	}
 	
+	/**
+	 * Given a state in a lifted setting, returns all actions which are applicable
+	 * in that state and have not been returned as applicable before.
+	 */
 	public List<Operator> getRelaxedApplicableLiftedActions(LiftedState s) {
 		
 		// Find basic operators which may be applicable in some instantiation
 		List<Operator> filteredOps = new ArrayList<>();
-		for (Predicate p : s.getOccurringPredicates()) {
+		for (String p : s.getOccurringPredicates()) {
 			List<Operator> ops = predicateOperatorMap.get(p);
 			if (ops != null)
 				filteredOps.addAll(ops);			
 		}
 		filteredOps.addAll(operatorsWithoutPreconditions);
 		
+		// Final structure of applicable actions
 		List<Operator> applicableOps = new ArrayList<>();
 		
 		// For each operator which may be instantiateable
@@ -124,28 +161,34 @@ public class OperatorIndex {
 					break;				
 				}
 			}
-				
+			
+			// For each parameter position, contains the possible arguments there
 			List<Set<Argument>> eligibleArgumentSets = new ArrayList<>();
 			for (int pos = 0; pos < op.getArguments().size(); pos++)
 				eligibleArgumentSets.add(new HashSet<>());
 			
+			// For each parameter position, contains the impossible arguments there
 			List<Set<Argument>> ineligibleArgumentSets = new ArrayList<>();
 			for (int pos = 0; pos < op.getArguments().size(); pos++)
 				ineligibleArgumentSets.add(new HashSet<>());
 			
+			// For each parameter position, "true" if the argument is not constrained
+			// by any of the preconditions
 			boolean[] unconstrainedArgs = new boolean[op.getArguments().size()];
 			for (int i = 0; i < unconstrainedArgs.length; i++) {
 				unconstrainedArgs[i] = true;
 			}
 			
+			// For each of the operator's simple preconditions
 			for (Condition pre : flatPreconds) {
+				String predicateName = pre.getPredicate().getName();
 				
 				List<Set<Argument>> eligibleArgs = new ArrayList<>();
 				for (int pos = 0; pos < op.getArguments().size(); pos++)
 					eligibleArgs.add(new HashSet<>());
 				
 				// For each condition in the current state which satisfies pre
-				for (Condition trueCondition : s.getConditions(pre.getPredicate())) {
+				for (Condition trueCondition : s.getConditions(predicateName)) {
 					
 					// For each of the state condition's arguments
 					for (int condArgIdx = 0; condArgIdx < trueCondition.getNumArgs(); condArgIdx++) {
@@ -163,14 +206,18 @@ public class OperatorIndex {
 					}
 				}
 				
+				// Add new information to (in)eligible arguments of the operator
 				for (int pos = 0; pos < op.getArguments().size(); pos++) {
 					
+					// For each problem constant of fitting type
 					for (Argument constant : p.getConstants()) {
 						if (p.isArgumentOfType(constant, op.getArgumentTypes().get(pos))) {
 							
 							if (unconstrainedArgs[pos] || eligibleArgs.get(pos).contains(constant)) {
+								// This constant is eligible at this position
 								eligibleArgumentSets.get(pos).add(constant);
 							} else if (pre.getArguments().contains(op.getArguments().get(pos))) {
+								// This constant cannot occur at this position
 								ineligibleArgumentSets.get(pos).add(constant);
 							}
 						}
@@ -178,17 +225,21 @@ public class OperatorIndex {
 				}
 			}
 			
-			// Sets to list
+			// Compile a single list of eligible arguments for each parameter position
 			List<List<Argument>> eligibleArguments = new ArrayList<>();
 			for (int pos = 0; pos < op.getArguments().size(); pos++) {
 				List<Argument> args = new ArrayList<>();
+				
+				// For each problem constant of fitting type
 				for (Argument constant : p.getConstants()) {
 					if (p.isArgumentOfType(constant, op.getArgumentTypes().get(pos))) {
 						
 						if (flatPreconds.isEmpty()) {
+							// No preconditions: any constant of correct type is allowed
 							args.add(constant);
 						} else if (eligibleArgumentSets.get(pos).contains(constant) 
 								&& !ineligibleArgumentSets.get(pos).contains(constant)) {
+							// Constant is eligible at this position
 							args.add(constant);
 						}
 					}
@@ -198,7 +249,7 @@ public class OperatorIndex {
 			
 			Stack<ArgumentAssignment> assignmentStack = new Stack<>();
 			assignmentStack.push(new ArgumentAssignment(op.getArguments().size()));
-			Map<String, Integer> argIndices = operatorArgPositions.get(op);
+			Map<String, Integer> argIndices = operatorArgPositions.get(op.getName());
 			
 			// Find a suitable order of which arguments to instantiate first
 			// (sort arguments decreasingly by the amount of occurrences in preconditions)
@@ -223,8 +274,21 @@ public class OperatorIndex {
 				if (decisionLevel == op.getArguments().size()) {
 					// Assignment is complete
 					
-					Operator applicableOp = op.getOperatorWithGroundArguments(partialAssignment.toList());
-					applicableOps.add(applicableOp);
+					// Has this operator not been instantiated yet?
+					args = partialAssignment.toList();
+					if (!instantiatedOperators.getOrDefault(op.getName(), 
+							new ArgumentNode(argumentIds)).contains(args)) {
+						
+						// Create and add new operator
+						Operator applicableOp = op.getOperatorWithGroundArguments(args);
+						applicableOps.add(applicableOp);
+						
+						// Remember that this operator has been instantiated
+						if (!instantiatedOperators.containsKey(op.getName())) {
+							instantiatedOperators.put(op.getName(), new ArgumentNode(argumentIds));
+						}
+						instantiatedOperators.get(op.getName()).add(args);
+					}
 					
 				} else {
 					
@@ -256,7 +320,7 @@ public class OperatorIndex {
 							}
 							
 							// Does the precondition hold?
-							if (!s.getConditions(pre.getPredicate()).contains(c)) {
+							if (!s.holds(c)) {
 								holds = false;
 								break;
 							}

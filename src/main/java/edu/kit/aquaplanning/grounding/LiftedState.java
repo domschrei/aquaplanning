@@ -1,58 +1,81 @@
 package edu.kit.aquaplanning.grounding;
 
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import edu.kit.aquaplanning.model.lifted.Argument;
 import edu.kit.aquaplanning.model.lifted.Condition;
-import edu.kit.aquaplanning.model.lifted.Predicate;
 
+/**
+ * Static (immutable) structure for a certain lifted state,
+ * with a couple of data structures accelerating checks of conditions.
+ */
 public class LiftedState {
 
-	private Map<Predicate, Set<Condition>> conditions;
+	private Map<String, List<Condition>> conditions;
+	private Map<String, ArgumentNode> conditionTree;
+	private Map<String, Integer> argumentIds;
 	
 	public LiftedState(Set<Condition> conditions) {
 		this.conditions = new HashMap<>();
+		this.conditionTree = new HashMap<>();
+		this.argumentIds = new HashMap<>();
+		
+		int argId = 1;
 		for (Condition c : conditions) {
-			Predicate p = c.getPredicate();
-			if (!this.conditions.containsKey(p)) {
-				this.conditions.put(p, new HashSet<>());
+			
+			String predicateName = c.getPredicate().getName();
+			if (!this.conditions.containsKey(predicateName)) {
+				this.conditions.put(predicateName, new ArrayList<>());
 			}
-			this.conditions.get(p).add(c);
+			this.conditions.get(predicateName).add(c);
+			
+			for (Argument arg : c.getArguments()) {
+				if (!argumentIds.containsKey(arg.getName())) {
+					argumentIds.put(arg.getName(), argId++);
+				}
+			}
+			
+			if (!this.conditionTree.containsKey(predicateName)) {
+				this.conditionTree.put(predicateName, new ArgumentNode(argumentIds));
+			}
+			this.conditionTree.get(predicateName).add(c.getArguments());
 		}
 	}
 	
 	public LiftedState(List<Condition> conditions) {
-		this.conditions = new HashMap<>();
+		this.conditionTree = new HashMap<>();
 		for (Condition c : conditions) {
-			Predicate p = c.getPredicate();
-			if (!this.conditions.containsKey(p)) {
-				this.conditions.put(p, new HashSet<>());
+			String predicateName = c.getPredicate().getName();
+			if (!this.conditionTree.containsKey(predicateName)) {
+				this.conditionTree.put(predicateName, new ArgumentNode(argumentIds));
 			}
-			this.conditions.get(p).add(c);
+			this.conditionTree.get(predicateName).add(c.getArguments());
 		}
 	}
 	
-	public Set<Predicate> getOccurringPredicates() {
-		return conditions.keySet();
+	public Set<String> getOccurringPredicates() {
+		return conditionTree.keySet();
 	}
 	
-	public Set<Condition> getConditions(Predicate p) {
-		Set<Condition> conditions = this.conditions.get(p);
-		return (conditions == null ? new HashSet<>() : conditions);
+	public List<Condition> getConditions(String p) {
+		if (!this.conditions.containsKey(p)) {
+			this.conditions.put(p, new ArrayList<>());
+		}
+		return this.conditions.get(p);
 	}
 	
-	public Collection<Set<Condition>> getConditions() {
-		return conditions.values();
+	public boolean holds(Condition condition) {
+		return conditionTree.getOrDefault(condition.getPredicate().getName(), new ArgumentNode(argumentIds)).contains(condition.getArguments());
 	}
 	
 	@Override
 	public String toString() {
 		String out = "";
-		for (Set<Condition> conds : conditions.values()) {
+		for (List<Condition> conds : conditions.values()) {
 			out += conds.toString();
 		}
 		return out;

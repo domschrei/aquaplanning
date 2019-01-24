@@ -69,15 +69,13 @@ public class RelaxedPlanningGraphGrounder extends BaseGrounder {
 		
 		// Traverse delete-relaxed state space
 		RelaxedPlanningGraph graph = new RelaxedPlanningGraph(problem);
-		int iteration = 0;
 		while (graph.hasNextLayer()) {
 			graph.computeNextLayer();
-			iteration++;
 		}
 		// Generate action objects
 		Logger.log(Logger.INFO_V, "Generating ground action objects ...");
 		Set<Action> actionSet = new HashSet<>();
-		for (Operator op : graph.getLiftedActions(iteration-1)) {
+		for (Operator op : graph.getLiftedActions()) {
 			Action a = getAction(op); // actual grounding
 			if (a != null) {
 				actionSet.add(a);

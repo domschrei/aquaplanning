@@ -106,10 +106,10 @@ public class Operator {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((arguments == null) ? 0 : arguments.hashCode());
-		result = prime * result + cost;
-		result = prime * result + ((effect == null) ? 0 : effect.hashCode());
+		//result = prime * result + cost;
+		//result = prime * result + ((effect == null) ? 0 : effect.hashCode());
 		result = prime * result + ((name == null) ? 0 : name.hashCode());
-		result = prime * result + ((precondition == null) ? 0 : precondition.hashCode());
+		//result = prime * result + ((precondition == null) ? 0 : precondition.hashCode());
 		return result;
 	}
 
@@ -127,23 +127,23 @@ public class Operator {
 				return false;
 		} else if (!arguments.equals(other.arguments))
 			return false;
-		if (cost != other.cost)
+		/*if (cost != other.cost)
 			return false;
 		if (effect == null) {
 			if (other.effect != null)
 				return false;
 		} else if (!effect.equals(other.effect))
 			return false;
-		if (name == null) {
+		*/if (name == null) {
 			if (other.name != null)
 				return false;
 		} else if (!name.equals(other.name))
 			return false;
-		if (precondition == null) {
+		/*if (precondition == null) {
 			if (other.precondition != null)
 				return false;
 		} else if (!precondition.equals(other.precondition))
-			return false;
+			return false;*/
 		return true;
 	}
 }
