@@ -49,15 +49,22 @@ public class TestPlanners extends TestCase {
 	public void testAdlFeatures() throws FileNotFoundException, IOException {
 
 		Configuration config = new Configuration();
+		
 		config.keepDisjunctions = true;
 		fullTest("testfiles/adl/domain1.pddl", "testfiles/adl/p1.pddl", config);
+		fullTest("testfiles/equality/domain1.pddl", "testfiles/equality/p1.pddl", config);
+		
 		config.keepDisjunctions = false;
 		config.keepEqualities = true;
 		fullTest("testfiles/adl/domain1.pddl", "testfiles/adl/p1.pddl", config);
+		fullTest("testfiles/equality/domain1.pddl", "testfiles/equality/p1.pddl", config);
+		
 		config.keepDisjunctions = true;
 		fullTest("testfiles/adl/domain1.pddl", "testfiles/adl/p1.pddl", config);
-		
+		fullTest("testfiles/equality/domain1.pddl", "testfiles/equality/p1.pddl", config);
+
 		fullTest("testfiles/adl/domain2.pddl", "testfiles/adl/p2.pddl");
+		fullTest("testfiles/equality/domain2.pddl", "testfiles/equality/p2.pddl");
 	}
 	
 	public void testPlanOptimization() throws FileNotFoundException, IOException {

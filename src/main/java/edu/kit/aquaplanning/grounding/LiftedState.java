@@ -69,6 +69,13 @@ public class LiftedState {
 	}
 	
 	public boolean holds(Condition condition) {
+		if (condition.getPredicate().getName().equals("=")) {
+			// Equality predicate
+			String arg1 = condition.getArguments().get(0).getName();
+			String arg2 = condition.getArguments().get(1).getName();
+			return arg1.equals(arg2);
+		}
+		// Normal predicate
 		return conditionTree.getOrDefault(condition.getPredicate().getName(), new ArgumentNode(argumentIds)).contains(condition.getArguments());
 	}
 	

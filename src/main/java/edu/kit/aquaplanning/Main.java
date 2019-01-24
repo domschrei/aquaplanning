@@ -84,8 +84,6 @@ public class Main {
 		Logger.log(Logger.INFO, "This is Aquaplanning - QUick Automated Planning.");
 		Logger.log(Logger.INFO, "Running on " + InetAddress.getLocalHost().getHostName());
 		
-		//Thread.sleep(7000);
-		
 		// Configuration defaults are editable in Configuration.java.
 		// For debugging, you can also override the configuration here, e.g.
 		// config.heuristic = HeuristicType.manhattanGoalDistance;

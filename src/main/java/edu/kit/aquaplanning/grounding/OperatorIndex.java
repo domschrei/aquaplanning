@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
+import javax.swing.plaf.synth.SynthSpinnerUI;
+
 import edu.kit.aquaplanning.model.lifted.AbstractCondition;
 import edu.kit.aquaplanning.model.lifted.Argument;
 import edu.kit.aquaplanning.model.lifted.Condition;
@@ -15,6 +17,7 @@ import edu.kit.aquaplanning.model.lifted.ConditionSet;
 import edu.kit.aquaplanning.model.lifted.Negation;
 import edu.kit.aquaplanning.model.lifted.Operator;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
+import edu.kit.aquaplanning.model.lifted.Predicate;
 
 /**
  * Lookup structure for applicable actions given a state in a lifted setting.
@@ -77,6 +80,8 @@ public class OperatorIndex {
 					if (cond.isNegated())
 						break;
 					if (cond.getPredicate().isDerived())
+						break;
+					if (cond.getPredicate().getName().equals("="))
 						break;
 					if (!predicateOperatorMap.containsKey(cond.getPredicate().getName())) {
 						predicateOperatorMap.put(cond.getPredicate().getName(), new ArrayList<>());
@@ -188,21 +193,24 @@ public class OperatorIndex {
 					eligibleArgs.add(new HashSet<>());
 				
 				// For each condition in the current state which satisfies pre
-				for (Condition trueCondition : s.getConditions(predicateName)) {
+				// (Skip equality predicates for now)
+				if (!predicateName.equals("=")) {
+					for (Condition trueCondition : s.getConditions(predicateName)) {
 					
-					// For each of the state condition's arguments
-					for (int condArgIdx = 0; condArgIdx < trueCondition.getNumArgs(); condArgIdx++) {
-						Argument opArg = pre.getArguments().get(condArgIdx);
-						if (opArg.isConstant())
-							continue;
-						
-						int opArgIdx = op.getArguments().indexOf(opArg);
-						Argument constArg = trueCondition.getArguments().get(condArgIdx);
-						
-						// Insert constArg at position opArgIdx
-						// into the action's possible arguments
-						eligibleArgs.get(opArgIdx).add(constArg);
-						unconstrainedArgs[opArgIdx] = false;
+						// For each of the state condition's arguments
+						for (int condArgIdx = 0; condArgIdx < trueCondition.getNumArgs(); condArgIdx++) {
+							Argument opArg = pre.getArguments().get(condArgIdx);
+							if (opArg.isConstant())
+								continue;
+							
+							int opArgIdx = op.getArguments().indexOf(opArg);
+							Argument constArg = trueCondition.getArguments().get(condArgIdx);
+							
+							// Insert constArg at position opArgIdx
+							// into the action's possible arguments
+							eligibleArgs.get(opArgIdx).add(constArg);
+							unconstrainedArgs[opArgIdx] = false;
+						}
 					}
 				}
 				
@@ -212,7 +220,6 @@ public class OperatorIndex {
 					// For each problem constant of fitting type
 					for (Argument constant : p.getConstants()) {
 						if (p.isArgumentOfType(constant, op.getArgumentTypes().get(pos))) {
-							
 							if (unconstrainedArgs[pos] || eligibleArgs.get(pos).contains(constant)) {
 								// This constant is eligible at this position
 								eligibleArgumentSets.get(pos).add(constant);
