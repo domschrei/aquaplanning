@@ -15,8 +15,19 @@ import edu.kit.aquaplanning.model.lifted.Condition;
  */
 public class LiftedState {
 
+	/**
+	 * Maps a predicate name to a flat list of all conditions
+	 * in the state with that predicate name.
+	 */
 	private Map<String, List<Condition>> conditions;
+	/**
+	 * Maps a predicate name to a set of all argument combinations
+	 * which occur in the state with that predicate.
+	 */
 	private Map<String, ArgumentNode> conditionTree;
+	/**
+	 * Maps each problem constant to a unique positive integer.
+	 */
 	private Map<String, Integer> argumentIds;
 	
 	public LiftedState(Set<Condition> conditions) {
@@ -27,29 +38,21 @@ public class LiftedState {
 		int argId = 1;
 		for (Condition c : conditions) {
 			
+			// Add condition to correct flat conditions list 
 			String predicateName = c.getPredicate().getName();
 			if (!this.conditions.containsKey(predicateName)) {
 				this.conditions.put(predicateName, new ArrayList<>());
 			}
 			this.conditions.get(predicateName).add(c);
 			
+			// Set ID of each argument
 			for (Argument arg : c.getArguments()) {
 				if (!argumentIds.containsKey(arg.getName())) {
 					argumentIds.put(arg.getName(), argId++);
 				}
 			}
 			
-			if (!this.conditionTree.containsKey(predicateName)) {
-				this.conditionTree.put(predicateName, new ArgumentNode(argumentIds));
-			}
-			this.conditionTree.get(predicateName).add(c.getArguments());
-		}
-	}
-	
-	public LiftedState(List<Condition> conditions) {
-		this.conditionTree = new HashMap<>();
-		for (Condition c : conditions) {
-			String predicateName = c.getPredicate().getName();
+			// Add condition arguments to correct set structure
 			if (!this.conditionTree.containsKey(predicateName)) {
 				this.conditionTree.put(predicateName, new ArgumentNode(argumentIds));
 			}
@@ -76,7 +79,8 @@ public class LiftedState {
 			return arg1.equals(arg2);
 		}
 		// Normal predicate
-		return conditionTree.getOrDefault(condition.getPredicate().getName(), new ArgumentNode(argumentIds)).contains(condition.getArguments());
+		return conditionTree.getOrDefault(condition.getPredicate().getName(), new ArgumentNode(argumentIds))
+				.contains(condition.getArguments());
 	}
 	
 	@Override

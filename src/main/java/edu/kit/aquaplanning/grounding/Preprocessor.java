@@ -3,6 +3,8 @@ package edu.kit.aquaplanning.grounding;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.model.lifted.Operator;
@@ -20,6 +22,7 @@ import edu.kit.aquaplanning.model.lifted.Function;
 import edu.kit.aquaplanning.model.lifted.Axiom;
 import edu.kit.aquaplanning.model.lifted.NumericEffect;
 import edu.kit.aquaplanning.model.lifted.NumericEffect.Type;
+import edu.kit.aquaplanning.model.lifted.NumericExpression;
 
 /**
  * Provides simplification routines for lifted planning problems,
@@ -283,6 +286,9 @@ public class Preprocessor {
 			return;
 		}
 		
+		// Compute all functions which never change
+		Set<Function> rigidFunctions = getRigidFunctions();
+		
 		// For each operator:
 		Function totalCost = functions.get("total-cost");
 		List<Integer> costs = new ArrayList<>();
@@ -311,13 +317,27 @@ public class Preprocessor {
 							Logger.log(Logger.WARN, "(total-cost) function is defined "
 									+ "using operators other than \"increase\".");
 							error = true;
-						} else if (eff.getExpression().getType() != TermType.constant) {
-							Logger.log(Logger.WARN, "(total-cost) function is increased "
-									+ "by a non-atomic and/or non-constant value.");
-							error = true;
-						} else {							
+						} else if (eff.getExpression().getType() == TermType.constant) {
 							cost += eff.getExpression().getValue();
-						}
+						} else {
+							// Allow numeric update if expression is effectively constant,
+							// i.e. only rigid functions are used
+							List<Function> usedFunctions = getContainedFunctions(eff.getExpression());
+							for (Function f : usedFunctions) {
+								if (!rigidFunctions.contains(f)) {
+									Logger.log(Logger.WARN, "(total-cost) function is increased "
+											+ "by a non-atomic and/or non-constant value.");
+									error = true;
+									break;
+								}
+							}
+							if (!error) {
+								Logger.log(Logger.WARN, "(total-cost) function is increased "
+										+ "by an effectively constant value, but simplification "
+										+ "to an actual constant is not implemented yet.");
+								error = true;
+							}
+						} 
 					}
 				} else if (c.getConditionType() == ConditionType.conjunction) {
 					// Process children as well
@@ -366,5 +386,46 @@ public class Preprocessor {
 		// Remove total-cost from functions
 		problem.getFunctions().remove("total-cost");
 		problem.getInitialFunctionValues().remove(totalCost);
+	}
+	
+	private Set<Function> getRigidFunctions() {
+		
+		// Set of all functions
+		final Set<Function> functionSet = new TreeSet<>((f1, f2) -> f1.getName().compareTo(f2.getName()));
+		for (Function f : problem.getFunctions().values()) {
+			functionSet.add(f);
+		}
+		
+		// Filter functions by occurrence in an operator effect
+		for (Operator op : problem.getOperators()) {
+			AbstractCondition effect = op.getEffect();
+			effect.traverse(c -> {
+				switch (c.getConditionType()) {
+				case numericEffect:
+					functionSet.remove(((NumericEffect) c).getFunction());
+				default:
+					return c;
+				}
+			}, AbstractCondition.RECURSE_HEAD);
+		}
+		
+		return functionSet;
+	}
+	
+	private List<Function> getContainedFunctions(NumericExpression exp) {
+		List<Function> functions = new ArrayList<>();
+		switch (exp.getType()) {
+		case function:
+			functions.add(exp.getFunction());
+			break;
+		case constant:
+			break;
+		default:
+			for (NumericExpression child : exp.getChildren()) {
+				functions.addAll(getContainedFunctions(child));
+			}
+			break;
+		}
+		return functions;
 	}
 }

@@ -6,6 +6,15 @@ import java.util.Map;
 
 import edu.kit.aquaplanning.model.lifted.Argument;
 
+/**
+ * Node of a tree-like set structure used to represent objects 
+ * with instantiated parameters, e.g. actions and conditions.
+ * Each node corresponds to a certain argument position and 
+ * contains for each possible argument choice a child node with
+ * the next argument position, and so on.
+ * The root node of the set structure represents the first 
+ * argument position (index 0).
+ */
 public class ArgumentNode {
 	
 	private Map<String, Integer> argumentIds;

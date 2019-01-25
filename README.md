@@ -4,7 +4,7 @@ Aquaplanning is a Java framework for Automated Planning, developed by Tomáš Ba
 
 ## Features
 
-Here we give a brief overview on what Aquaplanning can do.
+Here we give an overview on what Aquaplanning can do.
 
 ### Problem Models
 
