@@ -12,6 +12,15 @@ public class Atom {
 		this.value = value;
 	}
 	
+	/**
+	 * Copies the provided atom into a new object.
+	 */
+	public Atom(Atom other) {
+		this.id = other.id;
+		this.name = new String(other.name);
+		this.value = other.value;
+	}
+	
 	public void set(boolean value) {
 		this.value = value;
 	}

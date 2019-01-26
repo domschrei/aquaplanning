@@ -21,6 +21,14 @@ public abstract class Heuristic {
 			return new RelaxedPathLengthHeuristic(p);
 		case manhattanGoalDistance:
 			return new ManhattanGoalDistanceHeuristic(p);
+		case actionInterferenceRelaxation:
+			return new SatAbstractionHeuristic(p, config);
+		case ffTrautmann:
+			return new TrautmannsHeuristic(p);
+		case ffFroleyks:
+			return new FroleyksHeuristic(p);
+		default:
+			break;
 		}
 		return null;
 	}

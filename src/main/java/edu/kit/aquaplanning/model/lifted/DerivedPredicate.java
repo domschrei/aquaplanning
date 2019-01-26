@@ -8,11 +8,6 @@ public class DerivedPredicate extends Predicate {
 	private List<Argument> arguments;
 	private AbstractCondition condition;
 	
-	public DerivedPredicate() {
-		super(null);
-		this.arguments = new ArrayList<>();
-	}
-	
 	public DerivedPredicate(String name) {
 		super(name);
 		this.arguments = new ArrayList<>();

@@ -20,10 +20,15 @@ public class SimpleSatPlanner extends Planner {
 	// supporting actions for negative atoms
 	private Map<Integer, List<Action> > supportingActionsNegative;
 	private List<Action> empty = new ArrayList<>();
+	private boolean ignoreAtMostOneAction = false;
 	
 	
 	public SimpleSatPlanner(Configuration config) {
 		super(config);
+	}
+	
+	public void setIgnoreAtMostOneAction(boolean value) {
+		this.ignoreAtMostOneAction = value;
 	}
 	
 	
@@ -33,6 +38,7 @@ public class SimpleSatPlanner extends Planner {
 	}
 
 	private void initializeActionIdsAndSupports(GroundPlanningProblem problem) {
+		startSearch();
 		actionIds = new HashMap<>();
 		supportingActionsPositive = new HashMap<>();
 		supportingActionsNegative = new HashMap<>();
@@ -92,7 +98,7 @@ public class SimpleSatPlanner extends Planner {
 
 		// find the plan
 		int step = 0;
-		while (true) {
+		while (withinComputationalBounds(step+1)) {
 			
 			// add the universal clauses for this step
 			addUniversalClauses(problem, solver, step);
@@ -110,6 +116,11 @@ public class SimpleSatPlanner extends Planner {
 				// Try more steps
 				step++;
 			}
+		}
+		
+		if (!withinComputationalBounds(step+1)) {
+			// No plan found in the given computational bounds
+			return null;
 		}
 		
 		// Decode the plan
@@ -146,7 +157,6 @@ public class SimpleSatPlanner extends Planner {
 	 * @param solver
 	 */
 	private void addInitialStateClauses(GroundPlanningProblem problem, SatSolver solver) {
-		System.out.println(problem.getInitialState().getAtomSet().toString());
 		for (int atomid = 0; atomid < problem.getNumAtoms(); atomid++) {
 			int atomSatId = getAtomSatVariable(atomid, 0);
 			if (problem.getInitialState().getAtomSet().get(atomid)) {
@@ -213,26 +223,7 @@ public class SimpleSatPlanner extends Planner {
 	 * @param solver
 	 * @param step
 	 */
-	private void addUniversalClauses(GroundPlanningProblem problem, SatSolver solver, int step) {
-		// at most one action
-		for (Action a1 : problem.getActions()) {
-			for (Action a2 : problem.getActions()) {
-				int actionSatId1 = getActionSatVariable(a1.getName(), step);
-				int actionSatId2 = getActionSatVariable(a2.getName(), step);
-				if (actionSatId1 < actionSatId2) {
-					solver.addClause(new int[] {-actionSatId1,-actionSatId2});
-				}
-			}
-		}
-		
-		// at least one action
-		int[] clause = new int[problem.getActions().size()];
-		for (int i = 0; i < problem.getActions().size(); i++) {
-			int actionSatId = getActionSatVariable(problem.getActions().get(i).getName(), step); 
-			clause[i] = actionSatId;
-		}
-		solver.addClause(clause);
-		
+	private void addUniversalClauses(GroundPlanningProblem problem, SatSolver solver, int step) {	
 		// actions imply their preconditions
 		for (Action a : problem.getActions()) {
 			int actionSatId = getActionSatVariable(a.getName(), step);
@@ -244,6 +235,26 @@ public class SimpleSatPlanner extends Planner {
 				if (a.getPreconditionsNeg().get(atomid)) {
 					int atomSatId = getAtomSatVariable(atomid, step);
 					solver.addClause(new int[] {-actionSatId, -atomSatId});
+				}
+			}
+		}
+		// at least one action
+		int[] clause = new int[problem.getActions().size()];
+		for (int i = 0; i < problem.getActions().size(); i++) {
+			int actionSatId = getActionSatVariable(problem.getActions().get(i).getName(), step); 
+			clause[i] = actionSatId;
+		}
+		solver.addClause(clause);
+		
+		// at most one action
+		if (ignoreAtMostOneAction == false) {
+			for (Action a1 : problem.getActions()) {
+				for (Action a2 : problem.getActions()) {
+					int actionSatId1 = getActionSatVariable(a1.getName(), step);
+					int actionSatId2 = getActionSatVariable(a2.getName(), step);
+					if (actionSatId1 < actionSatId2) {
+						solver.addClause(new int[] {-actionSatId1,-actionSatId2});
+					}
 				}
 			}
 		}

@@ -7,10 +7,26 @@ public class Predicate {
 
 	protected String name;
 	private List<Type> argumentTypes;
+	private boolean derived;
+	
+	public Predicate(String name, boolean derived) {
+		this.name = name;
+		this.argumentTypes = new ArrayList<>();
+		this.derived = derived;
+	}
 	
 	public Predicate(String name) {
 		this.name = name;
 		this.argumentTypes = new ArrayList<>();
+	}
+	
+	/**
+	 * Copies the provided predicate into a new object.
+	 */
+	public Predicate(Predicate other) {
+		this.name = new String(other.name);
+		this.argumentTypes = new ArrayList<Type>(other.argumentTypes);
+		this.derived = other.derived;
 	}
 	
 	public void addArgumentType(Type type) {
@@ -27,6 +43,10 @@ public class Predicate {
 	
 	public int getNumArgs() {
 		return argumentTypes.size();
+	}
+	
+	public boolean isDerived() {
+		return derived;
 	}
 	
 	@Override

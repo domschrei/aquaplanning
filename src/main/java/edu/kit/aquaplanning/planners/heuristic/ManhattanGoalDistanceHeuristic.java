@@ -1,5 +1,7 @@
 package edu.kit.aquaplanning.planners.heuristic;
 
+import java.util.Random;
+
 import edu.kit.aquaplanning.model.ground.Atom;
 import edu.kit.aquaplanning.model.ground.Goal;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
@@ -12,9 +14,11 @@ import edu.kit.aquaplanning.planners.SearchNode;
 public class ManhattanGoalDistanceHeuristic extends Heuristic {
 
 	private GroundPlanningProblem problem;
+	private Random rnd;
 	
 	public ManhattanGoalDistanceHeuristic(GroundPlanningProblem p) {
 		problem = p;
+		rnd = new Random();
 	}
 	
 	@Override
@@ -27,6 +31,6 @@ public class ManhattanGoalDistanceHeuristic extends Heuristic {
 				unsatisfiedGoals++;
 			}
 		}
-		return node.depth + unsatisfiedGoals;
+		return 10*(node.depth + unsatisfiedGoals)+rnd.nextInt(10);
 	}
 }

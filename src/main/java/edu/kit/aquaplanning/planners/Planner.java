@@ -3,6 +3,7 @@ package edu.kit.aquaplanning.planners;
 import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
+import edu.kit.aquaplanning.util.Logger;
 
 /**
  * Blueprint for a planner operating on a fully grounded planning problem.
@@ -12,9 +13,14 @@ import edu.kit.aquaplanning.model.ground.Plan;
 public abstract class Planner {
 	
 	protected Configuration config;
+	protected long searchStartMillis = 0;
 	
 	public Planner(Configuration config) {
 		this.config = config;
+	}
+	
+	protected void startSearch() {
+		searchStartMillis = System.currentTimeMillis();
 	}
 	
 	/**
@@ -24,23 +30,29 @@ public abstract class Planner {
 	 */
 	protected boolean withinComputationalBounds(int iterations) {
 		
-		boolean withinIterations = false;
-		boolean withinTime = false;
+		if (Thread.interrupted())
+			return false;
+		
 
-		if (config.maxIterations <= 0) {
-			withinIterations = true; // no bound specified
-		} else {
-			withinIterations = (iterations <= config.maxIterations);
+		if (config.maxIterations > 0 && iterations >= config.maxIterations) {
+			return false;
 		}
-		if (config.maxTimeSeconds <= 0) {
-			withinTime = true; // no bound specified
-		} else {
-			long timeMillis = System.currentTimeMillis();
-			long expired = timeMillis - config.startTimeMillis;
-			withinTime = (expired / 1000 < config.maxTimeSeconds);			
+		
+		if (config.searchTimeSeconds > 0) {
+			long searchTime = System.currentTimeMillis() - searchStartMillis;
+			if (searchTime > config.searchTimeSeconds * 1000) {
+				return false;
+			}
 		}
 
-		return withinIterations && withinTime;
+		if (config.maxTimeSeconds > 0) {
+			long totalTime = System.currentTimeMillis() - config.startTimeMillis;
+			if (totalTime > config.maxTimeSeconds * 1000) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 	
 	/**
@@ -49,7 +61,7 @@ public abstract class Planner {
 	public abstract Plan findPlan(GroundPlanningProblem problem);
 	
 	/**
-	 * Constructs a planner object fitting the provided configuration.
+	 * Constructs a planner object according to the provided configuration.
 	 */
 	public static Planner getPlanner(Configuration config) {
 		
@@ -58,6 +70,12 @@ public abstract class Planner {
 			return new ForwardSearchPlanner(config);
 		case satBased:
 			return new SimpleSatPlanner(config);
+		case hegemannSat:
+			return new HegemannsSatPlanner(config);
+		case parallel:
+			Logger.log(Logger.INFO, "Doing parallel planning with up to " 
+						+ config.numThreads + " threads.");
+			return new SimpleParallelPlanner(config);
 		}
 		return null;
 	}

@@ -10,22 +10,41 @@ public class GroundPlanningProblem {
 
 	private State initialState;
 	private List<Action> actions;
+	
 	private Goal goal;
 	private boolean hasActionCosts;
 	private List<String> atomNames;
+	private List<String> numericAtomNames;
 	
 	public GroundPlanningProblem(State initState, List<Action> actions, 
-			Goal goal, boolean hasActionCosts, List<String> atomNames) {
+			Goal goal, boolean hasActionCosts, List<String> atomNames, 
+			List<String> numericAtomNames) {
 		
 		this.initialState = initState;
 		this.actions = actions;
 		this.goal = goal;
 		this.hasActionCosts = hasActionCosts;
 		this.atomNames = atomNames;
+		this.numericAtomNames = numericAtomNames;
 	}
 	
+
+	public GroundPlanningProblem(GroundPlanningProblem other) {
+		super();
+		this.initialState = other.initialState;
+		this.actions = other.actions;
+		this.goal = other.goal;
+		this.hasActionCosts = other.hasActionCosts;
+		this.atomNames = other.atomNames;
+		this.numericAtomNames = other.numericAtomNames;
+	}
+
 	public State getInitialState() {
 		return initialState;
+	}
+	
+	public void setInitialState(State s) {
+		this.initialState = s;
 	}
 	
 	public List<Action> getActions() {
@@ -36,11 +55,21 @@ public class GroundPlanningProblem {
 		return goal;
 	}
 	
+	public void setGoal(Goal g) {
+		this.goal = g;
+	}
+	
 	public boolean hasActionCosts() {
 		return hasActionCosts;
 	}
 
-	public List<String> getAtomNames() { return atomNames; }
+	public List<String> getAtomNames() { 
+		return atomNames; 
+	}
+	
+	public List<String> getNumericAtomNames() {
+		return numericAtomNames;
+	}
 	
 	public int getNumAtoms() {
 		return atomNames.size();
@@ -71,6 +100,9 @@ public class GroundPlanningProblem {
 			if (atoms.get(i)) {
 				out += atomNames.get(i) + " ";
 			}
+		}
+		for (int i = 0; i < numericAtomNames.size(); i++) {
+			out += numericAtomNames.get(i) + "=" + state.get(new NumericAtom(i, numericAtomNames.get(i), 0)) + " ";
 		}
 		return out + "}";
 	}

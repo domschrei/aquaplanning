@@ -33,6 +33,15 @@ public class AtomSet {
 		}
 	}
 	
+
+	/**
+	 * Get the index of first true atom or -1 if none is true
+	 * @return
+	 */
+	public int getFirstTrueAtom() {
+		return atoms.nextSetBit(0);
+	}
+
 	/**
 	 * True iff the provided atom is contained in this set
 	 * (or, if the atom has a value of false, it is *not* contained).
@@ -53,11 +62,9 @@ public class AtomSet {
 	 * are also contained in this AtomSet.
 	 */
 	public boolean all(AtomSet other) {
-		for (int i = other.atoms.nextSetBit(0); i >= 0; i = other.atoms.nextSetBit(i+1)) {
-			if (!atoms.get(i))
-				return false;
-		}
-		return true;
+		BitSet bs = (BitSet) other.atoms.clone();
+		bs.andNot(atoms);
+		return bs.isEmpty();
 	}
 	
 	/**

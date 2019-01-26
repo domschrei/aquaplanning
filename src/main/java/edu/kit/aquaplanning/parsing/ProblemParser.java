@@ -19,23 +19,28 @@ import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import edu.kit.aquaplanning.model.PddlRequirement;
 import edu.kit.aquaplanning.model.lifted.AbstractCondition;
 import edu.kit.aquaplanning.model.lifted.Argument;
+import edu.kit.aquaplanning.model.lifted.Axiom;
 import edu.kit.aquaplanning.model.lifted.Condition;
 import edu.kit.aquaplanning.model.lifted.ConditionSet;
 import edu.kit.aquaplanning.model.lifted.ConsequentialCondition;
-import edu.kit.aquaplanning.model.lifted.DerivedCondition;
-import edu.kit.aquaplanning.model.lifted.DerivedPredicate;
+import edu.kit.aquaplanning.model.lifted.Function;
 import edu.kit.aquaplanning.model.lifted.Implication;
 import edu.kit.aquaplanning.model.lifted.Negation;
+import edu.kit.aquaplanning.model.lifted.NumericCondition;
+import edu.kit.aquaplanning.model.lifted.NumericEffect;
+import edu.kit.aquaplanning.model.lifted.NumericExpression;
 import edu.kit.aquaplanning.model.lifted.Operator;
 import edu.kit.aquaplanning.model.lifted.Predicate;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.model.lifted.Quantification;
 import edu.kit.aquaplanning.model.lifted.Type;
 import edu.kit.aquaplanning.model.lifted.AbstractCondition.ConditionType;
+import edu.kit.aquaplanning.model.lifted.NumericExpression.TermType;
 import edu.kit.aquaplanning.model.lifted.Quantification.Quantifier;
 import edu.kit.aquaplanning.parsing.PddlParser.ActionDefBodyContext;
 import edu.kit.aquaplanning.parsing.PddlParser.ActionDefContext;
 import edu.kit.aquaplanning.parsing.PddlParser.AtomicFormulaSkeletonContext;
+import edu.kit.aquaplanning.parsing.PddlParser.AtomicFunctionSkeletonContext;
 import edu.kit.aquaplanning.parsing.PddlParser.AtomicNameFormulaContext;
 import edu.kit.aquaplanning.parsing.PddlParser.AtomicTermFormulaContext;
 import edu.kit.aquaplanning.parsing.PddlParser.CEffectContext;
@@ -44,6 +49,9 @@ import edu.kit.aquaplanning.parsing.PddlParser.ConstantsDefContext;
 import edu.kit.aquaplanning.parsing.PddlParser.DerivedDefContext;
 import edu.kit.aquaplanning.parsing.PddlParser.DomainNameContext;
 import edu.kit.aquaplanning.parsing.PddlParser.EffectContext;
+import edu.kit.aquaplanning.parsing.PddlParser.FCompContext;
+import edu.kit.aquaplanning.parsing.PddlParser.FExpContext;
+import edu.kit.aquaplanning.parsing.PddlParser.FHeadContext;
 import edu.kit.aquaplanning.parsing.PddlParser.FunctionListContext;
 import edu.kit.aquaplanning.parsing.PddlParser.FunctionsDefContext;
 import edu.kit.aquaplanning.parsing.PddlParser.GoalContext;
@@ -67,16 +75,20 @@ import edu.kit.aquaplanning.parsing.PddlParser.TypesDefContext;
 @SuppressWarnings("deprecation")
 public class ProblemParser extends PddlBaseListener {
 	
-	// Fields to populate during the parsing process
+	// Fields to populate during the parsing process: 
+	// Domain
 	private String domainName;
 	private String problemName;
 	private List<String> requirements;
 	private Map<String, Type> types;
 	private List<Argument> constants; // both from domain and problem
 	private Map<String, Predicate> predicates;
-	private Map<String, DerivedPredicate> derivedPredicates;
+	private Map<String, Axiom> derivedPredicates;
+	private Map<String, Function> functions;
 	private List<Operator> operators;
+	// Problem
 	private List<Condition> initialState;
+	private Map<Function, Float> initialFunctionValues;
 	private List<AbstractCondition> goals;
 	private boolean hasActionCosts;
 	
@@ -94,8 +106,10 @@ public class ProblemParser extends PddlBaseListener {
 
 	private Predicate predicate;
 	private Type supertype;
-	
+
 	private Stack<AbstractCondition> conditionStack;
+	private Stack<NumericExpression> expressionStack;
+	private Function function;
 	
 	/**
 	 * Parses a pair of PDDL domain and problem files.
@@ -106,9 +120,19 @@ public class ProblemParser extends PddlBaseListener {
 	 */
 	public PlanningProblem parse(String domainFile, String problemFile) 
 			throws FileNotFoundException, IOException {
-				
+		
+		// Initialize basic data structures
 		conditionStack = new Stack<>();
+		expressionStack = new Stack<>();
+		predicates = new HashMap<>();
+		derivedPredicates = new HashMap<>();
+		functions = new HashMap<>();
 
+		// Initialize typing
+		types = new HashMap<>();
+		supertype = new Type("_root_type"); // virtual supertype
+		types.put("_root_type",  supertype);
+		
 		// Get domain
         ANTLRInputStream in = new ANTLRInputStream(new FileInputStream(domainFile));
         PddlLexer lexer = new PddlLexer(in);
@@ -134,16 +158,11 @@ public class ProblemParser extends PddlBaseListener {
         parsedFile = problemFile;
         walker = new ParseTreeWalker();
         walker.walk(this, ctx);
-
-        // In case no derived predicates were entered...
-        if (derivedPredicates == null) {
-            derivedPredicates = new HashMap<>();
-        }
         
         // Create object to return
         PlanningProblem problem = new PlanningProblem(domainName, problemName, 
-        		types, constants, predicates, derivedPredicates, operators, 
-        		initialState, goals, hasActionCosts);
+        		types, constants, predicates, derivedPredicates, functions, 
+        		operators, initialState, initialFunctionValues, goals, hasActionCosts);
         return problem;
 	}
 	
@@ -182,7 +201,7 @@ public class ProblemParser extends PddlBaseListener {
 		// is actually needed, or if features from an unspecified requirement
 		// are used. It is only checked to give an immediate error when an 
 		// explicit requirement is unsupported.
-		for (int childIdx = 2; childIdx+1 < ctx.getChildCount(); childIdx++) {
+		for (int childIdx = 3; childIdx+1 < ctx.getChildCount(); childIdx++) {
 			String requirement = ctx.getChild(childIdx).getText();
 			
 			if (PddlRequirement.isSupported(requirement)) {				
@@ -203,18 +222,13 @@ public class ProblemParser extends PddlBaseListener {
 	public void enterTypesDef(TypesDefContext ctx) {
 		
 		context = ParseContext.typeDefs;
-		types = new HashMap<>();
-
-		// Create a virtual supertype for general predicate "="
-		supertype = new Type("_root_type");
-		types.put("_root_type",  supertype);
 	}
 
 	@Override
 	public void enterTypedNameList(TypedNameListContext ctx) {
 		
 		if (ctx.children == null) {
-			// Empty constants definition - just skip it
+			// Empty definition - just skip it
 			return;
 		}
 		
@@ -227,13 +241,25 @@ public class ProblemParser extends PddlBaseListener {
 				// A subtype definition begins here
 				break;
 			} else {
-				// Primitive type: add, if not already contained
-				String typeName = ctx.children.get(childIdx).getText().toLowerCase();
-				if (!types.containsKey(typeName)) {
-					types.put(typeName, new Type(typeName));
-					supertype.addSubtype(typeName);
-				} else {
-					error("Type \"" + typeName + "\" is defined multiple times.");
+				
+				String name = ctx.children.get(childIdx).getText().toLowerCase();
+				
+				if (context == ParseContext.typeDefs) {
+					
+					// Primitive type: add, if not already contained
+					if (!types.containsKey(name)) {
+						types.put(name, new Type(name));
+						supertype.addSubtype(name);
+					} else {
+						error("Type \"" + name + "\" is defined multiple times.");
+					}
+					
+				} else if (context == ParseContext.constantDefs 
+						|| context == ParseContext.objectDefs) {
+					
+					// An object (!) is declared, without an explicit type
+					Argument constant = new Argument(name, supertype);
+					constants.add(constant);
 				}
 			}
 		}
@@ -327,14 +353,17 @@ public class ProblemParser extends PddlBaseListener {
 	@Override
 	public void enterFunctionList(FunctionListContext ctx) {
 		
-		if (ctx.getText().equalsIgnoreCase("(total-cost)-number")) {
+		if (ctx.getText().toLowerCase().contains("(total-cost)")) {
 			// Metric function detected
 			hasActionCosts = true;
-			
-		} else {
-			error("Unsupported function definition found – "
-				+ "only the function \"(total-cost) - number\" is allowed.");
 		}
+	}
+	
+	@Override
+	public void enterAtomicFunctionSkeleton(AtomicFunctionSkeletonContext ctx) {
+		
+		function = new Function(ctx.children.get(1).getText().toLowerCase());
+		functions.put(function.getName(), function);
 	}
 
 	
@@ -345,24 +374,22 @@ public class ProblemParser extends PddlBaseListener {
 	public void enterPredicatesDef(PredicatesDefContext ctx) {
 		
 		context = ParseContext.predicateDefs;
-		predicates = new HashMap<>();
 	}
 	
 	@Override
 	public void enterAtomicFormulaSkeleton(AtomicFormulaSkeletonContext ctx) {
 		
+		// A new predicate is being defined; create the object
+		String predName = ctx.children.get(1).getText().toLowerCase();
 		if (context == ParseContext.predicateDefs) {
-			// A new predicate is being defined; create the object
-			String predName = ctx.children.get(1).getText().toLowerCase();
 			predicate = new Predicate(predName);
-			predicates.put(predName, predicate);
-			
 		} else if (context == ParseContext.derivedPredicateDef) {
-			// A derived predicate is being defined
-			String predName = ctx.children.get(1).getText().toLowerCase();
-			((DerivedPredicate) predicate).setName(predName);
-			derivedPredicates.put(predName, (DerivedPredicate) predicate);
+			predicate = new Predicate(predName, true);
+			if (!derivedPredicates.containsKey(predicate.getName())) {
+				derivedPredicates.put(predicate.getName(), new Axiom(predicate));
+			}
 		}
+		predicates.put(predName, predicate);
 	}
 
 	/**
@@ -397,19 +424,26 @@ public class ProblemParser extends PddlBaseListener {
 				
 			} else if (context == ParseContext.derivedPredicateDef) {	
 				// Add type to current predicate
+				predicate.addArgumentType(type);
+				// Add type to derived predicate argument list
 				String argName = ctx.children.get(childIdx).getText().toLowerCase();
-				((DerivedPredicate) predicate).addArgument(new Argument(argName, type));
+				derivedPredicates.get(predicate.getName()).addArgument(new Argument(argName, type));
 				
 			} else if (context == ParseContext.actionDef) {
 				// Add argument to current operator
 				String argName = ctx.children.get(childIdx).getText().toLowerCase();
 				currentOperator().addArgument(new Argument(argName, type));
+				
+			} else if (context == ParseContext.functionsDef) {
+				// Add argument to function
+				function.addArgumentType(type);
 			}
 		}
 	}
 	
 	/**
-	 * Parsing of structures of the form <code>singleTypeVarList* variable*</code>.
+	 * Parsing of structures of the form <code>variable*</code> or 
+	 * <code>singleTypeVarList* variable*</code>.
 	 * SingleTypeVarLists are handled in another method, so here only the isolated
 	 * variables at the end are processed. 
 	 */
@@ -440,25 +474,47 @@ public class ProblemParser extends PddlBaseListener {
 			// Read variables from right to left until a SingleTypeVarList is hit
 			if (ctx.children == null) {
 				// Empty variable list
-			} else {				
-				for (int childIdx = ctx.children.size()-1; childIdx >= 0; childIdx--) {
-					if (ctx.children.get(childIdx).getChildCount() > 1) {
-						// Typed definition
-						break;
-					}
-					
-					// We don't know the type of this argument, 
-					// so we assume the supertype
-					if (context == ParseContext.predicateDefs) {						
-						predicate.addArgumentType(supertype);
-					} else if (context == ParseContext.derivedPredicateDef) {
+				return;
+			} 		
+			
+			for (int childIdx = ctx.children.size()-1; childIdx >= 0; childIdx--) {
+				if (ctx.children.get(childIdx).getChildCount() > 1) {
+					// Typed definition
+					break;
+				}
+				
+				// We don't know the type of this argument, 
+				// so we assume the supertype
+				if (context == ParseContext.predicateDefs) {						
+					predicate.addArgumentType(supertype);
+				} else if (context == ParseContext.derivedPredicateDef) {
 
-						String varName = ctx.children.get(childIdx).getText().toLowerCase();
-						((DerivedPredicate) predicate).addArgument(new Argument(varName, supertype));
-					}
+					String varName = ctx.children.get(childIdx).getText().toLowerCase();
+					derivedPredicates.get(predicate.getName()).addArgument(new Argument(varName, supertype));
 				}
 			}
 			
+		} else if (context == ParseContext.actionDef) {
+			// Action parameter definition
+			
+			if (ctx.children == null) {
+				return;
+			}
+			
+			// Read variables from left to right until a SingleTypeVarList is hit
+			for (int childIdx = ctx.children.size()-1; childIdx >= 0; childIdx--) {
+				
+				if (ctx.children.get(childIdx).getChildCount() > 1) {
+					// A typed definition begins here
+					break;
+				} else {
+					// Variable (general supertype)
+					String varName = ctx.children.get(childIdx).getText().toLowerCase();
+					Type type = supertype;
+					Argument arg = new Argument(varName, type);
+					currentOperator().addArgument(arg);
+				}
+			}
 		}
 	}
 	
@@ -471,12 +527,6 @@ public class ProblemParser extends PddlBaseListener {
 		// '(' ':derived' atomicFormulaSkeleton goalDesc ')'
 		
 		context = ParseContext.derivedPredicateDef;
-		if (derivedPredicates == null) {
-			derivedPredicates = new HashMap<>();
-		}
-		
-		DerivedPredicate p = new DerivedPredicate();
-		this.predicate = p;
 	}
 		
 	
@@ -491,7 +541,7 @@ public class ProblemParser extends PddlBaseListener {
 			operators = new ArrayList<>();
 		
 		// Create new, empty operator
-		String opName = ctx.children.get(2).getText().toLowerCase();
+		String opName = ctx.children.get(3).getText().toLowerCase();
 		Operator op = new Operator(opName);
 		operators.add(op);
 	}
@@ -504,7 +554,7 @@ public class ProblemParser extends PddlBaseListener {
 	public void enterActionDefBody(ActionDefBodyContext ctx) {
 		
 		// Precondition definition?
-		if (ctx.children.get(0).getText().equalsIgnoreCase(":precondition")) {
+		if (ctx.children.get(1).getText().equalsIgnoreCase("precondition")) {
 			
 			// Empty precondition?
 			if (ctx.children.size() > 2 &&
@@ -520,10 +570,21 @@ public class ProblemParser extends PddlBaseListener {
 				context = ParseContext.actionPre;
 			}
 			
-		} else if (ctx.children.get(0).getText().equalsIgnoreCase(":effect")) {
+		} else if (ctx.children.get(1).getText().equalsIgnoreCase("effect")) {
 			
 			// Parse effects now (in the case that there are no preconds)
 			context = ParseContext.actionEff;
+		}
+	}
+	
+	@Override
+	public void exitActionDef(ActionDefContext ctx) {
+		Operator op = currentOperator();
+		if (op.getPrecondition() == null) {
+			op.setPrecondition(new ConditionSet(ConditionType.conjunction));
+		}
+		if (op.getEffect() == null) {
+			op.setEffect(new ConditionSet(ConditionType.conjunction));
 		}
 	}
 	
@@ -597,6 +658,18 @@ public class ProblemParser extends PddlBaseListener {
 			enterCondition(condition);
 		}
 	}
+	
+	@Override
+	public void enterFComp(FCompContext ctx) {
+		// '(' binaryComp fExp fExp ')'
+		NumericCondition cond = new NumericCondition(ctx.children.get(1).getText());
+		enterCondition(cond);
+	}
+	
+	@Override
+	public void exitFComp(FCompContext ctx) {
+		exitCondition();
+	}
 
 	@Override
 	public void exitGoalDesc(GoalDescContext ctx) {
@@ -621,15 +694,9 @@ public class ProblemParser extends PddlBaseListener {
 		String predicateName = ctx.children.get(1).getText().toLowerCase();
 		Predicate predicate = predicates.get(predicateName);
 		if (predicate == null) {
-			predicate = derivedPredicates.get(predicateName);
-			if (predicate == null) {
-				error("Predicate \"" + predicateName + "\" is undefined.");
-			} else {
-				cond = new DerivedCondition((DerivedPredicate) predicate);
-			}
-		} else {			
-			cond = new Condition(predicate);
+			error("Predicate \"" + predicateName + "\" is undefined.");	
 		}
+		cond = new Condition(predicate);
 		
 		// Add arguments of condition
 		for (int childIdx = 2; childIdx+1 < ctx.children.size(); childIdx++) {
@@ -654,17 +721,15 @@ public class ProblemParser extends PddlBaseListener {
 							type = new Type("quantified");
 						}
 					} // -- if not: type == null
-				
-				} else if (context == ParseContext.goalDef) {
-					error("Variables in goal specifications are illegal.");
-				
-				} else if (context == ParseContext.derivedPredicateDef) {
+				}
+
+				if (type == null && context == ParseContext.derivedPredicateDef) {
 					
 					// Derived predicate definition
-					DerivedPredicate p = (DerivedPredicate) predicate;
-					for (Argument arg : p.getArguments()) {
+					for (Argument arg : derivedPredicates.get(this.predicate.getName()).getArguments()) {
 						if (termStr.equalsIgnoreCase(arg.getName())) {
 							type = arg.getType();
+							break;
 						}
 					}
 				}
@@ -706,20 +771,92 @@ public class ProblemParser extends PddlBaseListener {
 			cond.addArgument(new Argument(termStr, type));
 		}
 		
-		// Add created condition to preconditions/effects
-		// of the current operator
-		
 		if (isInQuantification()) {
 			// We need to infer the types of bound variables
 			Quantification q = currentQuantification();
 			inferQuantifiedTypes(q, cond);
 		}
+		
+		// Normal predicate: atomic condition
 		enterCondition(cond);
 		exitCondition();
 		
 		// Basic checks for correct typing and predicate use
 		checkConsistency(cond);
-	}		
+	}	
+	
+	@Override
+	public void enterFExp(FExpContext ctx) {
+		
+		// NUMBER | '(' binaryOp fExp fExp2 ')' | '(' '-' fExp ')' | fHead
+		NumericExpression exp = null;
+		
+		if (ctx.children.get(0).getText().equals("(")) {
+			if (ctx.children.get(1).getText().equals("-") && ctx.children.size() == 4) {
+				// Case 3 (negative fExp)
+				exp = new NumericExpression(TermType.negation);
+			} else {
+				// Case 2 (operation)
+				TermType type = null;
+				switch (ctx.children.get(1).getText()) {
+				case "+":
+					type = TermType.addition; break;
+				case "-":
+					type = TermType.subtraction; break;
+				case "*":
+					type = TermType.multiplication; break;
+				case "/":
+					type = TermType.division; break;
+				}
+				exp = new NumericExpression(type);
+			}
+		} else if (ctx.children.get(0).getText().matches("-?\\d+(\\.\\d+)?")) {
+			// Case 1 (number)
+			exp = new NumericExpression(Float.parseFloat(ctx.children.get(0).getText()));
+		} else {
+			// Case 4 (function)
+			exp = new NumericExpression(TermType.function);
+		}
+		
+		enterNumericExpression(exp);
+	}
+	
+	@Override
+	public void enterFHead(FHeadContext ctx) {
+		
+		// '(' functionSymbol term* ')' | functionSymbol
+		
+		String functionName;
+		if (ctx.children.size() == 1) {
+			functionName = ctx.children.get(0).getText().toLowerCase();
+		} else {
+			functionName = ctx.children.get(1).getText().toLowerCase();
+		}
+		function = functions.get(functionName).copy();
+		if (function == null) {
+			error("Function \"" + functionName + "\" has not been defined.");
+		}
+		for (int i = 2; i+1 < ctx.children.size(); i++) {
+			String arg = ctx.children.get(i).getText().toLowerCase();
+			Type type = function.getArgumentTypes().get(i-2);
+			function.addArgument(new Argument(arg, type));
+		}
+		
+		if (!expressionStack.isEmpty()) {
+			// Function is part of a numeric expression
+			expressionStack.peek().setFunction(function);
+		} else if (!conditionStack.isEmpty()) {
+			// Function is being updated as an effect
+			NumericEffect eff = (NumericEffect) conditionStack.peek();
+			eff.setFunction(function);
+		} // else: function will be used elsewhere
+	}
+	
+	@Override
+	public void exitFExp(FExpContext ctx) {
+		
+		exitNumericExpression();
+	}
 	
 	
 	
@@ -774,40 +911,24 @@ public class ProblemParser extends PddlBaseListener {
 	public void enterPEffect(PEffectContext ctx) {
 		
 		if (ctx.children.size() > 4) {
+			// Function update
 			
-			// Function operation
-			if (hasActionCosts) {
-
-				// Get parameters of the function operation
-				String operation = ctx.children.get(1).getText();
-				String functionName = ctx.children.get(2).getText();
-				String value = ctx.children.get(3).getText();
-				
-				// Only total-cost is a valid function
-				if (functionName.equalsIgnoreCase("(total-cost)")) {
-					
-					// No conditional effects, and no increase/assign operation
-					if (!operation.equalsIgnoreCase("increase")) {
-						error("Action cost may only increase as an operator effect.");
-					} else {
-						
-						// Set action cost of the operator
-						try {
-							currentOperator().setCost(Integer.parseInt(value));
-						} catch (NumberFormatException e) {
-							error("Invalid function assignment \"" + value 
-								+ "\" (only positive integer constants are allowed).");
-						}
-					}
-					
-				} else {
-					error("Unrecognized function \"" + functionName + "\".");
-				}
-				
-			} else {
-				error("A function effect is used, "
-					+ "but no functions have been defined.");
+			String operation = ctx.children.get(1).getText();
+			NumericEffect.Type type = null;
+			switch (operation) {
+			case "assign":
+				type = NumericEffect.Type.assign; break;
+			case "increase":
+				type = NumericEffect.Type.increase; break;
+			case "decrease":
+				type = NumericEffect.Type.decrease; break;
+			case "scale-up":
+				type = NumericEffect.Type.scaleUp; break;
+			case "scale-down":
+				type = NumericEffect.Type.scaleDown; break;
 			}
+			NumericEffect eff = new NumericEffect(type);
+			enterCondition(eff);
 			
 		} else if (ctx.children.size() == 1) {
 			
@@ -824,8 +945,8 @@ public class ProblemParser extends PddlBaseListener {
 	@Override
 	public void exitPEffect(PEffectContext ctx) {
 		
-		// Negation
-		if (ctx.children.size() > 1 && ctx.children.size() <= 4) {
+		// Negation, Function update
+		if (ctx.children.size() > 1) {
 			exitCondition();
 		}
 	}
@@ -873,33 +994,15 @@ public class ProblemParser extends PddlBaseListener {
 		
 		context = ParseContext.initialStateDef;
 		initialState = new ArrayList<>();
+		initialFunctionValues = new HashMap<>();
 	}
 
 	@Override
-	public void enterInitEl(InitElContext ctx) {
+	public void exitInitEl(InitElContext ctx) {
 		
 		if (ctx.children.size() == 5) {
-			
-			if (ctx.children.get(1).getText().equals("=")) {
-				
-				if (!ctx.children.get(1).getText().equals("=")) {
-					error("Invalid function assignment operator \"" 
-						+ ctx.children.get(1).getText() + "\" in goal definition.");
-				}
-				if (!ctx.children.get(2).getText().equalsIgnoreCase("(total-cost)")) {
-					error("Invalid function \"" 
-						+ ctx.children.get(2).getText() + "\" in goal definition.");
-				}
-				if (!ctx.children.get(3).getText().equals("0")) {
-					error("Invalid function assignment value \"" 
-						+ ctx.children.get(3).getText() + "\" in goal definition "
-								+ "(only 0 is allowed).");
-				}
-				
-			} else {				
-				error("An unsupported initial state specification is used.");			
-			}
-			
+			// '(' '=' fHead NUMBER ')'
+			initialFunctionValues.put(function, Float.parseFloat(ctx.children.get(3).getText()));			
 		}
 	}
 	
@@ -924,15 +1027,9 @@ public class ProblemParser extends PddlBaseListener {
 		String predicateName = ctx.children.get(1).getText().toLowerCase();
 		Predicate predicate = predicates.get(predicateName);
 		if (predicate == null) {
-			predicate = derivedPredicates.get(predicateName);
-			if (predicate == null) {
-				error("Predicate \"" + predicateName + "\" is undefined.");
-			} else {
-				condition = new DerivedCondition((DerivedPredicate) predicate);
-			}
-		} else {
-			condition = new Condition(predicate);
-		}		
+			error("Predicate \"" + predicateName + "\" is undefined.");
+		}
+		condition = new Condition(predicate);
 		
 		// Parse condition's arguments
 		for (int childIdx = 2; childIdx+1 < ctx.getChildCount(); childIdx++) {
@@ -976,8 +1073,8 @@ public class ProblemParser extends PddlBaseListener {
 		
 		if (hasActionCosts) {
 			
-			if (!ctx.children.get(2).getText().equals("minimize") 
-					|| !ctx.children.get(3).getText().equals("(total-cost)")) {
+			if (!ctx.children.get(3).getText().equalsIgnoreCase("minimize") 
+					|| !ctx.children.get(4).getText().equalsIgnoreCase("(total-cost)")) {
 				error("Invalid metric specification. (Expected \"minimize (total-cost)\".)");
 			}
 			
@@ -1112,6 +1209,9 @@ public class ProblemParser extends PddlBaseListener {
 		if (condition != null) {
 			switch (condition.getConditionType()) {
 			case atomic:
+			case numericPrecondition:
+			case numericEffect:
+			case derived:
 				break;
 			case conjunction:
 			case disjunction:
@@ -1154,6 +1254,35 @@ public class ProblemParser extends PddlBaseListener {
 			addToCurrentObject(condition);
 	}
 	
+	private void enterNumericExpression(NumericExpression exp) {
+		
+		NumericExpression parent = null;
+		if (!expressionStack.isEmpty()) {
+			parent = expressionStack.peek();
+			parent.add(exp);
+		} else {
+			AbstractCondition cond = conditionStack.peek();
+			if (cond.getConditionType() == ConditionType.numericPrecondition) {				
+				NumericCondition pre = (NumericCondition) cond;
+				if (pre.getExpLeft() == null) {
+					pre.setExpLeft(exp);
+				} else if (pre.getExpRight() == null) {
+					pre.setExpRight(exp);
+				}
+			} else if (cond.getConditionType() == ConditionType.numericEffect) {
+				NumericEffect eff = (NumericEffect) cond;
+				eff.setExpression(exp);
+			}
+		}
+		
+		expressionStack.push(exp);
+	}
+	
+	private void exitNumericExpression() {
+		
+		expressionStack.pop();
+	}
+	
 	/**
 	 * Adds the provided condition to the correct object
 	 * depending on the current parsing context 
@@ -1173,7 +1302,7 @@ public class ProblemParser extends PddlBaseListener {
 		} else if (context == ParseContext.initialStateDef) {
 			initialState.add((Condition) cond);
 		} else if (context == ParseContext.derivedPredicateDef) {
-			((DerivedPredicate) predicate).setCondition(cond);
+			derivedPredicates.get(predicate.getName()).setCondition(cond);
 		}
 	}
 	

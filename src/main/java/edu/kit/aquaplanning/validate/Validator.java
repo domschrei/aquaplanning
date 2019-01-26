@@ -4,6 +4,7 @@ import edu.kit.aquaplanning.model.ground.Action;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
 import edu.kit.aquaplanning.model.ground.State;
+import edu.kit.aquaplanning.util.Logger;
 
 /**
  * Basic plan validator.
@@ -25,8 +26,8 @@ public class Validator {
 		for (Action action : plan) {
 			
 			if (!action.isApplicable(state)) {
-				System.err.println("Error at step " + step + ": The action " 
-						+ action + " is not applicable in state " + state + ".");
+				Logger.log(Logger.ERROR, "Error at step " + step + ": Action " 
+						+ action + " is not applicable in state " + problem.stateToString(state) + ".");
 				return false;
 			}
 			
@@ -36,8 +37,8 @@ public class Validator {
 		}
 		
 		if (!problem.getGoal().isSatisfied(state)) {
-			System.err.println("Error: The goal " + problem.getGoal() 
-				+ " is not satisfied in the final state " + state);
+			Logger.log(Logger.ERROR, "Error: The goal " + problem.getGoal() 
+				+ " is not satisfied in the final state " + problem.stateToString(state) + ".");
 			return false;
 		}
 		

@@ -1,7 +1,5 @@
 package edu.kit.aquaplanning.planners;
 
-import java.util.List;
-
 import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.model.ground.Action;
 import edu.kit.aquaplanning.model.ground.Goal;
@@ -9,6 +7,7 @@ import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
 import edu.kit.aquaplanning.model.ground.State;
 import edu.kit.aquaplanning.planners.heuristic.Heuristic;
+import edu.kit.aquaplanning.util.Logger;
 
 /**
  * Generic state space forward search planner. Different search strategies 
@@ -32,11 +31,12 @@ public class ForwardSearchPlanner extends Planner {
 	 */
 	@Override
 	public Plan findPlan(GroundPlanningProblem problem) {
-		
+		startSearch();
+		Logger.log(Logger.INFO, "Starting forward search with " + config.toString());
 		// Important objects from the planning problem
 		State initState = problem.getInitialState();
 		Goal goal = problem.getGoal();
-		List<Action> actions = problem.getActions();		
+		ActionIndex aindex = new ActionIndex(problem);
 		
 		// Initialize forward search
 		SearchQueue frontier;
@@ -68,25 +68,20 @@ public class ForwardSearchPlanner extends Planner {
 					node = node.parent;
 				}
 				long timeStop = System.nanoTime();
-				System.out.println("Visited " + iteration + " nodes in total. "
+				Logger.log(Logger.INFO, "Visited " + iteration + " nodes in total. "
 						+ "Search time: " + (timeStop - timeStart)/1000000 + "ms");
 				return plan;
 			}
 			
 			// Expand node: iterate over operators
-			for (Action action : actions) {
+			for (Action action : aindex.getApplicableActions(node.state)) {
+				// Create new node by applying the operator
+				State newState = action.apply(node.state);
 				
-				// Can this operator be applied to this state?
-				if (action.isApplicable(node.state)) {
-					
-					// Create new node by applying the operator
-					State newState = action.apply(node.state);
-					
-					// Add new node to frontier
-					SearchNode newNode = new SearchNode(node, newState);
-					newNode.lastAction = action;
-					frontier.add(newNode);
-				}
+				// Add new node to frontier
+				SearchNode newNode = new SearchNode(node, newState);
+				newNode.lastAction = action;
+				frontier.add(newNode);
 			}
 			
 			iteration++;
@@ -95,7 +90,7 @@ public class ForwardSearchPlanner extends Planner {
 			if ((iteration << visitedNodesPrintInterval) == 0) {
 				double elapsedMillis = ((System.nanoTime() - timeStart) * 0.001 * 0.001);
 				int nodesPerSecond = (int) (iteration / (0.001 * elapsedMillis));
-				System.out.println("Visited " + iteration + " nodes. (" + nodesPerSecond + " nodes/s)");
+				Logger.log(Logger.INFO, "Visited " + iteration + " nodes. (" + nodesPerSecond + " nodes/s)");
 				visitedNodesPrintInterval--;
 			}
 		}
@@ -103,12 +98,12 @@ public class ForwardSearchPlanner extends Planner {
 		// Failure to find a plan within the maximum amount of iterations
 		// (or the problem is unsolvable and search space is exhausted)
 		if (frontier.isEmpty()) {
-			System.out.println("Search space exhausted.");
+			Logger.log(Logger.INFO, "Search space exhausted.");
 		} else {
-			System.out.println("Computational resources exhausted.");
+			Logger.log(Logger.INFO, "Interrupted and/or computational resources exhausted.");
 		}
 		long timeStop = System.nanoTime();
-		System.out.println("Visited " + iteration + " nodes in total. Search time: " 
+		Logger.log(Logger.INFO, "Visited " + iteration + " nodes in total. Search time: " 
 				+ (timeStop - timeStart)/1000000 + "ms");
 		return null;
 	}
