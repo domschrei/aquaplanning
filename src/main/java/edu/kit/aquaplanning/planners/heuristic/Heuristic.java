@@ -27,6 +27,8 @@ public abstract class Heuristic {
 			return new TrautmannsHeuristic(p);
 		case ffFroleyks:
 			return new FroleyksHeuristic(p);
+		case ffWilliams:
+			return new WilliamsHeuristic(p);
 		default:
 			break;
 		}

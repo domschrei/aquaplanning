@@ -9,27 +9,20 @@ import java.util.Collections;
 import edu.kit.aquaplanning.model.ground.Atom;
 import edu.kit.aquaplanning.model.ground.Action;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
-import edu.kit.aquaplanning.model.ground.Plan;
-import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.planners.SearchNode;
 import edu.kit.aquaplanning.model.ground.State;
 import edu.kit.aquaplanning.planners.GroundRelaxedPlanningGraph;
 import edu.kit.aquaplanning.model.ground.AtomSet;
 
-/**
- * Rename this class: [Lastname]sHeuristic .
- */
 public class WilliamsHeuristic extends Heuristic {
 
-    // All information your heuristic should need
-    // (together with the search node)
     private GroundPlanningProblem problem;
 
-    // Define more members, if needed ...
-
     /**
-     * Constructor (please do not change the signature except for the class name)
-     */
+     * This class manages applicable actions.
+     * The value keeps track of the number of atoms which this action can
+     * satisfy that are not already satisfied.
+     * */
     class ApplicableAction implements Comparable<ApplicableAction> {
         public int value;
         private Action action;
@@ -47,11 +40,19 @@ public class WilliamsHeuristic extends Heuristic {
             value = satisfiable.numAtoms();
         }
 
+        /**
+         * Refreshes the value after other actions have satisfied the effects
+         * of this action partially.
+         * @param effects The effects that any taken action had
+         */
         public void removeEffects(AtomSet effects) {
             satisfiable.applyTrueAtomsAsFalse(effects);
             value = satisfiable.numAtoms();
         }
 
+        /**
+         * @return the underlying action
+         */
         public Action getAction() {
             return action;
         }
@@ -62,12 +63,17 @@ public class WilliamsHeuristic extends Heuristic {
         }
     }
 
-    public WilliamsHeuristic(GroundPlanningProblem groundProblem, PlanningProblem liftedProblem) {
+    /**
+     * Constructor for this heuristic
+     * @param groundProblem the grounded planning problem
+     */
+    public WilliamsHeuristic(GroundPlanningProblem groundProblem) {
         this.problem = groundProblem;
     }
 
     /**
-     * Implement this method.
+     * The game-changing heuristic which assigns a value for A* to each node to
+     * be searched.
      */
     @Override
     public int value(SearchNode node) {
@@ -93,59 +99,46 @@ public class WilliamsHeuristic extends Heuristic {
         }
         int planLength = 0;
         AtomSet goals = new AtomSet(problem.getGoal().getAtoms(), true);
-        // System.out.println("size: " + states.size());
         while (!states.isEmpty()) {
-            // System.out.println("Not finished yet");
             State currentState = states.removeFirst();
-            // System.out.println(currentState.toString());
             List<ApplicableAction> possibleActions = new ArrayList<>();
             List<Integer> goalList = new ArrayList<Integer>();
             AtomSet toSatisfy = new AtomSet(new ArrayList<Atom>());
-            // System.out.println("New new goals: " + goals.toString());
             for (int i = 0; i < problem.getNumAtoms(); i++) {
                 if (goals.get(i) && (!currentState.holds(new Atom(i, "", true)))) {
                     goalList.add(i);
                     toSatisfy.set(new Atom(i, "", true));
                 }
             }
-            // System.out.println("Goals " + toSatisfy + " not yet satisfied");
             for (Action action : problem.getActions()) {
                 if (action.isApplicableRelaxed(currentState)) {
-                    // System.out.println("Action " + action.getName() + " is applicable");
                     possibleActions.add(new ApplicableAction(action, toSatisfy));
                 }
             }
 
             AtomSet preconditions = new AtomSet(new ArrayList<>());
             AtomSet effects = new AtomSet(new ArrayList<>());
-            // while (!goals.all(effects)) {
             while (!effects.all(toSatisfy)) {
+              // Find the best action
                 if (possibleActions.size() == 0) {
                     return Integer.MAX_VALUE;
                 }
                 ApplicableAction apply = Collections.max(possibleActions);
-                // System.out.println("Best action is " + apply.getAction().getName() + " with value " + apply.value);
+                // Even the best action would not satisfy any goal
                 if (apply.value == 0) {
                     return Integer.MAX_VALUE;
                 }
                 preconditions.applyTrueAtoms(apply.getAction().getPreconditionsPos());
-                // System.out.println("Action has Preconditions: " + apply.getAction().getPreconditionsPos().toString());
                 effects.applyTrueAtoms(apply.getAction().getEffectsPos());
-                // System.out.println("Action has Effects: " + apply.getAction().getEffectsPos().toString());
                 possibleActions.remove(apply);
-                // System.out.println("Atom " + id + " is now satisfied");
                 for (ApplicableAction pa : possibleActions) {
                     pa.removeEffects(apply.getAction().getEffectsPos());
                 }
                 planLength++;
             }
-            // System.out.println("New goals: " + preconditions.toString());
             goals.applyTrueAtomsAsFalse(effects);
             goals.applyTrueAtoms(preconditions);
-            // System.out.println("All goals satisfied");
         }
-        // System.out.println("Plan length: " + planLength);
-        // System.exit(0);
         return planLength;
     }
 }
