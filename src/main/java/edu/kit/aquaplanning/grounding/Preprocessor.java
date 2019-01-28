@@ -19,6 +19,7 @@ import edu.kit.aquaplanning.model.lifted.Argument;
 import edu.kit.aquaplanning.model.lifted.ConditionSet;
 import edu.kit.aquaplanning.model.lifted.ConsequentialCondition;
 import edu.kit.aquaplanning.model.lifted.Function;
+import edu.kit.aquaplanning.model.lifted.Negation;
 import edu.kit.aquaplanning.model.lifted.Axiom;
 import edu.kit.aquaplanning.model.lifted.NumericEffect;
 import edu.kit.aquaplanning.model.lifted.NumericEffect.Type;
@@ -79,25 +80,7 @@ public class Preprocessor {
 		// Simplify operators
 		List<Operator> operators = new ArrayList<>();
 		for (Operator op : problem.getOperators()) {
-			
-			// Preconditions
-			AbstractCondition pre = op.getPrecondition();
-			pre = instantiateQuantifications(pre);
-			pre = pre.simplify(/*negated = */false);
-			if (toDNF) {
-				pre = pre.getDNF();
-			}
-			op.setPrecondition(pre);
-			
-			// Effects
-			AbstractCondition eff = op.getEffect();
-			eff = instantiateQuantifications(eff);
-			eff = eff.simplify(/*negated = */false);
-			if (toDNF) {
-				eff = eff.getDNF();
-			}
-			op.setEffect(eff);
-			
+			simplify(op, toDNF);
 			operators.add(op);
 		}
 		problem.getOperators().clear();
@@ -126,6 +109,27 @@ public class Preprocessor {
 			}
 			cond.setCondition(c);
 		}
+	}
+	
+	private void simplify(Operator op, boolean toDNF) {
+		
+		// Preconditions
+		AbstractCondition pre = op.getPrecondition();
+		pre = instantiateQuantifications(pre);
+		pre = pre.simplify(/*negated = */false);
+		if (toDNF) {
+			pre = pre.getDNF();
+		}
+		op.setPrecondition(pre);
+		
+		// Effects
+		AbstractCondition eff = op.getEffect();
+		eff = instantiateQuantifications(eff);
+		eff = eff.simplify(/*negated = */false);
+		if (toDNF) {
+			eff = eff.getDNF();
+		}
+		op.setEffect(eff);
 	}
 	
 	/**
@@ -272,6 +276,74 @@ public class Preprocessor {
 		}
 		
 		return splitConds;
+	}
+	
+	private void eliminateConditionalEffects() {
+		
+		List<Operator> newOperators = new ArrayList<>();
+		
+		for (Operator op : problem.getOperators()) {
+			
+			// Partition effects of the operator into conditional and other effects
+			List<ConsequentialCondition> ccs = new ArrayList<>();
+			ConditionSet normalEffects = new ConditionSet(ConditionType.conjunction);
+			AbstractCondition effect = op.getEffect();
+			List<AbstractCondition> effectList = new ArrayList<>();
+			effectList.add(effect);
+			for (int i = 0; i < effectList.size(); i++) {
+				AbstractCondition eff = effectList.get(i);
+				if (eff.getConditionType() == ConditionType.conjunction) {
+					effectList.addAll(((ConditionSet) eff).getConditions());
+				} else if (eff.getConditionType() == ConditionType.consequential) {
+					ccs.add((ConsequentialCondition) eff);
+				} else {
+					normalEffects.add(eff);
+				}
+			}
+			
+			// Warn if amount of resulting STRIPS actions is large
+			if (ccs.size() > 4) {
+				Logger.log(Logger.WARN, "An operator contains a significant number of "
+						+ "conditional effects after simplification. "
+						+ "Compilation into STRIPS actions may become highly expensive.");
+			}
+			
+			// Create a new operator for each combination of cond. effects
+			for (int condEffChoice = 0; condEffChoice < Math.pow(2, ccs.size()); condEffChoice++) {
+				
+				List<AbstractCondition> posPre = new ArrayList<>();
+				List<AbstractCondition> posNeg = new ArrayList<>();
+				List<AbstractCondition> eff = new ArrayList<>();
+				
+				for (int ccIdx = 0; ccIdx < ccs.size(); ccIdx++) {
+					if (condEffChoice << ccIdx == 0) {
+						posPre.add(ccs.get(ccIdx).getPrerequisite());
+						eff.add(ccs.get(ccIdx).getConsequence());
+					} else {
+						Negation n = new Negation();
+						n.setChildCondition(ccs.get(ccIdx).getPrerequisite());
+						posNeg.add(n);
+					}
+				}
+				
+				Operator newOp = new Operator(op.getName());
+				op.getArguments().forEach(arg -> newOp.addArgument(arg));
+				newOp.setCost(op.getCost());
+				
+				final ConditionSet preconds = new ConditionSet(ConditionType.conjunction);
+				posPre.forEach(p -> preconds.add(p));
+				posNeg.forEach(p -> preconds.add(p));
+				newOp.setPrecondition(preconds);
+				
+				final ConditionSet postconds = new ConditionSet(ConditionType.conjunction);
+				postconds.add(normalEffects);
+				eff.forEach(c -> postconds.add(c));
+				newOp.setEffect(postconds);
+				
+				simplify(newOp, /*toDNF=*/true);
+				newOperators.addAll(split(newOp));
+			}
+		}
 	}
 	
 	/**
