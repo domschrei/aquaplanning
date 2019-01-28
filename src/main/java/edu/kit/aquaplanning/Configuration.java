@@ -113,7 +113,7 @@ public class Configuration {
 	
 	@Option(names = {"-S", "--seed"}, description = "Random seed to use for randomized search strategies",
 			defaultValue = "1337")
-	public int seed;
+	public int seed = 1337;
 	
 	
 	/* 
