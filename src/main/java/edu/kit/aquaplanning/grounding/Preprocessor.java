@@ -321,8 +321,9 @@ public class Preprocessor {
 				
 				int remainder = condEffChoice;
 				for (int ccIdx = 0; ccIdx < ccs.size(); ccIdx++) {
-					int power = (int) Math.pow(2, ccIdx+1);
-					if (remainder % power == 0) {
+					int power = (int) Math.pow(2, ccs.size()-ccIdx-1);
+					if (remainder >= power) {
+						remainder -= power;
 						posPre.add(ccs.get(ccIdx).getPrerequisite());
 						eff.add(ccs.get(ccIdx).getConsequence());
 					} else {
@@ -330,7 +331,6 @@ public class Preprocessor {
 						n.setChildCondition(ccs.get(ccIdx).getPrerequisite());
 						posNeg.add(n);
 					}
-					remainder /= power;
 				}
 				
 				String opName = op.getName() + (ccs.size() > 0 ? "*" + condEffChoice + "*" : "");

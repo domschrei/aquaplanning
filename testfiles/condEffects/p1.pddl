@@ -4,10 +4,15 @@
   	o4 - object
   )
   (:init
-  	(a)
+  	(a) (c) (d)
   )
   (:goal (and
   	(not (a))
   	(b)
+  	(not (result-a))
+  	(result-b)
+  	(result-c)
+  	(result-d)
+  	(not (result-e))
   ))
 )
