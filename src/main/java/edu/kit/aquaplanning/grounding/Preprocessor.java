@@ -58,7 +58,7 @@ public class Preprocessor {
 		// Eliminate quantifications,
 		// Simplify structure of logical expressions,
 		// Convert to DNF, if desired
-		boolean convertToDNF = !config.keepDisjunctions;
+		boolean convertToDNF = !config.keepDisjunctions || config.eliminateConditionalEffects;
 		simplifyProblem(convertToDNF);
 		if (convertToDNF) {
 			// Split DNF operators w.r.t. their preconditions
@@ -85,6 +85,9 @@ public class Preprocessor {
 		}
 		problem.getOperators().clear();
 		problem.getOperators().addAll(operators);
+		if (config.eliminateConditionalEffects) {			
+			eliminateConditionalEffects();
+		}
 		
 		// Simplify goal
 		ConditionSet goalSet = new ConditionSet(ConditionType.conjunction);
@@ -303,9 +306,10 @@ public class Preprocessor {
 			
 			// Warn if amount of resulting STRIPS actions is large
 			if (ccs.size() > 4) {
-				Logger.log(Logger.WARN, "An operator contains a significant number of "
-						+ "conditional effects after simplification. "
-						+ "Compilation into STRIPS actions may become highly expensive.");
+				Logger.log(Logger.WARN, "An operator contains " + ccs.size()
+						+ " conditional effects after simplification. "
+						+ "Attempting compilation into at least " + (int) Math.pow(2, ccs.size()) 
+						+ " STRIPS actions.");
 			}
 			
 			// Create a new operator for each combination of cond. effects
@@ -315,8 +319,10 @@ public class Preprocessor {
 				List<AbstractCondition> posNeg = new ArrayList<>();
 				List<AbstractCondition> eff = new ArrayList<>();
 				
+				int remainder = condEffChoice;
 				for (int ccIdx = 0; ccIdx < ccs.size(); ccIdx++) {
-					if (condEffChoice << ccIdx == 0) {
+					int power = (int) Math.pow(2, ccIdx+1);
+					if (remainder % power == 0) {
 						posPre.add(ccs.get(ccIdx).getPrerequisite());
 						eff.add(ccs.get(ccIdx).getConsequence());
 					} else {
@@ -324,13 +330,16 @@ public class Preprocessor {
 						n.setChildCondition(ccs.get(ccIdx).getPrerequisite());
 						posNeg.add(n);
 					}
+					remainder /= power;
 				}
 				
-				Operator newOp = new Operator(op.getName());
+				String opName = op.getName() + (ccs.size() > 0 ? "*" + condEffChoice + "*" : "");
+				Operator newOp = new Operator(opName);
 				op.getArguments().forEach(arg -> newOp.addArgument(arg));
 				newOp.setCost(op.getCost());
 				
 				final ConditionSet preconds = new ConditionSet(ConditionType.conjunction);
+				preconds.add(op.getPrecondition());
 				posPre.forEach(p -> preconds.add(p));
 				posNeg.forEach(p -> preconds.add(p));
 				newOp.setPrecondition(preconds);
@@ -344,6 +353,9 @@ public class Preprocessor {
 				newOperators.addAll(split(newOp));
 			}
 		}
+		
+		problem.getOperators().clear();
+		problem.getOperators().addAll(newOperators);
 	}
 	
 	/**

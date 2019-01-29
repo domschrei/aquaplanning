@@ -68,12 +68,15 @@ public class Configuration {
 	 * Preprocessing and grounding configuration
 	 */
 	
-	@Option(names = {"-d", "--keep-disjunctions"}, description = "Do not compile disjunctive conditions "
+	@Option(names = {"-kd", "--keep-disjunctions"}, description = "Do not compile disjunctive conditions "
 			+ "into simple actions, but keep complex logical structure during planning")
 	public boolean keepDisjunctions;
-	@Option(names = {"-q", "--keep-equalities"}, description = "Do not resolve equality conditions, "
+	@Option(names = {"-kq", "--keep-equalities"}, description = "Do not resolve equality conditions, "
 			+ "but add them as explicit atoms to the initial state")
 	public boolean keepEqualities;
+	@Option(names = {"-nc", "--no-keep-cond-effects"}, description = "Compile conditional effects "
+			+ "into multiple STRIPS operators (implies translation into DNF)")
+	public boolean eliminateConditionalEffects;
 	
 	
 	/* 
