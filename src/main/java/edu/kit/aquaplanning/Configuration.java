@@ -94,11 +94,11 @@ public class Configuration {
 	/* Forward search space planning */
 	
 	public enum HeuristicType {
-		manhattanGoalDistance, relaxedPathLength, actionInterferenceRelaxation, ffTrautmann, ffFroleyks;
+		manhattanGoalDistance, relaxedPathLength, actionInterferenceRelaxation, ffTrautmann, ffFroleyks, ffWilliams;
 	}
 	@Option(paramLabel = "heuristicClass", names = {"-H", "--heuristic"}, 
 			description = "Heuristic for forward search: " + USAGE_OPTIONS_AND_DEFAULT, 
-			defaultValue = "ffTrautmann")
+			defaultValue = "ffWilliams")
 	public HeuristicType heuristic;
 	@Option(paramLabel = "heuristicWeight", names = {"-w", "--heuristic-weight"},
 			description = "Weight of heuristic when using a weighted search strategy " + USAGE_DEFAULT, 
@@ -116,7 +116,7 @@ public class Configuration {
 	
 	@Option(names = {"-S", "--seed"}, description = "Random seed to use for randomized search strategies",
 			defaultValue = "1337")
-	public int seed;
+	public int seed = 1337;
 	
 	
 	/* 
