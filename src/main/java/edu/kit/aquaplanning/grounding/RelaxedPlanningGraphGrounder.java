@@ -83,6 +83,7 @@ public class RelaxedPlanningGraphGrounder extends BaseGrounder {
 		}
 		actions = new ArrayList<>();
 		actions.addAll(actionSet);
+		actions.sort((a1,a2) -> a1.getName().compareTo(a2.getName()));
 		
 		// Extract initial state
 		State initialState = getInitialState();

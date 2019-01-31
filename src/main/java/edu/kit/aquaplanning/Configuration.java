@@ -68,12 +68,15 @@ public class Configuration {
 	 * Preprocessing and grounding configuration
 	 */
 	
-	@Option(names = {"-d", "--keep-disjunctions"}, description = "Do not compile disjunctive conditions "
+	@Option(names = {"-kd", "--keep-disjunctions"}, description = "Do not compile disjunctive conditions "
 			+ "into simple actions, but keep complex logical structure during planning")
 	public boolean keepDisjunctions;
-	@Option(names = {"-q", "--keep-equalities"}, description = "Do not resolve equality conditions, "
+	@Option(names = {"-kq", "--keep-equalities"}, description = "Do not resolve equality conditions, "
 			+ "but add them as explicit atoms to the initial state")
 	public boolean keepEqualities;
+	@Option(names = {"-nc", "--no-keep-cond-effects"}, description = "Compile conditional effects "
+			+ "into multiple STRIPS operators (implies translation into DNF)")
+	public boolean eliminateConditionalEffects;
 	
 	
 	/* 
@@ -91,11 +94,11 @@ public class Configuration {
 	/* Forward search space planning */
 	
 	public enum HeuristicType {
-		manhattanGoalDistance, relaxedPathLength, actionInterferenceRelaxation, ffTrautmann, ffFroleyks;
+		manhattanGoalDistance, relaxedPathLength, actionInterferenceRelaxation, ffTrautmann, ffFroleyks, ffWilliams;
 	}
 	@Option(paramLabel = "heuristicClass", names = {"-H", "--heuristic"}, 
 			description = "Heuristic for forward search: " + USAGE_OPTIONS_AND_DEFAULT, 
-			defaultValue = "ffTrautmann")
+			defaultValue = "ffWilliams")
 	public HeuristicType heuristic;
 	@Option(paramLabel = "heuristicWeight", names = {"-w", "--heuristic-weight"},
 			description = "Weight of heuristic when using a weighted search strategy " + USAGE_DEFAULT, 
@@ -113,7 +116,7 @@ public class Configuration {
 	
 	@Option(names = {"-S", "--seed"}, description = "Random seed to use for randomized search strategies",
 			defaultValue = "1337")
-	public int seed;
+	public int seed = 1337;
 	
 	
 	/* 

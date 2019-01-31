@@ -44,8 +44,10 @@ public class SimpleParallelPlanner extends Planner {
 	
 	@Override
 	public Plan findPlan(GroundPlanningProblem problem) {
+		
 		startSearch();
 		threads = new ArrayList<>();
+		plan = null;
 		Random random = new Random(this.config.seed); // seed generator
 		
 		for (int i = 1; i <= numThreads; i++) {
