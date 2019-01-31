@@ -35,15 +35,15 @@ public class TestPlanners extends TestCase {
 	
 	public void testQuantifications() throws FileNotFoundException, IOException {
 
-		fullTest("testfiles/quantifications/domain.pddl", "testfiles/quantifications/p1.pddl");
-		fullTest("testfiles/quantifications/domain.pddl", "testfiles/quantifications/p2.pddl");
+		fullTest("testfiles/quantifications/domain.pddl", "testfiles/quantifications/p1.pddl", 1, 1);
+		fullTest("testfiles/quantifications/domain.pddl", "testfiles/quantifications/p2.pddl", 1, 1);
 	}
 	
 	public void testDerivedPredicates() throws FileNotFoundException, IOException {
 
-		fullTest("testfiles/derivedPredicates/domain1.pddl", "testfiles/derivedPredicates/p1.pddl");
-		fullTest("testfiles/derivedPredicates/domain2.pddl", "testfiles/derivedPredicates/p2.pddl");
-		fullTest("testfiles/derivedPredicates/domain3.pddl", "testfiles/derivedPredicates/p3.pddl");
+		fullTest("testfiles/derivedPredicates/domain1.pddl", "testfiles/derivedPredicates/p1.pddl", 2, 2);
+		fullTest("testfiles/derivedPredicates/domain2.pddl", "testfiles/derivedPredicates/p2.pddl", 1, 1);
+		fullTest("testfiles/derivedPredicates/domain3.pddl", "testfiles/derivedPredicates/p3.pddl", 1, 1);
 	}
 	
 	public void testAdlFeatures() throws FileNotFoundException, IOException {
@@ -51,20 +51,20 @@ public class TestPlanners extends TestCase {
 		Configuration config = new Configuration();
 		
 		config.keepDisjunctions = true;
-		fullTest("testfiles/adl/domain1.pddl", "testfiles/adl/p1.pddl", config);
-		fullTest("testfiles/equality/domain1.pddl", "testfiles/equality/p1.pddl", config);
+		fullTest("testfiles/adl/domain1.pddl", "testfiles/adl/p1.pddl", config, 5, 10);
+		fullTest("testfiles/equality/domain1.pddl", "testfiles/equality/p1.pddl", config, 6, 6);
 		
 		config.keepDisjunctions = false;
 		config.keepEqualities = true;
-		fullTest("testfiles/adl/domain1.pddl", "testfiles/adl/p1.pddl", config);
-		fullTest("testfiles/equality/domain1.pddl", "testfiles/equality/p1.pddl", config);
+		fullTest("testfiles/adl/domain1.pddl", "testfiles/adl/p1.pddl", config, 5, 10);
+		fullTest("testfiles/equality/domain1.pddl", "testfiles/equality/p1.pddl", config, 6, 6);
 		
 		config.keepDisjunctions = true;
-		fullTest("testfiles/adl/domain1.pddl", "testfiles/adl/p1.pddl", config);
-		fullTest("testfiles/equality/domain1.pddl", "testfiles/equality/p1.pddl", config);
+		fullTest("testfiles/adl/domain1.pddl", "testfiles/adl/p1.pddl", config, 5, 10);
+		fullTest("testfiles/equality/domain1.pddl", "testfiles/equality/p1.pddl", config, 6, 6);
 
-		fullTest("testfiles/adl/domain2.pddl", "testfiles/adl/p2.pddl");
-		fullTest("testfiles/equality/domain2.pddl", "testfiles/equality/p2.pddl");
+		fullTest("testfiles/adl/domain2.pddl", "testfiles/adl/p2.pddl", 1, 10);
+		fullTest("testfiles/equality/domain2.pddl", "testfiles/equality/p2.pddl", 1, 1);
 	}
 	
 	public void testPlanOptimization() throws FileNotFoundException, IOException {
@@ -133,8 +133,8 @@ public class TestPlanners extends TestCase {
 
 	public void testCustomDomains() throws FileNotFoundException, IOException {
 
-		fullTest("testfiles/RPG/domain.pddl", "testfiles/RPG/p01.pddl");
-		fullTest("testfiles/TM/domain.pddl", "testfiles/TM/p_det.pddl");
+		fullTest("testfiles/RPG/domain.pddl", "testfiles/RPG/p01.pddl", 5, Integer.MAX_VALUE);
+		fullTest("testfiles/TM/domain.pddl", "testfiles/TM/p_det.pddl", 8, 8);
 	}
 	
 	private void fullTest(String domainFile, String problemFile) throws FileNotFoundException, IOException {
@@ -142,6 +142,18 @@ public class TestPlanners extends TestCase {
 	}
 	
 	private void fullTest(String domainFile, String problemFile, Configuration config) 
+			throws FileNotFoundException, IOException {
+		
+		fullTest(domainFile, problemFile, config, 1, Integer.MAX_VALUE);
+	}
+	
+	private void fullTest(String domainFile, String problemFile, int minPlanLength, int maxPlanLength) 
+			throws FileNotFoundException, IOException {
+		
+		fullTest(domainFile, problemFile, new Configuration(), minPlanLength, maxPlanLength);
+	}
+	
+	private void fullTest(String domainFile, String problemFile, Configuration config, int minPlanLength, int maxPlanLength) 
 			throws FileNotFoundException, IOException {
 		
 		System.out.println("Testing domain \"" + domainFile 
@@ -153,7 +165,7 @@ public class TestPlanners extends TestCase {
 		assertTrue("String representation of problem is null", out != null);
 		
 		System.out.println("Grounding ...");
-		Grounder grounder = new RelaxedPlanningGraphGrounder(new Configuration());
+		Grounder grounder = new RelaxedPlanningGraphGrounder(config);
 		gpp = grounder.ground(pp);
 		out = gpp.toString();
 		assertTrue("String representation of ground problem is null", out != null);
@@ -162,15 +174,24 @@ public class TestPlanners extends TestCase {
 				gpp.getActions().size() > 0);
 		
 		System.out.println("Planning ...");
-		Configuration c = new Configuration();
-		c.searchStrategy = Mode.bestFirst;
-		c.heuristic = HeuristicType.relaxedPathLength;
-		Planner planner = new ForwardSearchPlanner(c);
+		if (config.searchStrategy == null) {
+			config.searchStrategy = Mode.bestFirst;
+			config.heuristic = HeuristicType.relaxedPathLength;
+		}
+		Planner planner = new ForwardSearchPlanner(config);
 		Plan plan = planner.findPlan(gpp);
 		
 		System.out.println(plan);
+		
 		assertTrue("No plan has been found.", plan != null);
-		assertTrue("The produced plan is empty.", plan.getLength() > 0);
+		
+		assertTrue("The produced plan of length " + plan.getLength() 
+		+ " is shorter than the minimum valid plan length (" + minPlanLength + ").", 
+		plan.getLength() >= minPlanLength);
+		assertTrue("The produced plan of length " + plan.getLength() 
+		+ " is larger than the maximum valid plan length (" + maxPlanLength + ").", 
+		plan.getLength() <= maxPlanLength);
+		
 		assertTrue("The produced plan is invalid.", Validator.planIsValid(gpp, plan));
 		
 		System.out.println("Done.\n");
