@@ -29,6 +29,8 @@ For planning problems using these features (or any subset), a full representatio
 
 ### Preprocessing and Grounding
 
+For processing PDDL input, a parser generated from [this ANTLR grammar for PDDL](https://github.com/domschrei/pddl_antlr_grammar) is used.
+
 Parsed problems will first be simplified in a preprocessing step: notably, all quantifications are eliminated into flat conjunctions / disjunctions, and complex logical expressions can be transformed into Disjunctive Normal Form (DNF) in order to split disjunctive operators into multiple conjunctive operators, if desired. 
 Derived predicates and conditional effects remain an explicit part of the problem representation, also during planning. Equality predicates can be compiled out (simplifying some preconditions) or can be kept just like normal predicates.
 
