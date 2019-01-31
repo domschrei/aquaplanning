@@ -100,7 +100,9 @@ public class Main {
 			Grounder grounder = new RelaxedPlanningGraphGrounder(config);
 			GroundPlanningProblem planningProblem = grounder.ground(p);
 			// Print ground problem
-			Logger.log(Logger.INFO_V, planningProblem.toString());
+			if (Logger.INFO_V <= config.verbosityLevel) {				
+				Logger.log(Logger.INFO_V, planningProblem.toString());
+			}
 			Logger.log(Logger.INFO, "Grounding complete. " + planningProblem.getActions().size() 
 					+ " actions resulted from the grounding.\n");
 			
