@@ -175,10 +175,16 @@ public class State {
 	 */
 	public List<Boolean> getAtoms() {
 		
-		List<Boolean> atoms = new ArrayList<>(this.atoms.size());
-		for (int i = 0; i < this.atoms.size(); i++) {
+		List<Boolean> atoms = new ArrayList<>();
+		
+		// For each set atom
+		for (int i = this.atoms.getFirstTrueAtom(); i >= 0; 
+				i = this.atoms.getNextTrueAtom(i+1)) {
+			while (atoms.size() < i)
+				atoms.add(false);
 			atoms.add(this.atoms.get(i));
 		}
+		
 		return atoms;
 	}
 
