@@ -37,7 +37,7 @@ public class SimpleSatPlanner extends Planner {
 		return result != null ? result : empty;
 	}
 
-	private void initializeActionIdsAndSupports(GroundPlanningProblem problem) {
+	protected void initializeActionIdsAndSupports(GroundPlanningProblem problem) {
 		startSearch();
 		actionIds = new HashMap<>();
 		supportingActionsPositive = new HashMap<>();
@@ -69,9 +69,9 @@ public class SimpleSatPlanner extends Planner {
 	
 	// number of Boolean variables in each sat solving step
 	// it is the sum of number of actions and atoms
-	private int satVarsPerStep;
+	protected int satVarsPerStep;
 
-	private int getActionSatVariable(String name, int step) {
+	protected int getActionSatVariable(String name, int step) {
 		int aid = actionIds.get(name);
 		return 1 + aid + step*(satVarsPerStep);
 	}
@@ -142,7 +142,7 @@ public class SimpleSatPlanner extends Planner {
 	 * @param step
 	 * @return
 	 */
-	private int[] calculateGoalAssumptions(GroundPlanningProblem problem, int step) {
+	protected int[] calculateGoalAssumptions(GroundPlanningProblem problem, int step) {
 		List<Atom> goalAtoms = problem.getGoal().getAtoms();
 		int[] assumptions = new int[goalAtoms.size()];
 		for (int i = 0; i < goalAtoms.size(); i++) {
@@ -156,7 +156,7 @@ public class SimpleSatPlanner extends Planner {
 	 * @param problem
 	 * @param solver
 	 */
-	private void addInitialStateClauses(GroundPlanningProblem problem, SatSolver solver) {
+	protected void addInitialStateClauses(GroundPlanningProblem problem, SatSolver solver) {
 		for (int atomid = 0; atomid < problem.getNumAtoms(); atomid++) {
 			int atomSatId = getAtomSatVariable(atomid, 0);
 			if (problem.getInitialState().getAtomSet().get(atomid)) {
@@ -173,7 +173,7 @@ public class SimpleSatPlanner extends Planner {
 	 * @param solver
 	 * @param step
 	 */
-	private void addTransitionalClauses(GroundPlanningProblem problem, SatSolver solver, int step) {
+	protected void addTransitionalClauses(GroundPlanningProblem problem, SatSolver solver, int step) {
 		// actions imply their effects
 		for (Action a : problem.getActions()) {
 			int actionSatId = getActionSatVariable(a.getName(), step);
@@ -223,7 +223,7 @@ public class SimpleSatPlanner extends Planner {
 	 * @param solver
 	 * @param step
 	 */
-	private void addUniversalClauses(GroundPlanningProblem problem, SatSolver solver, int step) {	
+	protected void addUniversalClauses(GroundPlanningProblem problem, SatSolver solver, int step) {	
 		// actions imply their preconditions
 		for (Action a : problem.getActions()) {
 			int actionSatId = getActionSatVariable(a.getName(), step);
