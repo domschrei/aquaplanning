@@ -48,11 +48,12 @@ public class FixedLengthSatPlanner extends SimpleSatPlanner {
 		if (config.maxTimeSeconds > 0) {
 			solver.setSolverTimeLimit(config.maxTimeSeconds);			
 		}
-		Plan plan = new Plan();
+		Plan plan = null;
 		if (solver.isSatisfiable(assumptions)) {
 			System.out.println("Found plan!");
 			// We found a Plan!
 			// Decode the plan
+			plan = new Plan();
 			int[] model = solver.getModel();
 			for (int i = 0; i < planLength; i++) {
 				for (Action a : problem.getActions()) {
@@ -61,8 +62,7 @@ public class FixedLengthSatPlanner extends SimpleSatPlanner {
 					}
 				}
 			}
-		}
-		else {
+		} else {
 			System.out.println("No plan found!");
 		}
 		
