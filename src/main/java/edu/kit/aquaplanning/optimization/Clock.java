@@ -15,7 +15,14 @@ public class Clock {
 		if (duration <= 0) {
 			return true;
 		}
+		return 0 <= timeLeft();
+	}
+	
+	public long timeLeft() {
+		if (duration <= 0) {
+			return Long.MAX_VALUE;
+		}
 		long timeNow = System.currentTimeMillis();
-		return startTime + duration >= timeNow;
+		return (startTime + duration) - timeNow;
 	}
 }
