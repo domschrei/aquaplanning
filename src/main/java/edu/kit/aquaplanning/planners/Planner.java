@@ -30,7 +30,7 @@ public abstract class Planner {
 	 */
 	protected boolean withinComputationalBounds(int iterations) {
 		
-		if (Thread.interrupted())
+		if (Thread.currentThread().isInterrupted())
 			return false;
 		
 
