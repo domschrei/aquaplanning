@@ -76,6 +76,12 @@ public abstract class Planner {
 			Logger.log(Logger.INFO, "Doing parallel planning with up to " 
 						+ config.numThreads + " threads.");
 			return new SimpleParallelPlanner(config);
+		case hagmanns:
+			return new HagmannssParallelPlanner(config);
+		case trautmann:
+			return new TrautmannsParallelPlanner(config);
+		case zhang:
+			return new ZhangsParallelPlanner(config);
 		}
 		return null;
 	}

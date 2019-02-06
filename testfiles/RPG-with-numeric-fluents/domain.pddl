@@ -3,20 +3,15 @@
     (:types
         location - object
         potion - object
-        
     )
-   
     (:predicates
         (player-at ?l - location)
         (monster-at ?l - location)
         (road ?l1 ?l2 - location)
         (playerhaspotion ?p - potion)
         (potion-at ?p - potion ?l - location)
-        ;(player-hp ?hp - hp-number) ;replaced with numeric fluents
-        ;(monster-hp ?l - location ?hp - hp-number) ;replaced with numeric fluents
-        ;(hp-next ?hp1 ?hp2 - hp-number) ;replaced with numeric fluents
     )
-       (:functions 
+    (:functions 
     	(player-hp) - number
     	(monster-hp ?l - location) - number
         (monster-attack ?l - location) - number
@@ -42,7 +37,7 @@
             (player-at ?l1) 
         )
         :effect (and 
-            (not(potion-at ?p ?l1))
+            (not (potion-at ?p ?l1))
             (playerhaspotion ?p)
         )
 
@@ -53,8 +48,8 @@
             (playerhaspotion ?p)
         )
         :effect (and 
-        	(not(playerhaspotion ?p))
-        	(increase(player-hp)(potion-hp ?p))
+        	(not (playerhaspotion ?p))
+        	(increase (player-hp) (potion-hp ?p))
         )
     )
     (:action fight-monster
@@ -63,18 +58,18 @@
             (road ?l1 ?l2) 
             (player-at ?l1) 
             (monster-at ?l2) 
-            (>=(player-hp)(monster-attack ?l2))
+            (>= (player-hp) (monster-attack ?l2))
         )
         :effect (and 
-            (decrease(player-hp)(monster-attack ?l2))
+            (decrease (player-hp) (monster-attack ?l2))
             (when 
                 (= (monster-hp ?l2) 1) 
                 (not (monster-at ?l2))
             )
             (when
-                (not (= (monster-hp ?l2) 1))
-		(decrease(monster-hp ?l2)1) )
-           
+            	(not (= (monster-hp ?l2) 1))
+            	(decrease (monster-hp ?l2) 1)
+            )
         )
     )
 ) 

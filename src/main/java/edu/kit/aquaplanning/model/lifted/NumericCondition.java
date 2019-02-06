@@ -6,7 +6,7 @@ import java.util.function.Function;
 public class NumericCondition extends AbstractCondition {
 
 	public enum Comparator {
-		greater, greaterEquals, lower, lowerEquals, equals;
+		greater, greaterEquals, lower, lowerEquals, equals, notEquals;
 	}
 	
 	private Comparator comparator;
@@ -31,6 +31,8 @@ public class NumericCondition extends AbstractCondition {
 			this.comparator = Comparator.lowerEquals; break;
 		case "=":
 			this.comparator = Comparator.equals; break;
+		case "!=":
+			this.comparator = Comparator.notEquals; break;
 		}
 	}
 	
@@ -73,6 +75,9 @@ public class NumericCondition extends AbstractCondition {
 		case equals:
 			out = "=";
 			break;
+		case notEquals:
+			out = "!=";
+			break;
 		}
 		out = expLeft.toString() + " " + out + " " + expRight.toString();
 		return out;
@@ -89,7 +94,30 @@ public class NumericCondition extends AbstractCondition {
 
 	@Override
 	public AbstractCondition simplify(boolean negated) {
-		return this.copy();
+		NumericCondition c = this.copy();
+		if (negated) {
+			switch (comparator) {
+			case equals:
+				c.comparator = Comparator.notEquals;
+				break;
+			case greater:
+				c.comparator = Comparator.lowerEquals;
+				break;
+			case greaterEquals:
+				c.comparator = Comparator.lower;
+				break;
+			case lower:
+				c.comparator = Comparator.greaterEquals;
+				break;
+			case lowerEquals:
+				c.comparator = Comparator.greater;
+				break;
+			case notEquals:
+				c.comparator = Comparator.equals;
+				break;
+			}
+		}
+		return c;
 	}
 
 	@Override

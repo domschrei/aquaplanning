@@ -134,6 +134,8 @@ public class Precondition {
 				return expLeft.evaluate(state) <= expRight.evaluate(state);
 			case equals:
 				return Math.abs(expLeft.evaluate(state) - expRight.evaluate(state)) < 0.00001f;
+			case notEquals:
+				return Math.abs(expLeft.evaluate(state) - expRight.evaluate(state)) >= 0.00001f;
 			}
 			throw new IllegalArgumentException();
 		default:
@@ -181,6 +183,7 @@ public class Precondition {
 					return valueLeft >= valueRight;
 				case lower:
 				case lowerEquals:
+				case notEquals:
 					// relaxed: ignore
 					return true;					
 				}
@@ -196,6 +199,7 @@ public class Precondition {
 					return valueLeft <= valueRight;
 				case greater:
 				case greaterEquals:
+				case notEquals:
 					// relaxed: ignore
 					return true;					
 				}
@@ -244,6 +248,8 @@ public class Precondition {
 			return "≤";
 		case equals:
 			return "=";
+		case notEquals:
+			return "!=";
 		}
 		return null;
 	}
