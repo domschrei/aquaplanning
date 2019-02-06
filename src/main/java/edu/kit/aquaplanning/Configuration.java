@@ -95,7 +95,7 @@ public class Configuration {
 	}
 	@Option(paramLabel = "heuristicClass", names = {"-H", "--heuristic"}, 
 			description = "Heuristic for forward search: " + USAGE_OPTIONS_AND_DEFAULT, 
-			defaultValue = "ffWilliams")
+			defaultValue = "ffTrautmann")
 	public HeuristicType heuristic;
 	@Option(paramLabel = "heuristicWeight", names = {"-w", "--heuristic-weight"},
 			description = "Weight of heuristic when using a weighted search strategy " + USAGE_DEFAULT, 
