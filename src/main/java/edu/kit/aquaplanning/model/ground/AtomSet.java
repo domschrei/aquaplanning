@@ -36,10 +36,17 @@ public class AtomSet {
 
 	/**
 	 * Get the index of first true atom or -1 if none is true
-	 * @return
 	 */
 	public int getFirstTrueAtom() {
 		return atoms.nextSetBit(0);
+	}
+	
+	/**
+	 * Get the index of the next true atom at or after index i,
+	 * or -1 if none such atom is true
+	 */
+	public int getNextTrueAtom(int i) {
+		return atoms.nextSetBit(i);
 	}
 
 	/**

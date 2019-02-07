@@ -67,6 +67,12 @@ public class TestPlanners extends TestCase {
 		fullTest("testfiles/equality/domain2.pddl", "testfiles/equality/p2.pddl", 1, 1);
 	}
 	
+	public void testNumericPlanning() throws FileNotFoundException, IOException {
+		
+		fullTest("testfiles/RPG-with-numeric-fluents/domain.pddl", 
+				 "testfiles/RPG-with-numeric-fluents/p01.pddl");
+	}
+	
 	public void testPlanOptimization() throws FileNotFoundException, IOException {
 		
 		Configuration config = new Configuration();

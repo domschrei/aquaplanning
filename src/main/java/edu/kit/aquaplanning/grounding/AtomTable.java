@@ -173,7 +173,7 @@ public class AtomTable {
 	public List<String> extractAtomNames() {
 		
 		List<String> atomNames = new ArrayList<>();
-		for (int i = 0; i < atoms.size(); i++) {
+		for (int i = 0; i < this.atomNames.size(); i++) {
 			atomNames.add(this.atomNames.get(i));
 		}
 		return atomNames;
