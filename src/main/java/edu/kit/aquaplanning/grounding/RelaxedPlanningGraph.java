@@ -12,7 +12,6 @@ import edu.kit.aquaplanning.model.lifted.ConditionSet;
 import edu.kit.aquaplanning.model.lifted.ConsequentialCondition;
 import edu.kit.aquaplanning.model.lifted.Operator;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
-import edu.kit.aquaplanning.model.lifted.Quantification;
 import edu.kit.aquaplanning.model.lifted.AbstractCondition.ConditionType;
 import edu.kit.aquaplanning.util.Logger;
 
@@ -24,7 +23,6 @@ import edu.kit.aquaplanning.util.Logger;
  */
 public class RelaxedPlanningGraph {
 
-	private PlanningProblem problem;
 	private List<Argument> constants;
 	private List<Set<Condition>> liftedStates;
 	private List<List<Operator>> liftedActions;
@@ -38,10 +36,9 @@ public class RelaxedPlanningGraph {
 	 */
 	public RelaxedPlanningGraph(PlanningProblem problem) {
 		
-		this.problem = problem;
 		this.liftedActions = new ArrayList<>();
 		this.liftedStates = new ArrayList<>();
-				
+		
 		this.opIndex = new OperatorIndex(problem);
 		
 		constants = new ArrayList<>();
@@ -133,43 +130,12 @@ public class RelaxedPlanningGraph {
 		
 		LiftedState s = new LiftedState(liftedState);
 		List<Operator> reachableOps = opIndex.getRelaxedApplicableLiftedActions(s);
-		return reachableOps;		
-		
-		/*
-		List<Operator> reachableOperators = new ArrayList<>();
-		
-		// For each operator
-		for (int i = 0; i < problem.getOperators().size(); i++) {
-			Operator op = problem.getOperators().get(i);
-			
-			// Iterate over all possible argument combinations
-			List<List<Argument>> arguments = ArgumentCombination.getEligibleArguments(
-					op.getArguments(), problem, constants);
-			new ArgumentCombination.Iterator(arguments).forEachRemaining(args -> {
-				
-				boolean addArguments = true;
-						
-				// Does the precondition hold with these arguments in a relaxed sense?
-				boolean holds = holdsCondition(op.getPrecondition(), op, args, liftedState);												
-				if (!holds) {
-					// -- no
-					addArguments = false;
-				}
-				
-				// Add lifted action, if reachable
-				if (addArguments) {
-					Operator liftedAction = op.getOperatorWithGroundArguments(args);
-					reachableOperators.add(liftedAction);
-				}
-			});
-		}
-		
-		return reachableOperators;*/
+		return reachableOps;
 	}
 	
 	/**
 	 * Given a lifted action executed in some (lifted) state, adds all of 
-	 * its positive effects (including conditional effects) to the state.
+	 * its positive effects to the state.
 	 */
 	protected void applyPositiveEffects(Operator liftedAction, Set<Condition> liftedState) {
 		
@@ -207,16 +173,19 @@ public class RelaxedPlanningGraph {
 					effects.add(cond.getConsequence());
 				}
 				
-			} else if (effect.getConditionType() == ConditionType.quantification) {
-				
-				// -- quantification: resolve into flat atom list,
-				// and add all atoms to processing queue
-				effects.add(ArgumentCombination.resolveQuantification(
-						(Quantification) effect, problem, constants));
-				
 			} else if (effect.getConditionType() == ConditionType.conjunction) {
 				
 				effects.addAll(((ConditionSet) effect).getConditions());
+				
+			} else if (effect.getConditionType() == ConditionType.numericEffect) {
+				
+				// TODO better delete-relaxation also incorporating numeric atoms
+				
+			} else {
+				
+				throw new IllegalArgumentException("An unexpected condition type \"" 
+						+ effect.getConditionType() + "\" occurred during grounding. "
+						+ "Has the problem been properly simplified?");
 			}
 		}
 	}
@@ -265,14 +234,6 @@ public class RelaxedPlanningGraph {
 		case negation:
 			return true;
 			
-		case quantification:
-			AbstractCondition condition = ArgumentCombination.resolveQuantification(
-					(Quantification) abstractCond, problem, constants);
-			if (!holdsCondition(condition, op, opArgs, liftedState)) {
-				return false;
-			}
-			return true;
-			
 		case conjunction:
 			for (AbstractCondition c : ((ConditionSet) abstractCond).getConditions()) {
 				if (!holdsCondition(c, op, opArgs, liftedState)) {
@@ -296,7 +257,9 @@ public class RelaxedPlanningGraph {
 			return true; // TODO better relaxation
 		
 		default:
-			throw new IllegalArgumentException("Illegal condition type.");
+			throw new IllegalArgumentException("An unexpected condition type \"" 
+					+ abstractCond.getConditionType() + "\" occurred during grounding. "
+					+ "Has the problem been properly simplified?");
 		}
 	}	
 	

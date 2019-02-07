@@ -18,12 +18,14 @@ import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 
 /**
  * Lookup structure for applicable actions given a state in a lifted setting.
+ * Designed to consider only a small subset of all possible argument combinations
+ * when dealing with operators with many parameters.
  */
 public class OperatorIndex {
 
 	/**
-	 * Maps the name of an operator to the arguments with which it has
-	 * already been instantiated.
+	 * Maps the name of an operator to the argument combinations
+	 * with which it has already been instantiated.
 	 */
 	private Map<String, ArgumentNode> instantiatedOperators;
 	/**
@@ -109,8 +111,8 @@ public class OperatorIndex {
 	}
 	
 	/**
-	 * Given a state in a lifted setting, returns all actions which are applicable
-	 * in that state and have not been returned as applicable before.
+	 * Given a state in a relaxed and lifted setting, returns all actions 
+	 * which are applicable in that state and have not been returned as applicable before.
 	 */
 	public List<Operator> getRelaxedApplicableLiftedActions(LiftedState s) {
 		
@@ -275,6 +277,8 @@ public class OperatorIndex {
 				orderedArgIndices[i++] = argIndices.get(arg.getName());
 			}
 			
+			// Explore all potentially valid argument combinations depth-first,
+			// pruning wherever some precondition becomes unsatisfiable
 			while (!assignmentStack.isEmpty()) {
 				ArgumentAssignment partialAssignment = assignmentStack.pop();
 				int decisionLevel = partialAssignment.getDecisionLevel();
@@ -334,9 +338,10 @@ public class OperatorIndex {
 							}
 						}
 						if (holds) {
+							// New assignment is still consistent;
 							// Remember partial assignment for further exploration
 							assignmentStack.push(newAssignment);
-						}				
+						} // else: inconsistent assignment, discard				
 					}
 				}
 			}

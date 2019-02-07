@@ -46,6 +46,10 @@ import edu.kit.aquaplanning.model.lifted.NumericExpression.TermType;
  */
 public abstract class BaseGrounder implements Grounder {
 
+	/**
+	 * Maintains all atoms, numeric atoms and derived atoms
+	 * which occurred so far during grounding.
+	 */
 	protected AtomTable atomTable;
 	
 	protected PlanningProblem problem;

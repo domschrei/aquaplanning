@@ -60,10 +60,18 @@ public class LiftedState {
 		}
 	}
 	
+	/**
+	 * Returns all predicates' names for which at least 
+	 * one condition occurs in the state.
+	 */
 	public Set<String> getOccurringPredicates() {
 		return conditionTree.keySet();
 	}
 	
+	/**
+	 * Returns all conditions in the state of the provided
+	 * predicate name.
+	 */
 	public List<Condition> getConditions(String p) {
 		if (!this.conditions.containsKey(p)) {
 			this.conditions.put(p, new ArrayList<>());
@@ -71,6 +79,10 @@ public class LiftedState {
 		return this.conditions.get(p);
 	}
 	
+	/**
+	 * Checks if a given *positive* condition is contained 
+	 * in the state. Checks equality conditions syntactically.
+	 */
 	public boolean holds(Condition condition) {
 		if (condition.getPredicate().getName().equals("=")) {
 			// Equality predicate

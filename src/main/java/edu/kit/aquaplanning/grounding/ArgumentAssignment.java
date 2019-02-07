@@ -5,6 +5,12 @@ import java.util.List;
 
 import edu.kit.aquaplanning.model.lifted.Argument;
 
+/**
+ * Represents a (partial or complete) assignment of arguments
+ * to a list of parameters of fixed size. The decision level
+ * of an instance indicates how many times some partial assignment
+ * has been incorporated into this assignment.
+ */
 public class ArgumentAssignment {
 
 	private Argument[] args;
@@ -47,6 +53,11 @@ public class ArgumentAssignment {
 		return decisionLevel;
 	}
 
+	/**
+	 * Attempts to merge this partial assignment with another assignment.
+	 * If the two assignments are compatible, the merge is returned.
+	 * Else, null is returned.
+	 */
 	public ArgumentAssignment mergeIfPossible(ArgumentAssignment a) {
 		
 		Argument[] assignment = this.args;
@@ -75,6 +86,10 @@ public class ArgumentAssignment {
 			return new ArgumentAssignment(match);
 	}
 	
+	/**
+	 * Only recomputes the hash code if something changed.
+	 * Else, uses the precomputed value.
+	 */
 	@Override
 	public int hashCode() {
 		if (hashCode == null) {

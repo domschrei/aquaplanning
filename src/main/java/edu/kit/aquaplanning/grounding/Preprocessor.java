@@ -144,6 +144,7 @@ public class Preprocessor {
 	 */
 	private AbstractCondition instantiateQuantifications(AbstractCondition abstractCondition) {
 		
+		// Recursively traverse the condition tree
 		return abstractCondition.traverse(cond -> {
 			
 			// Only apply some change for quantifications
@@ -165,9 +166,9 @@ public class Preprocessor {
 				// For each quantified variable, replace its occurrences 
 				// with all possible constants
 				List<List<Argument>> eligibleArgs = 
-				ArgumentCombination.getEligibleArguments(q.getVariables(), 
+				ArgumentCombinationUtils.getEligibleArguments(q.getVariables(), 
 						problem, problem.getConstants());
-				ArgumentCombination.iterator(eligibleArgs).forEachRemaining(args -> {
+				ArgumentCombinationUtils.iterator(eligibleArgs).forEachRemaining(args -> {
 					
 					AbstractCondition deq = innerCondition.getConditionBoundToArguments(
 							q.getVariables(), args);

@@ -17,27 +17,56 @@ import edu.kit.aquaplanning.model.lifted.Argument;
  */
 public class ArgumentNode {
 	
+	/**
+	 * Maps every argument to a unique ID.
+	 */
 	private Map<String, Integer> argumentIds;
+	/**
+	 * Maps argument IDs to corresponding child argument nodes.
+	 */
 	private Map<Integer, ArgumentNode> children;
-	private boolean holds;
 	
+	private boolean isLeafNode;
+	
+	/**
+	 * Creates an empty argument node. Requires a map 
+	 * containing an ID of each argument in the problem.
+	 */
 	public ArgumentNode(Map<String, Integer> argumentIds) {
 		this.argumentIds = argumentIds;
 		this.children = new HashMap<>();
 	}
 	
+	/**
+	 * Adds a "path" to the tree rooted at this node 
+	 * corresponding to the provided list of arguments.
+	 */
 	public void add(List<Argument> args) {
 		add(args, 0);
 	}
 	
+	/**
+	 * Decides whether the tree rooted at this node 
+	 * contains the provided "path" of arguments.
+	 */
 	public boolean contains(List<Argument> args) {
 		return contains(args, 0);
 	}
 	
+	/**
+	 * Adds a "path" to the tree rooted at this node 
+	 * corresponding to the provided list of arguments
+	 * beginning at the provided index.
+	 */
 	private void add(List<Argument> args, int argPos) {
 		if (argPos == args.size()) {
-			holds = true;
-		} else {				
+			// All arguments have been added;
+			// this node is a leaf
+			isLeafNode = true;
+		} else {
+			// Recurse on the child node which corresponds to the 
+			// argument at the first considered position (argPos),
+			// creating it if it does not exist yet
 			int argId = argumentIds.get(args.get(argPos).getName());
 			if (!children.containsKey(argId)) {
 				children.put(argId, new ArgumentNode(argumentIds));
@@ -46,14 +75,25 @@ public class ArgumentNode {
 		}
 	}
 	
+	/**
+	 * Decides whether the tree rooted at this node 
+	 * contains the provided "path" of arguments 
+	 * beginning at the provided position.
+	 */
 	private boolean contains(List<Argument> args, int argPos) {
-		if (argPos == args.size() || children.isEmpty()) {
-			return holds;
+		if (argPos == args.size()) {
+			// No arguments left to check;
+			// argument list is contained iff the node is a leaf
+			return isLeafNode;
 		} else {
+			// Check if the next argument is contained
 			String argName = args.get(argPos).getName();
 			int argId = argumentIds.getOrDefault(argName, -1);
-			if (!children.containsKey(argId))
+			if (!children.containsKey(argId)) {
+				// Dead end: argument path is not contained
 				return false;
+			}
+			// Recurse on the corresponding child
 			return children.get(argId).contains(args, argPos+1);
 		}
 	}
