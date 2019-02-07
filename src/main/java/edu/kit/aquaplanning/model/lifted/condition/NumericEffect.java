@@ -1,6 +1,10 @@
-package edu.kit.aquaplanning.model.lifted;
+package edu.kit.aquaplanning.model.lifted.condition;
 
 import java.util.List;
+
+import edu.kit.aquaplanning.model.lifted.Argument;
+import edu.kit.aquaplanning.model.lifted.Function;
+import edu.kit.aquaplanning.model.lifted.NumericExpression;
 
 public class NumericEffect extends AbstractCondition {
 

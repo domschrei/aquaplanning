@@ -1,6 +1,6 @@
 package edu.kit.aquaplanning.model.ground;
 
-import edu.kit.aquaplanning.model.lifted.AbstractCondition;
+import edu.kit.aquaplanning.model.lifted.condition.AbstractCondition;
 
 public class DerivedAtom {
 

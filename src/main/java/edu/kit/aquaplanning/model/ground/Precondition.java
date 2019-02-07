@@ -3,7 +3,7 @@ package edu.kit.aquaplanning.model.ground;
 import java.util.ArrayList;
 import java.util.List;
 
-import edu.kit.aquaplanning.model.lifted.NumericCondition.Comparator;
+import edu.kit.aquaplanning.model.lifted.condition.NumericCondition.Comparator;
 
 /**
  * Represents any kind of ground precondition of a certain action.

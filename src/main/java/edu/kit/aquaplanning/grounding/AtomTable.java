@@ -8,16 +8,17 @@ import java.util.Map;
 import edu.kit.aquaplanning.model.ground.Atom;
 import edu.kit.aquaplanning.model.ground.DerivedAtom;
 import edu.kit.aquaplanning.model.ground.NumericAtom;
-import edu.kit.aquaplanning.model.lifted.AbstractCondition;
 import edu.kit.aquaplanning.model.lifted.Argument;
 import edu.kit.aquaplanning.model.lifted.Axiom;
 import edu.kit.aquaplanning.model.lifted.Function;
 import edu.kit.aquaplanning.model.lifted.Operator;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.model.lifted.Predicate;
+import edu.kit.aquaplanning.model.lifted.condition.AbstractCondition;
 
 /**
- * 
+ * Produces and maintains information on atoms, 
+ * numeric atoms and derived atoms.
  */
 public class AtomTable {
 

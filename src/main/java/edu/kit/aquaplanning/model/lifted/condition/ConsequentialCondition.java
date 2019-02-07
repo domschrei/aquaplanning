@@ -1,7 +1,9 @@
-package edu.kit.aquaplanning.model.lifted;
+package edu.kit.aquaplanning.model.lifted.condition;
 
 import java.util.List;
 import java.util.function.Function;
+
+import edu.kit.aquaplanning.model.lifted.Argument;
 
 public class ConsequentialCondition extends AbstractCondition {
 

@@ -13,7 +13,7 @@ import edu.kit.aquaplanning.optimization.Clock;
 import edu.kit.aquaplanning.optimization.SimplePlanOptimizer;
 import edu.kit.aquaplanning.parsing.PlanParser;
 import edu.kit.aquaplanning.parsing.ProblemParser;
-import edu.kit.aquaplanning.validate.Validator;
+import edu.kit.aquaplanning.validation.Validator;
 import junit.framework.TestCase;
 
 public class TestPlanOptimizer extends TestCase {

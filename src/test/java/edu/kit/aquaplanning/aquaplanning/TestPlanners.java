@@ -18,8 +18,8 @@ import edu.kit.aquaplanning.planners.ForwardSearchPlanner;
 import edu.kit.aquaplanning.planners.HegemannsSatPlanner;
 import edu.kit.aquaplanning.planners.Planner;
 import edu.kit.aquaplanning.planners.SearchStrategy.Mode;
+import edu.kit.aquaplanning.validation.Validator;
 import edu.kit.aquaplanning.planners.SimpleSatPlanner;
-import edu.kit.aquaplanning.validate.Validator;
 import junit.framework.TestCase;
 
 public class TestPlanners extends TestCase {

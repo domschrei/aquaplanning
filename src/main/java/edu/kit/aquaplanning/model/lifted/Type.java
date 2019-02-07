@@ -3,6 +3,9 @@ package edu.kit.aquaplanning.model.lifted;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Instances of this class represent object types as defined in PDDL.
+ */
 public class Type {
 
 	private String name;

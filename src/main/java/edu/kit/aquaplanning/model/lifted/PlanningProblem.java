@@ -4,6 +4,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
+import edu.kit.aquaplanning.model.lifted.condition.AbstractCondition;
+import edu.kit.aquaplanning.model.lifted.condition.Condition;
+
 public class PlanningProblem {
 
 	private String domainName;

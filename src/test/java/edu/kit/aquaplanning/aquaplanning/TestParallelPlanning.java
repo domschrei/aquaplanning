@@ -16,7 +16,7 @@ import edu.kit.aquaplanning.planners.Planner;
 import edu.kit.aquaplanning.planners.SimpleParallelPlanner;
 import edu.kit.aquaplanning.planners.SimpleSatPlanner;
 import edu.kit.aquaplanning.planners.SearchStrategy.Mode;
-import edu.kit.aquaplanning.validate.Validator;
+import edu.kit.aquaplanning.validation.Validator;
 import junit.framework.TestCase;
 
 public class TestParallelPlanning extends TestCase {

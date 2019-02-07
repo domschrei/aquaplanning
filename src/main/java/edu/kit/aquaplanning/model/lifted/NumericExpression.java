@@ -3,6 +3,10 @@ package edu.kit.aquaplanning.model.lifted;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Represents a numeric expression, i.e. something that can be
+ * resolved to a numeric quantity.
+ */
 public class NumericExpression {
 
 	public static final float UNDEFINED = Float.NaN;

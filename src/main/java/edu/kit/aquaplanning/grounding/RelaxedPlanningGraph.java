@@ -5,14 +5,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import edu.kit.aquaplanning.model.lifted.AbstractCondition;
 import edu.kit.aquaplanning.model.lifted.Argument;
-import edu.kit.aquaplanning.model.lifted.Condition;
-import edu.kit.aquaplanning.model.lifted.ConditionSet;
-import edu.kit.aquaplanning.model.lifted.ConsequentialCondition;
 import edu.kit.aquaplanning.model.lifted.Operator;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
-import edu.kit.aquaplanning.model.lifted.AbstractCondition.ConditionType;
+import edu.kit.aquaplanning.model.lifted.condition.AbstractCondition;
+import edu.kit.aquaplanning.model.lifted.condition.Condition;
+import edu.kit.aquaplanning.model.lifted.condition.ConditionSet;
+import edu.kit.aquaplanning.model.lifted.condition.ConsequentialCondition;
+import edu.kit.aquaplanning.model.lifted.condition.AbstractCondition.ConditionType;
 import edu.kit.aquaplanning.util.Logger;
 
 /**

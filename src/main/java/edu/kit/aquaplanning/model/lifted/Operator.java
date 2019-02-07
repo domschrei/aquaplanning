@@ -3,6 +3,8 @@ package edu.kit.aquaplanning.model.lifted;
 import java.util.ArrayList;
 import java.util.List;
 
+import edu.kit.aquaplanning.model.lifted.condition.AbstractCondition;
+
 public class Operator {
 
 	private String name;

@@ -17,17 +17,8 @@ import edu.kit.aquaplanning.model.ground.Effect.EffectType;
 import edu.kit.aquaplanning.model.ground.Precondition;
 import edu.kit.aquaplanning.model.ground.Precondition.PreconditionType;
 import edu.kit.aquaplanning.model.ground.State;
-import edu.kit.aquaplanning.model.lifted.AbstractCondition;
 import edu.kit.aquaplanning.model.lifted.Argument;
-import edu.kit.aquaplanning.model.lifted.Condition;
-import edu.kit.aquaplanning.model.lifted.ConditionSet;
-import edu.kit.aquaplanning.model.lifted.ConsequentialCondition;
 import edu.kit.aquaplanning.model.lifted.Function;
-import edu.kit.aquaplanning.model.lifted.Implication;
-import edu.kit.aquaplanning.model.lifted.Negation;
-import edu.kit.aquaplanning.model.lifted.NumericCondition;
-import edu.kit.aquaplanning.model.lifted.NumericEffect;
-import edu.kit.aquaplanning.model.lifted.NumericEffect.Type;
 import edu.kit.aquaplanning.model.lifted.NumericExpression;
 import edu.kit.aquaplanning.model.lifted.Operator;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
@@ -35,8 +26,17 @@ import edu.kit.aquaplanning.model.lifted.Predicate;
 import edu.kit.aquaplanning.util.Logger;
 import edu.kit.aquaplanning.util.Pair;
 import edu.kit.aquaplanning.util.Triple;
-import edu.kit.aquaplanning.model.lifted.AbstractCondition.ConditionType;
 import edu.kit.aquaplanning.model.lifted.NumericExpression.TermType;
+import edu.kit.aquaplanning.model.lifted.condition.AbstractCondition;
+import edu.kit.aquaplanning.model.lifted.condition.Condition;
+import edu.kit.aquaplanning.model.lifted.condition.ConditionSet;
+import edu.kit.aquaplanning.model.lifted.condition.ConsequentialCondition;
+import edu.kit.aquaplanning.model.lifted.condition.Implication;
+import edu.kit.aquaplanning.model.lifted.condition.Negation;
+import edu.kit.aquaplanning.model.lifted.condition.NumericCondition;
+import edu.kit.aquaplanning.model.lifted.condition.NumericEffect;
+import edu.kit.aquaplanning.model.lifted.condition.AbstractCondition.ConditionType;
+import edu.kit.aquaplanning.model.lifted.condition.NumericEffect.Type;
 
 /**
  * Abstract base class which all grounders should inherit from.

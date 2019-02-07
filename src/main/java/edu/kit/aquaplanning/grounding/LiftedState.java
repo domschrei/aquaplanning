@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.Set;
 
 import edu.kit.aquaplanning.model.lifted.Argument;
-import edu.kit.aquaplanning.model.lifted.Condition;
+import edu.kit.aquaplanning.model.lifted.condition.Condition;
 
 /**
  * Static (immutable) structure for a certain lifted state,

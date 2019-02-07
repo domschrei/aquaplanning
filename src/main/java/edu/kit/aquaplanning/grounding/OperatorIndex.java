@@ -8,13 +8,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
-import edu.kit.aquaplanning.model.lifted.AbstractCondition;
 import edu.kit.aquaplanning.model.lifted.Argument;
-import edu.kit.aquaplanning.model.lifted.Condition;
-import edu.kit.aquaplanning.model.lifted.ConditionSet;
-import edu.kit.aquaplanning.model.lifted.Negation;
 import edu.kit.aquaplanning.model.lifted.Operator;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
+import edu.kit.aquaplanning.model.lifted.condition.AbstractCondition;
+import edu.kit.aquaplanning.model.lifted.condition.Condition;
+import edu.kit.aquaplanning.model.lifted.condition.ConditionSet;
+import edu.kit.aquaplanning.model.lifted.condition.Negation;
 
 /**
  * Lookup structure for applicable actions given a state in a lifted setting.

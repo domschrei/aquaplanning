@@ -1,4 +1,4 @@
-package edu.kit.aquaplanning.validate;
+package edu.kit.aquaplanning.validation;
 
 import edu.kit.aquaplanning.model.ground.Action;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;

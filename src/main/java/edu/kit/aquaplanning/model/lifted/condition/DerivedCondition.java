@@ -1,6 +1,9 @@
-package edu.kit.aquaplanning.model.lifted;
+package edu.kit.aquaplanning.model.lifted.condition;
 
 import java.util.List;
+
+import edu.kit.aquaplanning.model.lifted.Argument;
+import edu.kit.aquaplanning.model.lifted.DerivedPredicate;
 
 public class DerivedCondition extends Condition {
 

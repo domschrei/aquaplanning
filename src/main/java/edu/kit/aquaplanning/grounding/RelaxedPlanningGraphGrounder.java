@@ -19,9 +19,9 @@ import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.model.lifted.Predicate;
 import edu.kit.aquaplanning.util.Logger;
 import edu.kit.aquaplanning.util.Pair;
-import edu.kit.aquaplanning.model.lifted.AbstractCondition.ConditionType;
-import edu.kit.aquaplanning.model.lifted.Condition;
-import edu.kit.aquaplanning.model.lifted.ConditionSet;
+import edu.kit.aquaplanning.model.lifted.condition.Condition;
+import edu.kit.aquaplanning.model.lifted.condition.ConditionSet;
+import edu.kit.aquaplanning.model.lifted.condition.AbstractCondition.ConditionType;
 
 /**
  * Grounder doing a reachability analysis through some 
