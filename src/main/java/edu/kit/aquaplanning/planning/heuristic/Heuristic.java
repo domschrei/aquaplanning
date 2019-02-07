@@ -1,8 +1,8 @@
-package edu.kit.aquaplanning.planners.heuristic;
+package edu.kit.aquaplanning.planning.heuristic;
 
 import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
-import edu.kit.aquaplanning.planners.SearchNode;
+import edu.kit.aquaplanning.planning.SearchNode;
 
 /**
  * A heuristic approximates the minimum distance from a given state

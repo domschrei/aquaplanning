@@ -1,4 +1,4 @@
-package edu.kit.aquaplanning.planners;
+package edu.kit.aquaplanning.planning;
 
 import edu.kit.aquaplanning.model.ground.Action;
 import edu.kit.aquaplanning.model.ground.State;

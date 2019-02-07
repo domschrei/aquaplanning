@@ -11,11 +11,11 @@ import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.parsing.ProblemParser;
-import edu.kit.aquaplanning.planners.ForwardSearchPlanner;
-import edu.kit.aquaplanning.planners.Planner;
-import edu.kit.aquaplanning.planners.SimpleParallelPlanner;
-import edu.kit.aquaplanning.planners.SimpleSatPlanner;
-import edu.kit.aquaplanning.planners.SearchStrategy.Mode;
+import edu.kit.aquaplanning.planning.ForwardSearchPlanner;
+import edu.kit.aquaplanning.planning.Planner;
+import edu.kit.aquaplanning.planning.SimpleParallelPlanner;
+import edu.kit.aquaplanning.planning.SimpleSatPlanner;
+import edu.kit.aquaplanning.planning.SearchStrategy.Mode;
 import edu.kit.aquaplanning.validation.Validator;
 import junit.framework.TestCase;
 

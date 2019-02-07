@@ -12,7 +12,7 @@ import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.optimization.Clock;
 import edu.kit.aquaplanning.optimization.SimplePlanOptimizer;
 import edu.kit.aquaplanning.parsing.ProblemParser;
-import edu.kit.aquaplanning.planners.Planner;
+import edu.kit.aquaplanning.planning.Planner;
 import edu.kit.aquaplanning.util.Logger;
 import edu.kit.aquaplanning.validation.Validator;
 import picocli.CommandLine;

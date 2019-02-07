@@ -1,5 +1,5 @@
 
-package edu.kit.aquaplanning.planners.heuristic;
+package edu.kit.aquaplanning.planning.heuristic;
 
 import java.util.List;
 import java.util.ArrayDeque;
@@ -9,9 +9,9 @@ import java.util.Collections;
 import edu.kit.aquaplanning.model.ground.Atom;
 import edu.kit.aquaplanning.model.ground.Action;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
-import edu.kit.aquaplanning.planners.SearchNode;
 import edu.kit.aquaplanning.model.ground.State;
-import edu.kit.aquaplanning.planners.GroundRelaxedPlanningGraph;
+import edu.kit.aquaplanning.planning.GroundRelaxedPlanningGraph;
+import edu.kit.aquaplanning.planning.SearchNode;
 import edu.kit.aquaplanning.model.ground.AtomSet;
 
 public class WilliamsHeuristic extends Heuristic {

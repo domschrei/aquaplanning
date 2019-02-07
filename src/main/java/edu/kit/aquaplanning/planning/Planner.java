@@ -1,4 +1,4 @@
-package edu.kit.aquaplanning.planners;
+package edu.kit.aquaplanning.planning;
 
 import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;

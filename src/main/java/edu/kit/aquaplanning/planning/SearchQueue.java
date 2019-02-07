@@ -1,4 +1,4 @@
-package edu.kit.aquaplanning.planners;
+package edu.kit.aquaplanning.planning;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -10,8 +10,8 @@ import java.util.Random;
 import java.util.Set;
 import java.util.Stack;
 
-import edu.kit.aquaplanning.planners.SearchStrategy.Mode;
-import edu.kit.aquaplanning.planners.heuristic.Heuristic;
+import edu.kit.aquaplanning.planning.SearchStrategy.Mode;
+import edu.kit.aquaplanning.planning.heuristic.Heuristic;
 
 /**
  * Maintains a structure of search nodes. Nodes can be added and polled

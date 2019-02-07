@@ -1,4 +1,4 @@
-package edu.kit.aquaplanning.planners;
+package edu.kit.aquaplanning.planning;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -7,7 +7,7 @@ import java.util.Random;
 import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
-import edu.kit.aquaplanning.planners.SearchStrategy.Mode;
+import edu.kit.aquaplanning.planning.SearchStrategy.Mode;
 
 /**
  * A trivial portfolio planner which launches a number of forward search planners,

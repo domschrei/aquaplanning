@@ -1,4 +1,4 @@
-package edu.kit.aquaplanning.planners;
+package edu.kit.aquaplanning.planning;
 
 import java.util.ArrayList;
 import java.util.Collection;

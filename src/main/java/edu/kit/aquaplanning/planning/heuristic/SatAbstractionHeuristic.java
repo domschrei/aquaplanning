@@ -1,10 +1,10 @@
-package edu.kit.aquaplanning.planners.heuristic;
+package edu.kit.aquaplanning.planning.heuristic;
 
 import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
-import edu.kit.aquaplanning.planners.SearchNode;
-import edu.kit.aquaplanning.planners.SimpleSatPlanner;
+import edu.kit.aquaplanning.planning.SearchNode;
+import edu.kit.aquaplanning.planning.SimpleSatPlanner;
 
 public class SatAbstractionHeuristic extends Heuristic {
 	

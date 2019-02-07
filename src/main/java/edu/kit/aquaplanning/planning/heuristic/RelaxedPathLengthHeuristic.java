@@ -1,9 +1,9 @@
-package edu.kit.aquaplanning.planners.heuristic;
+package edu.kit.aquaplanning.planning.heuristic;
 
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.State;
-import edu.kit.aquaplanning.planners.GroundRelaxedPlanningGraph;
-import edu.kit.aquaplanning.planners.SearchNode;
+import edu.kit.aquaplanning.planning.GroundRelaxedPlanningGraph;
+import edu.kit.aquaplanning.planning.SearchNode;
 
 /**
  * An admissible heuristic which behaves like a simplified version of the max-cost

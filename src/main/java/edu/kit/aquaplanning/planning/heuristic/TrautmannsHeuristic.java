@@ -1,4 +1,4 @@
-package edu.kit.aquaplanning.planners.heuristic;
+package edu.kit.aquaplanning.planning.heuristic;
 
 import java.util.Iterator;
 import java.util.List;
@@ -11,8 +11,8 @@ import edu.kit.aquaplanning.model.ground.Atom;
 import edu.kit.aquaplanning.model.ground.ConditionalEffect;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.State;
-import edu.kit.aquaplanning.planners.GroundRelaxedPlanningGraph;
-import edu.kit.aquaplanning.planners.SearchNode;
+import edu.kit.aquaplanning.planning.GroundRelaxedPlanningGraph;
+import edu.kit.aquaplanning.planning.SearchNode;
 
 /**
  * Fast-forward heuristic using a greedy planning strategy

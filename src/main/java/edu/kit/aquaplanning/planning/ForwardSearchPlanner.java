@@ -1,4 +1,4 @@
-package edu.kit.aquaplanning.planners;
+package edu.kit.aquaplanning.planning;
 
 import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.model.ground.Action;
@@ -6,7 +6,7 @@ import edu.kit.aquaplanning.model.ground.Goal;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
 import edu.kit.aquaplanning.model.ground.State;
-import edu.kit.aquaplanning.planners.heuristic.Heuristic;
+import edu.kit.aquaplanning.planning.heuristic.Heuristic;
 import edu.kit.aquaplanning.util.Logger;
 
 /**

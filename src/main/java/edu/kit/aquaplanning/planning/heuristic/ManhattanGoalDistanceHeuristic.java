@@ -1,11 +1,11 @@
-package edu.kit.aquaplanning.planners.heuristic;
+package edu.kit.aquaplanning.planning.heuristic;
 
 import java.util.Random;
 
 import edu.kit.aquaplanning.model.ground.Atom;
 import edu.kit.aquaplanning.model.ground.Goal;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
-import edu.kit.aquaplanning.planners.SearchNode;
+import edu.kit.aquaplanning.planning.SearchNode;
 
 /**
  * Simple and greedy heuristic which maps a state to the amount of goals

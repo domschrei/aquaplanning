@@ -1,13 +1,13 @@
-package edu.kit.aquaplanning.planners.heuristic;
+package edu.kit.aquaplanning.planning.heuristic;
 
 import java.util.List;
 import java.util.ArrayList;
 import edu.kit.aquaplanning.model.ground.Action;
 import edu.kit.aquaplanning.model.ground.Plan;
 import edu.kit.aquaplanning.model.ground.State;
+import edu.kit.aquaplanning.planning.GroundRelaxedPlanningGraph;
+import edu.kit.aquaplanning.planning.SearchNode;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
-import edu.kit.aquaplanning.planners.GroundRelaxedPlanningGraph;
-import edu.kit.aquaplanning.planners.SearchNode;
 
 /**
  * Linear action traversal Fast-forward heuristic

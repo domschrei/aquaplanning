@@ -1,6 +1,6 @@
 package edu.kit.aquaplanning;
 
-import edu.kit.aquaplanning.planners.SearchStrategy;
+import edu.kit.aquaplanning.planning.SearchStrategy;
 import edu.kit.aquaplanning.util.Logger;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
