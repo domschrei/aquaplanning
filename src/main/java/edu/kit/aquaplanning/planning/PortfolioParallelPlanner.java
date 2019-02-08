@@ -5,21 +5,23 @@ import java.util.List;
 import java.util.Random;
 
 import edu.kit.aquaplanning.Configuration;
+import edu.kit.aquaplanning.Configuration.HeuristicType;
+import edu.kit.aquaplanning.Configuration.PlannerType;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
 import edu.kit.aquaplanning.planning.SearchStrategy.Mode;
+import edu.kit.aquaplanning.util.Logger;
 
 /**
- * A trivial portfolio planner which launches a number of forward search planners,
- * each with an uninformed, random search strategy and a different seed.
+ * A simple portfolio planner which launches a number of different planners in parallel.
  */
-public class SimpleParallelPlanner extends Planner {
+public class PortfolioParallelPlanner extends Planner {
 
 	private int numThreads;
 	private List<Thread> threads;
 	private Plan plan;
 	
-	public SimpleParallelPlanner(Configuration config) {
+	public PortfolioParallelPlanner(Configuration config) {
 		super(config);
 		numThreads = config.numThreads;
 	}
@@ -52,18 +54,59 @@ public class SimpleParallelPlanner extends Planner {
 		
 		for (int i = 1; i <= numThreads; i++) {
 			
-			// Create a new, randomized planner
+			// Default configuration with random seed
 			Configuration config = this.config.copy();
-			config.searchStrategy = Mode.randomChoice;	
 			config.seed = random.nextInt();
-			Planner planner = new ForwardSearchPlanner(config);
+			config.plannerType = PlannerType.forwardSSS;
+			config.searchStrategy = Mode.randomChoice;
+			
+			// Some more diversification
+			switch (i) {
+			case 1:
+				config.plannerType = PlannerType.forwardSSS;
+				config.searchStrategy = Mode.bestFirst;
+				config.heuristic = HeuristicType.ffWilliams;
+				break;
+			case 2:
+				config.plannerType = PlannerType.forwardSSS;
+				config.searchStrategy = Mode.bestFirst;
+				config.heuristic = HeuristicType.ffTrautmann;
+				break;
+			case 3:
+				config.plannerType = PlannerType.forwardSSS;
+				config.searchStrategy = Mode.bestFirst;
+				config.heuristic = HeuristicType.ffFroleyks;
+				break;
+			case 4:
+				config.plannerType = PlannerType.forwardSSS;
+				config.searchStrategy = Mode.bestFirst;
+				config.heuristic = HeuristicType.manhattanGoalDistance;
+				break;
+			case 5:
+				config.plannerType = PlannerType.hegemannSat;
+				break;
+			case 6:
+				config.plannerType = PlannerType.forwardSSS;
+				config.searchStrategy = Mode.depthFirst;
+				break;
+			case 7:
+				config.plannerType = PlannerType.forwardSSS;
+				config.searchStrategy = Mode.breadthFirst;
+				break;
+			}
+			
+			// Create planner
+			Planner planner = Planner.getPlanner(config);
 			
 			// Create a thread running the planner
+			final int threadNum = i;
 			Thread thread = new Thread(new Runnable() {
 				@Override
 				public void run() {
 					Plan plan = planner.findPlan(problem);
-					if (plan != null) {						
+					if (plan != null) {
+						Logger.log(Logger.INFO, "Planner \"" + planner 
+								+ "\" (index " + threadNum + ") found a plan.");
 						onPlanFound(plan);
 					}
 				}

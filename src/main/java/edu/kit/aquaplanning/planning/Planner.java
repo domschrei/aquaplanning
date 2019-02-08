@@ -75,8 +75,13 @@ public abstract class Planner {
 		case parallel:
 			Logger.log(Logger.INFO, "Doing parallel planning with up to " 
 						+ config.numThreads + " threads.");
-			return new SimpleParallelPlanner(config);
+			return new PortfolioParallelPlanner(config);
 		}
 		return null;
+	}
+	
+	@Override
+	public String toString() {
+		return getClass().toString();
 	}
 }

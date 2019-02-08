@@ -13,7 +13,7 @@ import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.parsing.ProblemParser;
 import edu.kit.aquaplanning.planning.ForwardSearchPlanner;
 import edu.kit.aquaplanning.planning.Planner;
-import edu.kit.aquaplanning.planning.SimpleParallelPlanner;
+import edu.kit.aquaplanning.planning.PortfolioParallelPlanner;
 import edu.kit.aquaplanning.planning.SimpleSatPlanner;
 import edu.kit.aquaplanning.planning.SearchStrategy.Mode;
 import edu.kit.aquaplanning.validation.Validator;
@@ -43,7 +43,7 @@ public class TestParallelPlanning extends TestCase {
 		Configuration config = new Configuration();
 		config.numThreads = 8;
 		config.searchTimeSeconds = 3;
-		SimpleParallelPlanner spp = new SimpleParallelPlanner(config);
+		PortfolioParallelPlanner spp = new PortfolioParallelPlanner(config);
 		testOnAll(spp);
 	}
 

@@ -5,6 +5,7 @@ import java.util.*;
 import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.model.ground.*;
 import edu.kit.aquaplanning.sat.SatSolver;
+import edu.kit.aquaplanning.util.Logger;
 
 public class HegemannsSatPlanner extends Planner {
 
@@ -122,7 +123,7 @@ public class HegemannsSatPlanner extends Planner {
         // Find the plan
         int step = 0;
         while (true) {
-            System.out.println("Step " + step + " - " + (int)Math.ceil(timeLimit) + " seconds limit");
+            Logger.log(Logger.INFO_V, "Step " + step + " - " + (int)Math.ceil(timeLimit) + " seconds limit");
 
             for (int i = 0; i < skipLayers; i++) {
                 addRecurrentClauses(solver, step);
