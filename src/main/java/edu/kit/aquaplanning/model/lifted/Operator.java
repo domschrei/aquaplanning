@@ -62,6 +62,10 @@ public class Operator {
 		return cost;
 	}
 	
+	public void removeConstantArguments() {
+		arguments.removeIf(arg -> arg.isConstant());
+	}
+	
 	/**
 	 * Creates a copy of this operator where its arguments have been
 	 * assigned the provided list of constants (in that order).

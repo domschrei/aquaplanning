@@ -35,6 +35,9 @@ public class Configuration {
 	@Option(paramLabel = "file", names = "-o", description = "Output plan to file")
 	public String planOutputFile;
 	
+	@Option(paramLabel = "satFile", names = "-SAT", description = "Output SAT formulae to file(s)")
+	public String satFormulaFile;
+	
 	/* Computational bounds */
 	
 	@Option(paramLabel = "maxIterations", names = {"-m", "--max-iterations"}, 

@@ -5,6 +5,7 @@ import java.util.*;
 import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.model.ground.*;
 import edu.kit.aquaplanning.sat.SatSolver;
+import edu.kit.aquaplanning.sat.SimpleSatPrinter;
 import edu.kit.aquaplanning.util.Logger;
 
 public class HegemannsSatPlanner extends Planner {
@@ -113,7 +114,12 @@ public class HegemannsSatPlanner extends Planner {
         // Calculate supporting actions for atoms
         initializeSupports(problem);
 
-        SatSolver solver = new SatSolver();
+        SatSolver solver;
+        if (config.satFormulaFile != null) {
+        	solver = new SatSolver(new SimpleSatPrinter(config.satFormulaFile));
+        } else {
+        	solver = new SatSolver();
+        }
 
         // Add the initial state unit clauses
         addInitialStateClauses(problem, solver);

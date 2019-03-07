@@ -13,9 +13,17 @@ public class SatSolver {
 	protected ISolver solver;
 	protected int[] model;
 	
+	private SimpleSatPrinter printer;
+	
 	public SatSolver() {
 		solver = SolverFactory.newDefault();
 		model = null;
+	}
+	
+	public SatSolver(SimpleSatPrinter printer) {
+		solver = SolverFactory.newDefault();
+		model = null;
+		this.printer = printer;
 	}
 
 	/**
@@ -28,6 +36,8 @@ public class SatSolver {
 	public boolean addClause(int[] clause) {
 		try {
 			solver.addClause(new VecInt(clause));
+			if (printer != null)
+				printer.addClause(new VecInt(clause));
 		} catch (ContradictionException e) {
 			return false;
 		}
@@ -51,6 +61,8 @@ public class SatSolver {
 	 */
 	public Boolean isSatisfiable(int[] assumptions) {
 		try {
+			if (printer != null)
+				printer.addAssumptionsAndPrint(new VecInt(assumptions));
 			int[] s4jModel = solver.findModel(new VecInt(assumptions));
 			if (s4jModel == null) {
 				model = null;
@@ -75,6 +87,8 @@ public class SatSolver {
 	 * @return
 	 */
 	public Boolean isSatisfiable() {
+		if (printer != null)
+			printer.addAssumptionsAndPrint(new VecInt());
 		return isSatisfiable(new int[] {});
 	}
 	
