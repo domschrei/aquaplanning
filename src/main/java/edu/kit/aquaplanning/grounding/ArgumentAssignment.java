@@ -102,6 +102,11 @@ public class ArgumentAssignment {
 	}
 
 	@Override
+	public String toString() {
+		return args.toString();
+	}
+	
+	@Override
 	public boolean equals(Object obj) {
 		if (this == obj)
 			return true;

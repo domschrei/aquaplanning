@@ -13,6 +13,7 @@ public class PddlRequirement {
 	public static final String EXISTENTIAL_PRECONDITIONS = "existential-preconditions";
 	public static final String DISJUNCTIVE_PRECONDITIONS = "disjunctive-preconditions";
 	public static final String DERIVED_PREDICATES = ":derived-predicates";
+	public static final String HTN = ":htn";
 
 	// composite requirements
 	public static final String QUANTIFIED_PRECONDITIONS = "quantified-preconditions";
@@ -25,7 +26,7 @@ public class PddlRequirement {
 	// supported requirements
 	public static final String[] ALL_SUPPORTED = {STRIPS, TYPING, NEGATIVE_PRECONDS, CONDITIONAL_EFFECTS, 
 			EQUALITY, ACTION_COSTS, UNIVERSAL_PRECONDS, EXISTENTIAL_PRECONDITIONS, DISJUNCTIVE_PRECONDITIONS, 
-			QUANTIFIED_PRECONDITIONS, ADL, DERIVED_PREDICATES};
+			QUANTIFIED_PRECONDITIONS, ADL, DERIVED_PREDICATES, HTN};
 	
 	public static boolean isSupported(String requireKey) {
 		for (String supported : ALL_SUPPORTED) {

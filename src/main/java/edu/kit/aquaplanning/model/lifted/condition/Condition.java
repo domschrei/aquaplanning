@@ -118,6 +118,7 @@ public class Condition extends AbstractCondition {
 			out += predicate.getName() + "( ";
 		}
 		for (Argument arg : arguments) {
+			if (arg == null) return null;
 			out += arg.getName() + " ";
 		}
 		out += ")";

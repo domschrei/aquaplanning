@@ -53,6 +53,10 @@ public class ArgumentNode {
 		return contains(args, 0);
 	}
 	
+	public boolean containsConsistentArgs(List<Argument> args) {
+		return containsConsistentArgs(args, 0);
+	}
+	
 	/**
 	 * Adds a "path" to the tree rooted at this node 
 	 * corresponding to the provided list of arguments
@@ -95,6 +99,29 @@ public class ArgumentNode {
 			}
 			// Recurse on the corresponding child
 			return children.get(argId).contains(args, argPos+1);
+		}
+	}
+	
+	/**
+	 * Decides whether the tree rooted at this node 
+	 * contains the provided "path" of arguments 
+	 * beginning at the provided position.
+	 */
+	private boolean containsConsistentArgs(List<Argument> args, int argPos) {
+		if (argPos == args.size()) {
+			// No arguments left to check;
+			// argument list is contained iff the node is a leaf
+			return isLeafNode;
+		} else {
+			// Check if the next argument is contained
+			String argName = args.get(argPos).getName();
+			int argId = argumentIds.getOrDefault(argName, -1);			
+			if (argId < 0 || children.containsKey(argId)) {
+				// Recurse on the corresponding child
+				return children.get(argId).contains(args, argPos+1);
+			}
+			// Dead end: argument path is not contained
+			return false;
 		}
 	}
 }

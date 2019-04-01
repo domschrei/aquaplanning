@@ -29,6 +29,7 @@ public class SatSolver {
 		try {
 			solver.addClause(new VecInt(clause));
 		} catch (ContradictionException e) {
+			e.printStackTrace();
 			return false;
 		}
 		return true;

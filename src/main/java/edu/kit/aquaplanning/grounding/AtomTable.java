@@ -31,6 +31,8 @@ public class AtomTable {
 	private Map<String, NumericAtom> numericAtoms;
 	private Map<Integer, String> numericAtomNames;
 	
+	private boolean consolidated = false;
+	
 	public AtomTable() {
 		atoms = new HashMap<>();
 		atomNames = new HashMap<>();
@@ -42,6 +44,10 @@ public class AtomTable {
 	
 	public void setProblem(PlanningProblem problem) {
 		this.problem = problem;
+	}
+	
+	public void consolidate() {
+		consolidated = true;
 	}
 	
 	/**
@@ -60,6 +66,9 @@ public class AtomTable {
 		String atomName = getAtomName(p, constants);
 		// Does the action already exists?
 		if (!atoms.containsKey(atomName)) {
+			if (consolidated) {
+				return null;
+			}
 			// -- no: create new atom
 			int atomId = atoms.size();
 			atoms.put(atomName, new Atom(atomId, atomName, true));
@@ -88,6 +97,9 @@ public class AtomTable {
 		// Does the action already exists?
 		if (!derivedAtoms.containsKey(atomName)) {
 			// -- no: create new atom
+			if (consolidated) {
+				return null;
+			}
 			Axiom axiom = problem.getDerivedPredicates().get(p.getName());
 			int atomId = - (atoms.size() + derivedAtoms.size());
 			AbstractCondition cond = axiom.getCondition().getConditionBoundToArguments(
@@ -103,6 +115,9 @@ public class AtomTable {
 		
 		String atomName = getAtomName(f);
 		if (!numericAtoms.containsKey(atomName)) {
+			if (consolidated) {
+				return null;
+			}
 			int atomId = numericAtoms.size();
 			NumericAtom atom = new NumericAtom(atomId, atomName, Float.NaN);
 			numericAtoms.put(atomName, atom);

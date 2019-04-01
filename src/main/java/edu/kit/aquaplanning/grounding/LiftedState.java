@@ -19,31 +19,38 @@ public class LiftedState {
 	 * Maps a predicate name to a flat list of all conditions
 	 * in the state with that predicate name.
 	 */
-	private Map<String, List<Condition>> conditions;
+	private Map<String, List<Condition>> conditionsPos;
+	private Map<String, List<Condition>> conditionsNeg;
 	/**
 	 * Maps a predicate name to a set of all argument combinations
 	 * which occur in the state with that predicate.
 	 */
-	private Map<String, ArgumentNode> conditionTree;
+	private Map<String, ArgumentNode> conditionTreePos;
+	private Map<String, ArgumentNode> conditionTreeNeg;
 	/**
 	 * Maps each problem constant to a unique positive integer.
 	 */
 	private Map<String, Integer> argumentIds;
 	
 	public LiftedState(Set<Condition> conditions) {
-		this.conditions = new HashMap<>();
-		this.conditionTree = new HashMap<>();
+		
+		this.conditionsPos = new HashMap<>();
+		this.conditionsNeg = new HashMap<>();
+		this.conditionTreePos = new HashMap<>();
+		this.conditionTreeNeg = new HashMap<>();
 		this.argumentIds = new HashMap<>();
 		
 		int argId = 1;
 		for (Condition c : conditions) {
+			Map<String, List<Condition>> stateConditions = c.isNegated() ? conditionsNeg : conditionsPos;
+			Map<String, ArgumentNode> conditionTree = c.isNegated() ? conditionTreeNeg : conditionTreePos;
 			
 			// Add condition to correct flat conditions list 
 			String predicateName = c.getPredicate().getName();
-			if (!this.conditions.containsKey(predicateName)) {
-				this.conditions.put(predicateName, new ArrayList<>());
+			if (!stateConditions.containsKey(predicateName)) {
+				stateConditions.put(predicateName, new ArrayList<>());
 			}
-			this.conditions.get(predicateName).add(c);
+			stateConditions.get(predicateName).add(c);
 			
 			// Set ID of each argument
 			for (Argument arg : c.getArguments()) {
@@ -53,10 +60,10 @@ public class LiftedState {
 			}
 			
 			// Add condition arguments to correct set structure
-			if (!this.conditionTree.containsKey(predicateName)) {
-				this.conditionTree.put(predicateName, new ArgumentNode(argumentIds));
+			if (!conditionTree.containsKey(predicateName)) {
+				conditionTree.put(predicateName, new ArgumentNode(argumentIds));
 			}
-			this.conditionTree.get(predicateName).add(c.getArguments());
+			conditionTree.get(predicateName).add(c.getArguments());
 		}
 	}
 	
@@ -64,19 +71,20 @@ public class LiftedState {
 	 * Returns all predicates' names for which at least 
 	 * one condition occurs in the state.
 	 */
-	public Set<String> getOccurringPredicates() {
-		return conditionTree.keySet();
+	public Set<String> getOccurringPredicates(boolean negated) {
+		return (negated ? conditionTreeNeg.keySet() : conditionTreePos.keySet());
 	}
 	
 	/**
 	 * Returns all conditions in the state of the provided
 	 * predicate name.
 	 */
-	public List<Condition> getConditions(String p) {
-		if (!this.conditions.containsKey(p)) {
-			this.conditions.put(p, new ArrayList<>());
+	public List<Condition> getConditions(String p, boolean negated) {
+		Map<String, List<Condition>> conditions = negated ? conditionsNeg : conditionsPos;
+		if (!conditions.containsKey(p)) {
+			conditions.put(p, new ArrayList<>());
 		}
-		return this.conditions.get(p);
+		return conditions.get(p);
 	}
 	
 	/**
@@ -88,18 +96,35 @@ public class LiftedState {
 			// Equality predicate
 			String arg1 = condition.getArguments().get(0).getName();
 			String arg2 = condition.getArguments().get(1).getName();
-			return arg1.equals(arg2);
+			return condition.isNegated() != arg1.equals(arg2);
 		}
 		// Normal predicate
-		return conditionTree.getOrDefault(condition.getPredicate().getName(), new ArgumentNode(argumentIds))
+		
+		if (condition.isNegated()) {
+			// Negative condition
+			boolean contained = conditionTreeNeg.getOrDefault(condition.getPredicate().getName(), new ArgumentNode(argumentIds))
+					.contains(condition.getArguments());
+			if (contained) {
+				return true;
+			} else {
+				// If neither tree contains the condition, a negative condition is assumed to hold
+				return !conditionTreePos.getOrDefault(condition.getPredicate().getName(), new ArgumentNode(argumentIds))
+						.contains(condition.getArguments());
+			}
+		}
+		// Positive condition
+		return conditionTreePos.getOrDefault(condition.getPredicate().getName(), new ArgumentNode(argumentIds))
 				.contains(condition.getArguments());
 	}
 	
 	@Override
 	public String toString() {
 		String out = "";
-		for (List<Condition> conds : conditions.values()) {
+		for (List<Condition> conds : conditionsPos.values()) {
 			out += conds.toString();
+		}
+		for (List<Condition> conds : conditionsNeg.values()) {
+			out += "¬" + conds.toString();
 		}
 		return out;
 	}

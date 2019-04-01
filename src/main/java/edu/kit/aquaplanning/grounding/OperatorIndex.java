@@ -14,7 +14,6 @@ import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.model.lifted.condition.AbstractCondition;
 import edu.kit.aquaplanning.model.lifted.condition.Condition;
 import edu.kit.aquaplanning.model.lifted.condition.ConditionSet;
-import edu.kit.aquaplanning.model.lifted.condition.Negation;
 
 /**
  * Lookup structure for applicable actions given a state in a lifted setting.
@@ -32,7 +31,8 @@ public class OperatorIndex {
 	 * Maps the name of a predicate to operators which may become applicable
 	 * if some condition of that predicate becomes true.
 	 */
-	private Map<String, List<Operator>> predicateOperatorMap;
+	private Map<String, List<Operator>> negPredicateOperatorMap;
+	private Map<String, List<Operator>> posPredicateOperatorMap;
 	/**
 	 * List of operators which have no preconditions at all, or
 	 * no simple (i.e. conjunctive) preconditions.
@@ -53,7 +53,8 @@ public class OperatorIndex {
 	public OperatorIndex(PlanningProblem p) {
 		
 		this.instantiatedOperators = new HashMap<>();
-		this.predicateOperatorMap = new HashMap<>();
+		this.posPredicateOperatorMap = new HashMap<>();
+		this.negPredicateOperatorMap = new HashMap<>();
 		this.operatorsWithoutPreconditions = new ArrayList<>();
 		this.operatorArgPositions = new HashMap<>();
 		this.p = p;
@@ -76,12 +77,13 @@ public class OperatorIndex {
 				switch (pre.getConditionType()) {
 				case atomic:
 					Condition cond = (Condition) pre;
-					if (cond.isNegated())
-						break;
 					if (cond.getPredicate().isDerived())
 						break;
 					if (cond.getPredicate().getName().equals("="))
 						break;
+					if (cond.isNegated())
+						break;
+					Map<String, List<Operator>> predicateOperatorMap = cond.isNegated() ? negPredicateOperatorMap : posPredicateOperatorMap;
 					if (!predicateOperatorMap.containsKey(cond.getPredicate().getName())) {
 						predicateOperatorMap.put(cond.getPredicate().getName(), new ArrayList<>());
 					}
@@ -118,10 +120,10 @@ public class OperatorIndex {
 		
 		// Find basic operators which may be applicable in some instantiation
 		List<Operator> filteredOps = new ArrayList<>();
-		for (String p : s.getOccurringPredicates()) {
-			List<Operator> ops = predicateOperatorMap.get(p);
+		for (String p : s.getOccurringPredicates(/*negated=*/false)) {
+			List<Operator> ops = posPredicateOperatorMap.get(p);
 			if (ops != null)
-				filteredOps.addAll(ops);			
+				filteredOps.addAll(ops);
 		}
 		filteredOps.addAll(operatorsWithoutPreconditions);
 		
@@ -134,31 +136,27 @@ public class OperatorIndex {
 			List<ArgumentAssignment> partialArgAssignments = new ArrayList<>();
 			partialArgAssignments.add(new ArgumentAssignment(op.getArguments().size()));
 			
-			// Compile preconditions into flat list of positive conditions
+			// Compile preconditions into flat list of (positive or negative) conditions
+			List<Condition> flatPosPreconds = new ArrayList<>();
 			List<Condition> flatPreconds = new ArrayList<>();
 			List<AbstractCondition> preconds = new ArrayList<>();
 			preconds.add(op.getPrecondition());
 			for (int preIdx = 0; preIdx < preconds.size(); preIdx++) {
 				AbstractCondition pre = preconds.get(preIdx);
-				boolean negated = false;
 				switch (pre.getConditionType()) {
 				case conjunction:
 					preconds.addAll(((ConditionSet) pre).getConditions());
 					break;
-				case negation:
-					negated = true;
-					pre = ((Negation) pre).getChildCondition();
 				case atomic:
 					Condition opCond = (Condition) pre;
-					negated ^= opCond.isNegated();
-					if (negated) {
-						// Negated condition
-						break;
-					} else if (opCond.getPredicate().isDerived()) {
+					if (opCond.getPredicate().isDerived()) {
 						// Derived predicate -- ignore
 						break;
 					} else {
 						flatPreconds.add(opCond);
+						if (!opCond.isNegated()) {
+							flatPosPreconds.add(opCond);
+						}
 						break;
 					}
 				default:
@@ -184,7 +182,11 @@ public class OperatorIndex {
 			}
 			
 			// For each of the operator's simple preconditions
-			for (Condition pre : flatPreconds) {
+			for (Condition pre : flatPosPreconds) {
+				
+				if (pre.isNegated())
+					continue;
+				
 				String predicateName = pre.getPredicate().getName();
 				
 				List<Set<Argument>> eligibleArgs = new ArrayList<>();
@@ -192,9 +194,9 @@ public class OperatorIndex {
 					eligibleArgs.add(new HashSet<>());
 				
 				// For each condition in the current state which satisfies pre
-				// (Skip equality predicates for now)
+				// (Skip equality predicates and negative conditions for now)
 				if (!predicateName.equals("=")) {
-					for (Condition trueCondition : s.getConditions(predicateName)) {
+					for (Condition trueCondition : s.getConditions(predicateName, pre.isNegated())) {
 					
 						// For each of the state condition's arguments
 						for (int condArgIdx = 0; condArgIdx < trueCondition.getNumArgs(); condArgIdx++) {
@@ -243,7 +245,7 @@ public class OperatorIndex {
 				for (Argument constant : p.getConstants()) {
 					if (p.isArgumentOfType(constant, op.getArgumentTypes().get(pos))) {
 						
-						if (flatPreconds.isEmpty()) {
+						if (flatPosPreconds.isEmpty()) {
 							// No preconditions: any constant of correct type is allowed
 							args.add(constant);
 						} else if (eligibleArgumentSets.get(pos).contains(constant) 
@@ -315,7 +317,7 @@ public class OperatorIndex {
 						precondLoop: for (Condition pre : flatPreconds) {
 							
 							// Build precondition with according arguments
-							final Condition c = new Condition(pre.getPredicate());
+							final Condition c = new Condition(pre.getPredicate(), pre.isNegated());
 							for (int condArgIdx = 0; condArgIdx < pre.getNumArgs(); condArgIdx++) {
 								Argument condArg = pre.getArguments().get(condArgIdx);
 								int opArgIdx = argIndices.getOrDefault(condArg.getName(), -1);

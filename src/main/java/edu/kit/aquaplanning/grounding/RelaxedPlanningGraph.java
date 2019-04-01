@@ -86,9 +86,24 @@ public class RelaxedPlanningGraph {
 		// Apply all operators seen so far to the state
 		for (List<Operator> ops : liftedActions) {			
 			for (Operator op : ops) {
-				applyPositiveEffects(op, newState);
+				applyEffects(op, newState);
 			}
 		}
+		Set<Condition> lastState = state;
+		Set<Condition> negConditionsToAdd = new HashSet<>();
+		for (Condition c : newState) {
+			if (!c.isNegated() && !lastState.contains(c)) {
+				// c is a positive condition that was just added
+				
+				// Also add its negated counterpart to the state
+				Condition cNeg = new Condition(c.getPredicate(), /*negated=*/true);
+				c.getArguments().forEach(arg -> cNeg.addArgument(arg));
+				if (!newState.contains(cNeg)) {
+					negConditionsToAdd.add(cNeg);
+				}
+			}
+		}
+		newState.addAll(negConditionsToAdd);
 		liftedStates.add(newState);
 	}
 	
@@ -135,9 +150,9 @@ public class RelaxedPlanningGraph {
 	
 	/**
 	 * Given a lifted action executed in some (lifted) state, adds all of 
-	 * its positive effects to the state.
+	 * its effects to the state.
 	 */
-	protected void applyPositiveEffects(Operator liftedAction, Set<Condition> liftedState) {
+	protected void applyEffects(Operator liftedAction, Set<Condition> liftedState) {
 		
 		List<AbstractCondition> effects = new ArrayList<>();
 		effects.add(liftedAction.getEffect());
@@ -148,12 +163,9 @@ public class RelaxedPlanningGraph {
 			
 			if (effect.getConditionType() == ConditionType.atomic) {
 				
-				// -- atomic effect: directly add condition, 
-				// if positive and not already present
+				// -- atomic effect: directly add condition
 				Condition cond = (Condition) effect;
-				if (!cond.isNegated() && !liftedState.contains(cond)) {
-					liftedState.add(cond);
-				}
+				liftedState.add(cond);
 				
 			} else if (effect.getConditionType() == ConditionType.consequential) {
 				
@@ -161,7 +173,7 @@ public class RelaxedPlanningGraph {
 				ConsequentialCondition cond = (ConsequentialCondition) effect;
 				boolean applyEffects = true;
 				
-				// Does this prerequisite hold in a relaxed sense?
+				// Does this prerequisite hold?
 				if (!holdsCondition(cond.getPrerequisite(), liftedAction, 
 						liftedAction.getArguments(), liftedState)) {
 					// -- no; dismiss this conditional effect
@@ -179,7 +191,7 @@ public class RelaxedPlanningGraph {
 				
 			} else if (effect.getConditionType() == ConditionType.numericEffect) {
 				
-				// TODO better delete-relaxation also incorporating numeric atoms
+				// TODO better planning graph also incorporating numeric atoms
 				
 			} else {
 				
@@ -215,9 +227,23 @@ public class RelaxedPlanningGraph {
 				return true; // derived predicate: just assume that it holds
 			}
 			
-			// When delete-relaxed: negation is dismissed, so it "holds"
 			if (groundCond.isNegated()) {
-				return true;
+				
+				// no delete-relaxation, actual planning graph instead
+				
+				if (liftedState.contains(groundCond)) {
+					// False condition is part of the lifted state
+					return true;
+					
+				} else if (liftedStates.get(0).contains(groundCond)) {
+					// Condition was true at the initial layer and never became false
+					return false;
+				} else {
+					// Condition has been false from the beginning
+					return true;
+				}
+				
+				
 			}
 			
 			// Search the provided state for this condition
@@ -230,9 +256,6 @@ public class RelaxedPlanningGraph {
 				// if the condition is negated, then it holds; else, not
 				return cond.isNegated();
 			}
-			
-		case negation:
-			return true;
 			
 		case conjunction:
 			for (AbstractCondition c : ((ConditionSet) abstractCond).getConditions()) {

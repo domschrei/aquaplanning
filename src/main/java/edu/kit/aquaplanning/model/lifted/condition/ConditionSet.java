@@ -141,7 +141,7 @@ public class ConditionSet extends AbstractCondition {
 	public String toString() {
 		String out = isDisjunctive() ? "OR { " : "AND { ";
 		for (AbstractCondition c : conditions) {
-			out += c.toString() + " ";
+			out += c + " ";
 		}
 		return out + "}";
 	}

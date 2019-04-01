@@ -63,6 +63,10 @@ public abstract class BaseGrounder implements Grounder {
 		this.atomTable = new AtomTable();
 	}
 	
+	public void consolidate() {
+		atomTable.consolidate();
+	}
+	
 	/**
 	 * Converts the provided precondition (with all constant arguments)
 	 * into a pair of a flat atom list and a complex precondition object.
@@ -224,7 +228,7 @@ public abstract class BaseGrounder implements Grounder {
 	 * Converts a lifted condition into a ground precondition.
 	 * Set the 2nd argument, "negated", to "false" for a usual top-level call.
 	 */
-	protected Precondition toPrecondition(AbstractCondition cond, boolean negated) {
+	public Precondition toPrecondition(AbstractCondition cond, boolean negated) {
 		
 		Precondition pre = null;
 		ConditionSet set;
@@ -644,6 +648,14 @@ public abstract class BaseGrounder implements Grounder {
 	public void setProblem(PlanningProblem problem) {
 		this.problem = problem;
 		atomTable.setProblem(problem);
+	}
+	
+	public PlanningProblem getProblem() {
+		return problem;
+	}
+	
+	public AtomTable getAtomTable() {
+		return atomTable;
 	}
 	
 	private void error(String msg) {

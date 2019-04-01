@@ -5,14 +5,17 @@ import java.io.IOException;
 import java.net.InetAddress;
 
 import edu.kit.aquaplanning.grounding.Grounder;
+import edu.kit.aquaplanning.grounding.HtnGrounder;
 import edu.kit.aquaplanning.grounding.RelaxedPlanningGraphGrounder;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
+import edu.kit.aquaplanning.model.ground.htn.HtnPlanningProblem;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.optimization.Clock;
 import edu.kit.aquaplanning.optimization.SimplePlanOptimizer;
 import edu.kit.aquaplanning.parsing.ProblemParser;
 import edu.kit.aquaplanning.planning.Planner;
+import edu.kit.aquaplanning.planning.htn.TreeRexPlanner;
 import edu.kit.aquaplanning.util.Logger;
 import edu.kit.aquaplanning.validation.Validator;
 import picocli.CommandLine;
@@ -88,6 +91,8 @@ public class Main {
 		// For debugging, you can also override the configuration here, e.g.
 		// config.heuristic = HeuristicType.manhattanGoalDistance;
 		
+		//Thread.sleep(5000);
+		
 		try {	
 			// Step 1: Parsing of domain and problem files
 			Logger.log(Logger.INFO, "Parsing ...");
@@ -106,10 +111,23 @@ public class Main {
 			Logger.log(Logger.INFO, "Grounding complete. " + planningProblem.getActions().size() 
 					+ " actions resulted from the grounding.\n");
 			
-			// Step 3: Planning
-			Logger.log(Logger.INFO, "Planning ...");
-			Planner planner = Planner.getPlanner(config);
-			Plan plan = planner.findPlan(planningProblem);
+			Plan plan = null;
+			if (p instanceof HtnPlanningProblem) {
+				// HTN planning problem
+				
+				Logger.log(Logger.INFO, "Initializing HTN grounding ...");
+				HtnGrounder htnGrounder = new HtnGrounder(planningProblem, (RelaxedPlanningGraphGrounder) grounder);
+				TreeRexPlanner planner = new TreeRexPlanner(htnGrounder);
+				plan = planner.findPlan();
+				
+			} else {
+				// Classical planning problem
+				
+				// Step 3: Planning
+				Logger.log(Logger.INFO, "Planning ...");
+				Planner planner = Planner.getPlanner(config);
+				plan = planner.findPlan(planningProblem);
+			}			
 			
 			// Solution found?
 			if (plan == null) {

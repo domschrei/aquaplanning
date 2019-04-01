@@ -5,8 +5,10 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Stack;
 
 import org.antlr.v4.runtime.ANTLRInputStream;
@@ -17,6 +19,7 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
 import edu.kit.aquaplanning.model.PddlRequirement;
+import edu.kit.aquaplanning.model.ground.htn.HtnPlanningProblem;
 import edu.kit.aquaplanning.model.lifted.Argument;
 import edu.kit.aquaplanning.model.lifted.Axiom;
 import edu.kit.aquaplanning.model.lifted.Function;
@@ -37,43 +40,52 @@ import edu.kit.aquaplanning.model.lifted.condition.NumericEffect;
 import edu.kit.aquaplanning.model.lifted.condition.Quantification;
 import edu.kit.aquaplanning.model.lifted.condition.AbstractCondition.ConditionType;
 import edu.kit.aquaplanning.model.lifted.condition.Quantification.Quantifier;
-import edu.kit.aquaplanning.parsing.PddlParser.ActionDefBodyContext;
-import edu.kit.aquaplanning.parsing.PddlParser.ActionDefContext;
-import edu.kit.aquaplanning.parsing.PddlParser.AtomicFormulaSkeletonContext;
-import edu.kit.aquaplanning.parsing.PddlParser.AtomicFunctionSkeletonContext;
-import edu.kit.aquaplanning.parsing.PddlParser.AtomicNameFormulaContext;
-import edu.kit.aquaplanning.parsing.PddlParser.AtomicTermFormulaContext;
-import edu.kit.aquaplanning.parsing.PddlParser.CEffectContext;
-import edu.kit.aquaplanning.parsing.PddlParser.CondEffectContext;
-import edu.kit.aquaplanning.parsing.PddlParser.ConstantsDefContext;
-import edu.kit.aquaplanning.parsing.PddlParser.DerivedDefContext;
-import edu.kit.aquaplanning.parsing.PddlParser.DomainNameContext;
-import edu.kit.aquaplanning.parsing.PddlParser.EffectContext;
-import edu.kit.aquaplanning.parsing.PddlParser.FCompContext;
-import edu.kit.aquaplanning.parsing.PddlParser.FExpContext;
-import edu.kit.aquaplanning.parsing.PddlParser.FHeadContext;
-import edu.kit.aquaplanning.parsing.PddlParser.FunctionListContext;
-import edu.kit.aquaplanning.parsing.PddlParser.FunctionsDefContext;
-import edu.kit.aquaplanning.parsing.PddlParser.GoalContext;
-import edu.kit.aquaplanning.parsing.PddlParser.GoalDescContext;
-import edu.kit.aquaplanning.parsing.PddlParser.InitContext;
-import edu.kit.aquaplanning.parsing.PddlParser.InitElContext;
-import edu.kit.aquaplanning.parsing.PddlParser.MetricSpecContext;
-import edu.kit.aquaplanning.parsing.PddlParser.NameLiteralContext;
-import edu.kit.aquaplanning.parsing.PddlParser.ObjectDeclContext;
-import edu.kit.aquaplanning.parsing.PddlParser.PEffectContext;
-import edu.kit.aquaplanning.parsing.PddlParser.PddlDocContext;
-import edu.kit.aquaplanning.parsing.PddlParser.PredicatesDefContext;
-import edu.kit.aquaplanning.parsing.PddlParser.ProblemDeclContext;
-import edu.kit.aquaplanning.parsing.PddlParser.RequireDefContext;
-import edu.kit.aquaplanning.parsing.PddlParser.SingleTypeNameListContext;
-import edu.kit.aquaplanning.parsing.PddlParser.SingleTypeVarListContext;
-import edu.kit.aquaplanning.parsing.PddlParser.TypedNameListContext;
-import edu.kit.aquaplanning.parsing.PddlParser.TypedVariableListContext;
-import edu.kit.aquaplanning.parsing.PddlParser.TypesDefContext;
+import edu.kit.aquaplanning.model.lifted.htn.Constraint;
+import edu.kit.aquaplanning.model.lifted.htn.Method;
+import edu.kit.aquaplanning.model.lifted.htn.Task;
+import edu.kit.aquaplanning.model.lifted.htn.Constraint.ConstraintType;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.ActionDefBodyContext;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.ActionDefContext;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.AtomicFormulaSkeletonContext;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.AtomicFunctionSkeletonContext;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.AtomicNameFormulaContext;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.AtomicTermFormulaContext;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.CEffectContext;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.CondEffectContext;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.ConstantsDefContext;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.ConstraintContext;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.DerivedDefContext;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.DomainNameContext;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.EffectContext;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.FCompContext;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.FExpContext;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.FHeadContext;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.FunctionListContext;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.FunctionsDefContext;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.GoalContext;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.GoalDescContext;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.InitContext;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.InitElContext;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.InitTaskNetworkContext;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.MethodDefContext;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.MetricSpecContext;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.NameLiteralContext;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.ObjectDeclContext;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.PEffectContext;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.PddlDocContext;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.PredicatesDefContext;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.ProblemDeclContext;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.RequireDefContext;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.SingleTypeNameListContext;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.SingleTypeVarListContext;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.TaggedTaskContext;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.TaskContext;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.TypedNameListContext;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.TypedVariableListContext;
+import edu.kit.aquaplanning.parsing.PddlHtnParser.TypesDefContext;
 
 @SuppressWarnings("deprecation")
-public class ProblemParser extends PddlBaseListener {
+public class ProblemParser extends PddlHtnBaseListener {
 	
 	// Fields to populate during the parsing process: 
 	// Domain
@@ -86,9 +98,13 @@ public class ProblemParser extends PddlBaseListener {
 	private Map<String, Axiom> derivedPredicates;
 	private Map<String, Function> functions;
 	private List<Operator> operators;
+	private Map<String, List<Type>> tasks;
+	private List<Method> methods;
+	private Set<String> methodNames;
 	// Problem
 	private List<Condition> initialState;
 	private Map<Function, Float> initialFunctionValues;
+	private Method initialTaskNetwork;
 	private List<AbstractCondition> goals;
 	private boolean hasActionCosts;
 	
@@ -98,8 +114,8 @@ public class ProblemParser extends PddlBaseListener {
 	 */
 	private enum ParseContext {
 		typeDefs, constantDefs, predicateDefs, derivedPredicateDef, 
-		functionsDef, actionDef, actionPre, actionEff, objectDefs, 
-		initialStateDef, goalDef;
+		functionsDef, actionDef, actionPre, actionEff, methodDef,
+		objectDefs, initialStateDef, initialTaskNetworkDef, goalDef;
 	}
 	private ParseContext context;
 	private String parsedFile; // the file *currently* being parsed
@@ -124,9 +140,14 @@ public class ProblemParser extends PddlBaseListener {
 		// Initialize basic data structures
 		conditionStack = new Stack<>();
 		expressionStack = new Stack<>();
+		constants = new ArrayList<>();
 		predicates = new HashMap<>();
 		derivedPredicates = new HashMap<>();
 		functions = new HashMap<>();
+		operators = new ArrayList<>();
+		methods = new ArrayList<>();
+		methodNames = new HashSet<>();
+		tasks = new HashMap<>();
 
 		// Initialize typing
 		types = new HashMap<>();
@@ -135,9 +156,9 @@ public class ProblemParser extends PddlBaseListener {
 		
 		// Get domain
         ANTLRInputStream in = new ANTLRInputStream(new FileInputStream(domainFile));
-        PddlLexer lexer = new PddlLexer(in);
+        PddlHtnLexer lexer = new PddlHtnLexer(in);
         CommonTokenStream tokens = new CommonTokenStream(lexer);
-        PddlParser parser = new PddlParser(tokens);
+        PddlHtnParser parser = new PddlHtnParser(tokens);
         parser.setBuildParseTree(true);
         PddlDocContext ctx = parser.pddlDoc();
         
@@ -148,9 +169,9 @@ public class ProblemParser extends PddlBaseListener {
         
         // Get problem
         in = new ANTLRInputStream(new FileInputStream(problemFile));
-        lexer = new PddlLexer(in);
+        lexer = new PddlHtnLexer(in);
         tokens = new CommonTokenStream(lexer);
-        parser = new PddlParser(tokens);
+        parser = new PddlHtnParser(tokens);
         parser.setBuildParseTree(true);
         ctx = parser.pddlDoc();
         
@@ -160,9 +181,20 @@ public class ProblemParser extends PddlBaseListener {
         walker.walk(this, ctx);
         
         // Create object to return
-        PlanningProblem problem = new PlanningProblem(domainName, problemName, 
-        		types, constants, predicates, derivedPredicates, functions, 
-        		operators, initialState, initialFunctionValues, goals, hasActionCosts);
+        PlanningProblem problem;
+        if (initialTaskNetwork == null) {
+        	
+        	problem = new PlanningProblem(domainName, problemName, 
+        			types, constants, predicates, derivedPredicates, functions, 
+        			operators, initialState, initialFunctionValues, goals, hasActionCosts);
+        } else {
+        	
+        	problem = new HtnPlanningProblem(domainName, problemName, 
+        			types, constants, predicates, derivedPredicates, functions, 
+        			operators, initialState, initialFunctionValues, goals, hasActionCosts, 
+        			tasks, methods, initialTaskNetwork);
+        }
+        
         return problem;
 	}
 	
@@ -337,7 +369,6 @@ public class ProblemParser extends PddlBaseListener {
 	public void enterConstantsDef(ConstantsDefContext ctx) {
 		
 		context = ParseContext.constantDefs;
-		constants = new ArrayList<>();
 	}
 
 	
@@ -434,6 +465,11 @@ public class ProblemParser extends PddlBaseListener {
 				String argName = ctx.children.get(childIdx).getText().toLowerCase();
 				currentOperator().addArgument(new Argument(argName, type));
 				
+			} else if (context == ParseContext.methodDef) {
+				// Add argument to current operator
+				String argName = ctx.children.get(childIdx).getText().toLowerCase();
+				currentMethod().addExplicitArgument(new Argument(argName, type));
+				
 			} else if (context == ParseContext.functionsDef) {
 				// Add argument to function
 				function.addArgumentType(type);
@@ -494,8 +530,8 @@ public class ProblemParser extends PddlBaseListener {
 				}
 			}
 			
-		} else if (context == ParseContext.actionDef) {
-			// Action parameter definition
+		} else if (context == ParseContext.actionDef || context == ParseContext.methodDef) {
+			// Action or method parameter definition
 			
 			if (ctx.children == null) {
 				return;
@@ -512,9 +548,14 @@ public class ProblemParser extends PddlBaseListener {
 					String varName = ctx.children.get(childIdx).getText().toLowerCase();
 					Type type = supertype;
 					Argument arg = new Argument(varName, type);
-					currentOperator().addArgument(arg);
+					if (context == ParseContext.methodDef) {
+						currentMethod().addExplicitArgument(arg);
+					} else {						
+						currentOperator().addArgument(arg);
+					}
 				}
 			}
+			
 		}
 	}
 	
@@ -537,8 +578,6 @@ public class ProblemParser extends PddlBaseListener {
 	public void enterActionDef(ActionDefContext ctx) {
 		
 		context = ParseContext.actionDef;
-		if (operators == null)
-			operators = new ArrayList<>();
 		
 		// Create new, empty operator
 		String opName = ctx.children.get(3).getText().toLowerCase();
@@ -579,6 +618,7 @@ public class ProblemParser extends PddlBaseListener {
 	
 	@Override
 	public void exitActionDef(ActionDefContext ctx) {
+		
 		Operator op = currentOperator();
 		if (op.getPrecondition() == null) {
 			op.setPrecondition(new ConditionSet(ConditionType.conjunction));
@@ -586,6 +626,95 @@ public class ProblemParser extends PddlBaseListener {
 		if (op.getEffect() == null) {
 			op.setEffect(new ConditionSet(ConditionType.conjunction));
 		}
+		
+		List<Type> opTypes = new ArrayList<>();
+		opTypes.addAll(op.getArgumentTypes());
+		tasks.put(op.getName(), opTypes);
+	}
+	
+	
+	
+	@Override
+	public void enterMethodDef(MethodDefContext ctx) {
+		this.context = ParseContext.methodDef;
+		String methodName = ctx.children.get(3).getText().toLowerCase();
+		methodNames.add(methodName);
+		Method method = new Method(methodName);
+		methods.add(method);
+	}
+	
+	@Override
+	public void enterTask(TaskContext ctx) {
+		
+		String name = ctx.children.get(1).getText().toLowerCase();
+		Task task = new Task(name);
+		Method method = null;
+		if (context == ParseContext.methodDef) {
+			method = currentMethod();
+		} else if (context == ParseContext.initialTaskNetworkDef) {
+			method = initialTaskNetwork;
+		}
+		
+		if (!tasks.containsKey(name)) {
+			tasks.put(name, new ArrayList<>());
+		}
+		List<Type> taskTypes = tasks.get(name);
+		
+		for (int i = 2; i < ctx.children.size()-1; i++) {
+			
+			if (i-2 >= taskTypes.size()) {
+				taskTypes.add(new Type("_IMPLICIT"));
+			}
+			Type type = taskTypes.get(i-2);
+
+			String argName = ctx.children.get(i).getText().toLowerCase();
+			if (argName.charAt(0) == '?') {
+				
+				if (!method.hasArgument(argName)) {
+					method.addImplicitArgument(new Argument(argName, type));
+				} else {					
+					Type typeFromMethod = method.getTypeOfArgument(argName);
+					if (type.getName().equals("_IMPLICIT"))
+						type = typeFromMethod;
+				}
+				
+			} else {
+				type = getTypeOfConstant(argName);
+			}
+			task.addArgument(new Argument(argName, type));
+			taskTypes.set(i-2, type);
+		}
+		method.addSubtask(task);
+	}
+	
+	@Override
+	public void exitTaggedTask(TaggedTaskContext ctx) {
+		currentMethod().tagLastSubtask(ctx.children.get(2).getText().toLowerCase());			
+	}
+	
+	@Override
+	public void enterConstraint(ConstraintContext ctx) {
+		
+		Method method = currentMethod();
+		String typeString = ctx.children.get(1).getText().toLowerCase();
+		ConstraintType type;
+		
+		Constraint constraint;
+		if (typeString.equals("between")) {
+			type = ConstraintType.between;
+			constraint = new Constraint(
+					ctx.children.get(3).getText().toLowerCase(), 
+					ctx.children.get(4).getText().toLowerCase());
+		} else {				
+			if (typeString.equals("before")) {
+				type = ConstraintType.before;
+			} else /*if (typeString.equals("after"))*/ {
+				type = ConstraintType.after;
+			}
+			constraint = new Constraint(type,
+					ctx.children.get(3).getText().toLowerCase());
+		}
+		method.addConstraint(constraint);
 	}
 	
 	
@@ -735,11 +864,26 @@ public class ProblemParser extends PddlBaseListener {
 				}
 				
 				if (type == null) {
-					// Check if the variable occurs in the operator definition,
-					// and which type it has
-					for (Argument arg : operators.get(operators.size()-1).getArguments()) {
-						if (arg.getName().equalsIgnoreCase(termStr)) {
-							type = arg.getType();
+					if (context == ParseContext.methodDef) {
+						Method method = currentMethod();
+						if (method.hasArgument(termStr)) {					
+							type = method.getTypeOfArgument(termStr);
+							if (type.getName().equals("_IMPLICIT")) {
+								// Try to infer type
+								type = predicate.getArgumentTypes().get(childIdx-2);
+								method.updateArgumentType(termStr, type);
+							}
+						} else {
+							type = predicate.getArgumentTypes().get(childIdx-2);
+							method.addImplicitArgument(new Argument(termStr, type));
+						}
+					} else {						
+						// Check if the variable occurs in the operator definition,
+						// and which type it has
+						for (Argument arg : operators.get(operators.size()-1).getArguments()) {
+							if (arg.getName().equalsIgnoreCase(termStr)) {
+								type = arg.getType();
+							}
 						}
 					}
 				}
@@ -747,20 +891,7 @@ public class ProblemParser extends PddlBaseListener {
 			} else {
 				
 				// -- constant
-				
-				// Check if there is a fitting constant,
-				// and which type it has
-				for (Argument constant : constants) {
-					if (constant.getName().equalsIgnoreCase(termStr)) {
-						type = constant.getType();
-					}
-				}
-				
-				if (type == null) {
-					// New constant is created; infer type from predicate
-					type = predicate.getArgumentTypes().get(childIdx-2);
-					constants.add(new Argument(termStr, type));
-				}
+				type = getTypeOfConstant(termStr, predicate, childIdx-2);
 			}
 			
 			if (type == null) {
@@ -981,8 +1112,6 @@ public class ProblemParser extends PddlBaseListener {
 	public void enterObjectDecl(ObjectDeclContext ctx) {
 		
 		context = ParseContext.objectDefs;
-		if (constants == null)
-			constants = new ArrayList<>();
 	}
 	
 	
@@ -1082,6 +1211,13 @@ public class ProblemParser extends PddlBaseListener {
 			error("A metric is specified, but no action cost "
 					+ "function has been defined.");
 		}
+	}
+	
+	@Override
+	public void enterInitTaskNetwork(InitTaskNetworkContext ctx) {
+		context = ParseContext.initialTaskNetworkDef;
+		initialTaskNetwork = new Method("_initTask");
+		
 	}
 	
 	
@@ -1303,6 +1439,9 @@ public class ProblemParser extends PddlBaseListener {
 			initialState.add((Condition) cond);
 		} else if (context == ParseContext.derivedPredicateDef) {
 			derivedPredicates.get(predicate.getName()).setCondition(cond);
+		} else if (context == ParseContext.methodDef 
+				|| context == ParseContext.initialTaskNetworkDef) {
+			currentMethod().addConditionToLastConstraint(cond);
 		}
 	}
 	
@@ -1311,6 +1450,17 @@ public class ProblemParser extends PddlBaseListener {
 	 */
 	private Operator currentOperator() {
 		return operators.get(operators.size()-1);
+	}
+	
+	/**
+	 * The method currently being parsed.
+	 */
+	private Method currentMethod() {
+		if (context == ParseContext.methodDef) {			
+			return methods.get(methods.size()-1);
+		} else {
+			return initialTaskNetwork;
+		}
 	}
 
 	private boolean isInQuantification() {
@@ -1334,6 +1484,29 @@ public class ProblemParser extends PddlBaseListener {
 		return null;
 	}
 	
+	private Type getTypeOfConstant(String argName) {
+		return getTypeOfConstant(argName, null, 0);
+	}
+	
+	private Type getTypeOfConstant(String argName, Predicate surroundingPred, int index) {
+		
+		// Check if there is a fitting constant,
+		// and which type it has
+		Type type = null;
+		for (Argument constant : constants) {
+			if (constant.getName().equalsIgnoreCase(argName)) {
+				type = constant.getType();
+			}
+		}
+		
+		if (type == null && surroundingPred != null) {
+			// New constant is created; infer type from predicate
+			type = surroundingPred.getArgumentTypes().get(index);
+			constants.add(new Argument(argName, type));
+		}	
+		
+		return type;
+	}
 	
 	
 	// Error handling

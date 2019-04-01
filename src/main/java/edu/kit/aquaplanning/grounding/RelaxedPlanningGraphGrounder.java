@@ -29,6 +29,8 @@ import edu.kit.aquaplanning.model.lifted.condition.AbstractCondition.ConditionTy
  */
 public class RelaxedPlanningGraphGrounder extends BaseGrounder {
 	
+	private RelaxedPlanningGraph graph;
+	
 	public RelaxedPlanningGraphGrounder(Configuration config) {
 		super(config);
 	}
@@ -68,7 +70,7 @@ public class RelaxedPlanningGraphGrounder extends BaseGrounder {
 		}
 		
 		// Traverse delete-relaxed state space
-		RelaxedPlanningGraph graph = new RelaxedPlanningGraph(problem);
+		graph = new RelaxedPlanningGraph(problem);
 		while (graph.hasNextLayer()) {
 			graph.computeNextLayer();
 		}
@@ -114,5 +116,13 @@ public class RelaxedPlanningGraphGrounder extends BaseGrounder {
 		GroundPlanningProblem planningProblem = new GroundPlanningProblem(initialState, actions, 
 				goal, problem.hasActionCosts(), extractAtomNames(), extractNumericAtomNames());
 		return planningProblem;
+	}
+	
+	public LiftedState getState() {
+		return new LiftedState(graph.getLiftedState(graph.getCurrentLayer()));
+	}
+	
+	public List<Operator> getLiftedActions() {
+		return graph.getLiftedActions();
 	}
 }

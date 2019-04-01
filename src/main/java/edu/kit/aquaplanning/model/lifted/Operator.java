@@ -102,6 +102,16 @@ public class Operator {
 		out += effect;
 		return out;
 	}
+	
+	public String toActionString() {
+		String out = "";
+		out += "(" + name + " ";
+		for (Argument arg : arguments) {
+			out += arg.getName() + " ";
+		}
+		out = out.substring(0, out.length()-1) + ")";
+		return out;
+	}
 
 	@Override
 	public int hashCode() {
