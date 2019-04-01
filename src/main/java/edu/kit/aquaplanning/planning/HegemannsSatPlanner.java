@@ -5,6 +5,8 @@ import java.util.*;
 import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.model.ground.*;
 import edu.kit.aquaplanning.sat.SatSolver;
+import edu.kit.aquaplanning.sat.SimpleSatPrinter;
+import edu.kit.aquaplanning.util.Logger;
 
 public class HegemannsSatPlanner extends Planner {
 
@@ -112,7 +114,12 @@ public class HegemannsSatPlanner extends Planner {
         // Calculate supporting actions for atoms
         initializeSupports(problem);
 
-        SatSolver solver = new SatSolver();
+        SatSolver solver;
+        if (config.satFormulaFile != null) {
+        	solver = new SatSolver(new SimpleSatPrinter(config.satFormulaFile));
+        } else {
+        	solver = new SatSolver();
+        }
 
         // Add the initial state unit clauses
         addInitialStateClauses(problem, solver);
@@ -122,7 +129,7 @@ public class HegemannsSatPlanner extends Planner {
         // Find the plan
         int step = 0;
         while (true) {
-            System.out.println("Step " + step + " - " + (int)Math.ceil(timeLimit) + " seconds limit");
+            Logger.log(Logger.INFO_V, "Step " + step + " - " + (int)Math.ceil(timeLimit) + " seconds limit");
 
             for (int i = 0; i < skipLayers; i++) {
                 addRecurrentClauses(solver, step);
