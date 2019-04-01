@@ -17,15 +17,22 @@ import edu.kit.aquaplanning.model.ground.State;
 import edu.kit.aquaplanning.model.ground.htn.HierarchyLayer;
 import edu.kit.aquaplanning.model.ground.htn.Reduction;
 import edu.kit.aquaplanning.sat.IpasirSatSolver;
+import edu.kit.aquaplanning.sat.SatSolver;
 import edu.kit.aquaplanning.util.BinaryEncoding;
 import edu.kit.aquaplanning.util.Logger;
 
 public class TreeRexPlanner {
 	
+	public enum SolverMode {
+		MODE_SAT4J, MODE_IPASIR;
+	}
+	
 	private HtnGrounder grounder;
 	private int depth;
-	
-	IpasirSatSolver solver;
+
+	private SolverMode solverMode;
+	SatSolver sat4jSolver;
+	IpasirSatSolver ipasirSolver;
 	
 	public TreeRexPlanner(HtnGrounder grounder) {
 		this.grounder = grounder;
@@ -33,7 +40,14 @@ public class TreeRexPlanner {
 	
 	public Plan findPlan() {
 		
-		solver = new IpasirSatSolver();
+		this.solverMode = SolverMode.MODE_SAT4J;
+		
+		if (solverMode == SolverMode.MODE_IPASIR) {
+			ipasirSolver = new IpasirSatSolver();
+		} else {
+			sat4jSolver = new SatSolver();
+		}
+		
 		depth = 0;
 		assumptions = new ArrayList<>();
 		
@@ -92,7 +106,8 @@ public class TreeRexPlanner {
 		if (result == true) {
 			Logger.log(Logger.INFO, "Extracting plan ...");
 			Plan plan = extractPlan();
-			solver.release();
+			if (solverMode == SolverMode.MODE_IPASIR)
+				ipasirSolver.release();
 			return plan;
 		} else {
 			return null;
@@ -382,20 +397,32 @@ public class TreeRexPlanner {
 	}
 	
 	private void addClause(int... lits) {
-		solver.addClause(lits);
-		/*if (!success) {
-			throw new RuntimeException("SAT solver reported contradiction while adding a clause.");
-		}*/
+		if (solverMode == SolverMode.MODE_IPASIR) {
+			ipasirSolver.addClause(lits);
+		} else {
+			boolean success = sat4jSolver.addClause(lits);
+			if (!success) {
+				throw new RuntimeException("SAT solver reported contradiction while adding a clause.");
+			}
+		}
 	}
 	
 	private void addAssumption(int lit) {
-		solver.addAssumption(lit);
+		if (solverMode == SolverMode.MODE_IPASIR) {			
+			ipasirSolver.addAssumption(lit);
+		} else {
+			assumptions.add(lit);
+		}
 	}
 	
 	private Boolean solve() {
-		/*int[] array = assumptions.stream().mapToInt(i->i).toArray();
-		assumptions = new ArrayList<>();*/
-		return solver.solve();
+		if (solverMode == SolverMode.MODE_IPASIR) {
+			return ipasirSolver.solve();			
+		} else {
+			int[] array = assumptions.stream().mapToInt(i->i).toArray();
+			assumptions = new ArrayList<>();
+			return sat4jSolver.isSatisfiable(array);
+		}
 	}
 	
 	private Plan extractPlan() {
@@ -407,7 +434,9 @@ public class TreeRexPlanner {
 				if (a == HierarchyLayer.BLANK_ACTION)
 					continue;
 				int actionVar = finalLayer.getActionVariable(pos, a);
-				if (solver.holds(actionVar)) {
+				if (solverMode == SolverMode.MODE_IPASIR && ipasirSolver.holds(actionVar)) {
+					plan.appendAtBack(a);
+				} else if (solverMode == SolverMode.MODE_SAT4J && sat4jSolver.getModel()[actionVar] > 0) {
 					plan.appendAtBack(a);
 				}
 			}
