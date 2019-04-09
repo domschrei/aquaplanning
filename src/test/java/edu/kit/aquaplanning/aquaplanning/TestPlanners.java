@@ -18,6 +18,7 @@ import edu.kit.aquaplanning.planning.ForwardSearchPlanner;
 import edu.kit.aquaplanning.planning.HegemannsSatPlanner;
 import edu.kit.aquaplanning.planning.Planner;
 import edu.kit.aquaplanning.planning.SimpleSatPlanner;
+import edu.kit.aquaplanning.planning.SymbolicReachabilityPlanner;
 import edu.kit.aquaplanning.planning.SearchStrategy.Mode;
 import edu.kit.aquaplanning.validation.Validator;
 import junit.framework.TestCase;
@@ -116,6 +117,7 @@ public class TestPlanners extends TestCase {
 			gpp = grounder.ground(pp);
 			testSatPlan(gpp);
 			testHegemannsSatPlan(gpp);
+			testReachabilityPlanner(gpp);
 		}
 	}
 	
@@ -133,6 +135,15 @@ public class TestPlanners extends TestCase {
 		Plan plan = planner.findPlan(gpp);
 		System.out.println(plan);
 		assertNotNull(plan);
+		assertTrue(plan.getLength() > 0);
+		assertTrue(Validator.planIsValid(gpp, plan));
+	}
+	
+	private void testReachabilityPlanner(GroundPlanningProblem gpp) {
+		Planner planner = new SymbolicReachabilityPlanner(new Configuration());
+		Plan plan = planner.findPlan(gpp);
+		assertNotNull(plan);
+		System.out.println(plan);
 		assertTrue(plan.getLength() > 0);
 		assertTrue(Validator.planIsValid(gpp, plan));
 	}

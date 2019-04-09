@@ -44,6 +44,18 @@ public class SatSolver {
 		return true;
 	}
 	
+	public boolean addAtMostOneConstraint(int[] clause) {
+		try {
+			solver.addAtMost(new VecInt(clause), 1);
+			if (printer != null) {
+				printer.addAtMostOneConstraint(new VecInt(clause));
+			}
+		} catch (ContradictionException e) {
+			return false;
+		}
+		return true;
+	}
+	
 	/**
 	 * Set the time limit for each individual solve call
 	 * @param seconds
