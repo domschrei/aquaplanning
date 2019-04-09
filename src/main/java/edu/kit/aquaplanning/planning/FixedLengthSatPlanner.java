@@ -4,7 +4,7 @@ import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.model.ground.Action;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
-import edu.kit.aquaplanning.sat.SatSolver;
+import edu.kit.aquaplanning.sat.AbstractSatSolver;
 
 /**
  * This class represents a SAT planner with a fixed plan length.
@@ -28,7 +28,7 @@ public class FixedLengthSatPlanner extends SimpleSatPlanner {
 		initializeActionIdsAndSupports(problem);
 		
 		// initialize the SAT solver
-		SatSolver solver = new SatSolver();
+		AbstractSatSolver solver = AbstractSatSolver.getSolver(config);
 		
 		// add the initial state unit clauses
 		addInitialStateClauses(problem, solver);
@@ -46,18 +46,18 @@ public class FixedLengthSatPlanner extends SimpleSatPlanner {
 		int[] assumptions = calculateGoalAssumptions(problem, planLength);
 		
 		if (config.maxTimeSeconds > 0) {
-			solver.setSolverTimeLimit(config.maxTimeSeconds);			
+			solver.setTimeLimit(config.maxTimeSeconds);			
 		}
 		Plan plan = null;
-		if (solver.isSatisfiable(assumptions)) {
+		Boolean result = solver.isSatisfiable(assumptions);
+		if (result != null && result) {
 			System.out.println("Found plan!");
 			// We found a Plan!
 			// Decode the plan
 			plan = new Plan();
-			int[] model = solver.getModel();
 			for (int i = 0; i < planLength; i++) {
 				for (Action a : problem.getActions()) {
-					if (model[getActionSatVariable(a.getName(), i)] > 0) {
+					if (solver.getValue(getActionSatVariable(a.getName(), i)) > 0) {
 						plan.appendAtBack(a);
 					}
 				}

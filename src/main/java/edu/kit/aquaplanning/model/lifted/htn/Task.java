@@ -44,10 +44,13 @@ public class Task {
 			boolean added = false;
 			for (int refArgIdx = 0; refArgIdx < refArgs.size(); refArgIdx++) {
 				Argument refArg = refArgs.get(refArgIdx);
-				if (arg.getName().equals(refArg.getName())) {
-					t.addArgument(argVals.get(refArgIdx));
-					added = true;
-					break;
+				if (refArg != null && arg.getName().equals(refArg.getName())) {
+					Argument argVal = argVals.get(refArgIdx);
+					if (argVal != null) {
+						t.addArgument(argVal);
+						added = true;
+						break;
+					}
 				}
 			}
 			if (!added)
@@ -72,6 +75,16 @@ public class Task {
 		}
 		out = out.substring(0, out.length()-1) + ")";
 		return out;
+	}
+	
+	public Task normalize() {
+		Task task = new Task(name);
+		int i = 0;
+		for (Argument arg : arguments) {
+			task.addArgument(new Argument("?a" + i, arg.getType()));
+			i++;
+		}
+		return task;
 	}
 	
 	@Override

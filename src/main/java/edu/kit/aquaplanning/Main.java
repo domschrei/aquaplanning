@@ -117,7 +117,7 @@ public class Main {
 				
 				Logger.log(Logger.INFO, "Initializing HTN grounding ...");
 				HtnGrounder htnGrounder = new HtnGrounder(planningProblem, (RelaxedPlanningGraphGrounder) grounder);
-				TreeRexPlanner planner = new TreeRexPlanner(htnGrounder);
+				TreeRexPlanner planner = new TreeRexPlanner(config, htnGrounder);
 				plan = planner.findPlan();
 				
 			} else {

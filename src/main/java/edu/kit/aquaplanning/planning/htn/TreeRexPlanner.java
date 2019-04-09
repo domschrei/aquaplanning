@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import edu.kit.aquaplanning.Configuration;
+import edu.kit.aquaplanning.Configuration.SatSolverMode;
 import edu.kit.aquaplanning.grounding.HtnGrounder;
 import edu.kit.aquaplanning.model.ground.Action;
 import edu.kit.aquaplanning.model.ground.Atom;
@@ -16,36 +18,31 @@ import edu.kit.aquaplanning.model.ground.Precondition.PreconditionType;
 import edu.kit.aquaplanning.model.ground.State;
 import edu.kit.aquaplanning.model.ground.htn.HierarchyLayer;
 import edu.kit.aquaplanning.model.ground.htn.Reduction;
+import edu.kit.aquaplanning.sat.AbstractSatSolver;
 import edu.kit.aquaplanning.sat.IpasirSatSolver;
-import edu.kit.aquaplanning.sat.SatSolver;
+import edu.kit.aquaplanning.sat.Sat4jSolver;
 import edu.kit.aquaplanning.util.BinaryEncoding;
 import edu.kit.aquaplanning.util.Logger;
 
 public class TreeRexPlanner {
-	
-	public enum SolverMode {
-		MODE_SAT4J, MODE_IPASIR;
-	}
-	
+
 	private HtnGrounder grounder;
 	private int depth;
 
-	private SolverMode solverMode;
-	SatSolver sat4jSolver;
-	IpasirSatSolver ipasirSolver;
+	private AbstractSatSolver solver;
+	private SatSolverMode satMode;
 	
-	public TreeRexPlanner(HtnGrounder grounder) {
+	public TreeRexPlanner(Configuration config, HtnGrounder grounder) {
 		this.grounder = grounder;
+		this.satMode = config.satSolverMode;
 	}
 	
 	public Plan findPlan() {
 		
-		this.solverMode = SolverMode.MODE_SAT4J;
-		
-		if (solverMode == SolverMode.MODE_IPASIR) {
-			ipasirSolver = new IpasirSatSolver();
+		if (satMode == SatSolverMode.sat4j) {
+			solver = new Sat4jSolver();
 		} else {
-			sat4jSolver = new SatSolver();
+			solver = new IpasirSatSolver();
 		}
 		
 		depth = 0;
@@ -106,8 +103,7 @@ public class TreeRexPlanner {
 		if (result == true) {
 			Logger.log(Logger.INFO, "Extracting plan ...");
 			Plan plan = extractPlan();
-			if (solverMode == SolverMode.MODE_IPASIR)
-				ipasirSolver.release();
+			solver.release();
 			return plan;
 		} else {
 			return null;
@@ -397,32 +393,15 @@ public class TreeRexPlanner {
 	}
 	
 	private void addClause(int... lits) {
-		if (solverMode == SolverMode.MODE_IPASIR) {
-			ipasirSolver.addClause(lits);
-		} else {
-			boolean success = sat4jSolver.addClause(lits);
-			if (!success) {
-				throw new RuntimeException("SAT solver reported contradiction while adding a clause.");
-			}
-		}
+		solver.addClause(lits);
 	}
 	
 	private void addAssumption(int lit) {
-		if (solverMode == SolverMode.MODE_IPASIR) {			
-			ipasirSolver.addAssumption(lit);
-		} else {
-			assumptions.add(lit);
-		}
+		solver.addAssumption(lit);
 	}
 	
 	private Boolean solve() {
-		if (solverMode == SolverMode.MODE_IPASIR) {
-			return ipasirSolver.solve();			
-		} else {
-			int[] array = assumptions.stream().mapToInt(i->i).toArray();
-			assumptions = new ArrayList<>();
-			return sat4jSolver.isSatisfiable(array);
-		}
+		return solver.isSatisfiable();
 	}
 	
 	private Plan extractPlan() {
@@ -434,9 +413,7 @@ public class TreeRexPlanner {
 				if (a == HierarchyLayer.BLANK_ACTION)
 					continue;
 				int actionVar = finalLayer.getActionVariable(pos, a);
-				if (solverMode == SolverMode.MODE_IPASIR && ipasirSolver.holds(actionVar)) {
-					plan.appendAtBack(a);
-				} else if (solverMode == SolverMode.MODE_SAT4J && sat4jSolver.getModel()[actionVar] > 0) {
+				if (solver.getValue(actionVar) > 0) {
 					plan.appendAtBack(a);
 				}
 			}

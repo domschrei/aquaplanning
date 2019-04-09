@@ -1,6 +1,8 @@
 package edu.kit.aquaplanning.sat;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import org.sat4j.core.VecInt;
 import org.sat4j.minisat.SolverFactory;
@@ -8,19 +10,18 @@ import org.sat4j.specs.ContradictionException;
 import org.sat4j.specs.ISolver;
 import org.sat4j.specs.TimeoutException;
 
-public class SatSolver {
+public class Sat4jSolver extends AbstractSatSolver {
 	
 	protected ISolver solver;
-	protected int[] model;
-	
+	private List<Integer> assumptions;
 	private SimpleSatPrinter printer;
 	
-	public SatSolver() {
+	public Sat4jSolver() {
 		solver = SolverFactory.newDefault();
 		model = null;
 	}
 	
-	public SatSolver(SimpleSatPrinter printer) {
+	public Sat4jSolver(SimpleSatPrinter printer) {
 		solver = SolverFactory.newDefault();
 		model = null;
 		this.printer = printer;
@@ -33,26 +34,33 @@ public class SatSolver {
 	 * @param clause
 	 * @return
 	 */
-	public boolean addClause(int[] clause) {
+	public void addClause(int... clause) {
 		try {
 			solver.addClause(new VecInt(clause));
 			if (printer != null)
 				printer.addClause(new VecInt(clause));
 		} catch (ContradictionException e) {
 			e.printStackTrace();
-			return false;
+			throw new RuntimeException();
 		}
-		return true;
+	}
+	
+	@Override
+	public void addAssumption(int assumption) {
+		if (assumptions == null) {
+			assumptions = new ArrayList<>();
+		}
+		assumptions.add(assumption);
 	}
 	
 	/**
 	 * Set the time limit for each individual solve call
 	 * @param seconds
 	 */
-	public void setSolverTimeLimit(int seconds) {
+	public void setTimeLimit(int seconds) {
 		solver.setTimeout(seconds);
 	}
-	
+		
 	/**
 	 * Return true if the formula specified by the addClause calls is satisfiable under
 	 * the given assumptions and false it is unsatisfiable. Return null in case of the
@@ -88,9 +96,8 @@ public class SatSolver {
 	 * @return
 	 */
 	public Boolean isSatisfiable() {
-		if (printer != null)
-			printer.addAssumptionsAndPrint(new VecInt());
-		return isSatisfiable(new int[] {});
+		int[] array = assumptions.stream().mapToInt(i->i).toArray();
+		return isSatisfiable(array);
 	}
 	
 	/**
@@ -102,5 +109,13 @@ public class SatSolver {
 		return model;
 	}
 	
-
+	@Override
+	public int getValue(int variable) {
+		return model[variable];
+	}
+	
+	@Override
+	public void release() {
+		solver.reset();
+	}
 }

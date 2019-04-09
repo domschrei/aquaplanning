@@ -8,7 +8,7 @@
   <packaging>jar</packaging>
 
   <name>aquaplanning</name>
-  <url>http://maven.apache.org</url>
+  <url>https://github.com/domschrei/aquaplanning</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -73,15 +73,16 @@
           </descriptorRefs>
         </configuration>
       </plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-surefire-plugin</artifactId>
-				<version>2.22.1</version>
-				<configuration>
-					  <useSystemClassLoader>false</useSystemClassLoader>
-					  <skipTests>${skipTests}</skipTests>
-				</configuration>
-			</plugin>
+	  <plugin>
+	  	<groupId>org.apache.maven.plugins</groupId>
+	  	<artifactId>maven-surefire-plugin</artifactId>
+		<version>2.22.1</version>
+		<configuration>
+		  <argLine>-Djava.library.path=lib/ipasir4j/:${java.library.path}</argLine>
+		  <useSystemClassLoader>false</useSystemClassLoader>
+		  <skipTests>${skipTests}</skipTests>
+		</configuration>
+	  </plugin>
     </plugins>
   </build>
   

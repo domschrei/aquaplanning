@@ -10,8 +10,7 @@ import edu.kit.aquaplanning.model.ground.Action;
 import edu.kit.aquaplanning.model.ground.Atom;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
-import edu.kit.aquaplanning.sat.SatSolver;
-import edu.kit.aquaplanning.sat.SimpleSatPrinter;
+import edu.kit.aquaplanning.sat.AbstractSatSolver;
 
 public class SimpleSatPlanner extends Planner {
 	
@@ -22,7 +21,6 @@ public class SimpleSatPlanner extends Planner {
 	private Map<Integer, List<Action> > supportingActionsNegative;
 	private List<Action> empty = new ArrayList<>();
 	private boolean ignoreAtMostOneAction = false;
-	
 	
 	public SimpleSatPlanner(Configuration config) {
 		super(config);
@@ -92,12 +90,7 @@ public class SimpleSatPlanner extends Planner {
 		initializeActionIdsAndSupports(problem);
 		
 		// initialize the SAT solver
-		SatSolver solver;
-		if (config.satFormulaFile != null) {
-			solver = new SatSolver(new SimpleSatPrinter(config.satFormulaFile));
-		} else {
-			solver = new SatSolver();
-		}
+		AbstractSatSolver solver = AbstractSatSolver.getSolver(config);
 		
 		// add the initial state unit clauses
 		addInitialStateClauses(problem, solver);
@@ -115,7 +108,8 @@ public class SimpleSatPlanner extends Planner {
 			// we will assume that the goal is satisfied after this step
 			int[] assumptions = calculateGoalAssumptions(problem, step+1);
 			
-			if (solver.isSatisfiable(assumptions)) {
+			Boolean result = solver.isSatisfiable(assumptions);
+			if (result != null && result) {
 				// We found a Plan!
 				break;
 			} else {
@@ -131,10 +125,9 @@ public class SimpleSatPlanner extends Planner {
 		
 		// Decode the plan
 		Plan plan = new Plan();
-		int[] model = solver.getModel();
 		for (int i = 0; i <= step; i++) {
 			for (Action a : problem.getActions()) {
-				if (model[getActionSatVariable(a.getName(), i)] > 0) {
+				if (solver.getValue(getActionSatVariable(a.getName(), i)) > 0) {
 					plan.appendAtBack(a);
 				}
 			}
@@ -162,7 +155,7 @@ public class SimpleSatPlanner extends Planner {
 	 * @param problem
 	 * @param solver
 	 */
-	protected void addInitialStateClauses(GroundPlanningProblem problem, SatSolver solver) {
+	protected void addInitialStateClauses(GroundPlanningProblem problem, AbstractSatSolver solver) {
 		for (int atomid = 0; atomid < problem.getNumAtoms(); atomid++) {
 			int atomSatId = getAtomSatVariable(atomid, 0);
 			if (problem.getInitialState().getAtomSet().get(atomid)) {
@@ -179,7 +172,7 @@ public class SimpleSatPlanner extends Planner {
 	 * @param solver
 	 * @param step
 	 */
-	protected void addTransitionalClauses(GroundPlanningProblem problem, SatSolver solver, int step) {
+	protected void addTransitionalClauses(GroundPlanningProblem problem, AbstractSatSolver solver, int step) {
 		// actions imply their effects
 		for (Action a : problem.getActions()) {
 			int actionSatId = getActionSatVariable(a.getName(), step);
@@ -229,7 +222,7 @@ public class SimpleSatPlanner extends Planner {
 	 * @param solver
 	 * @param step
 	 */
-	protected void addUniversalClauses(GroundPlanningProblem problem, SatSolver solver, int step) {	
+	protected void addUniversalClauses(GroundPlanningProblem problem, AbstractSatSolver solver, int step) {	
 		// actions imply their preconditions
 		for (Action a : problem.getActions()) {
 			int actionSatId = getActionSatVariable(a.getName(), step);

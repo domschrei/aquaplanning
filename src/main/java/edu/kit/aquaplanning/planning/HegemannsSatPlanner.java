@@ -4,8 +4,7 @@ import java.util.*;
 
 import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.model.ground.*;
-import edu.kit.aquaplanning.sat.SatSolver;
-import edu.kit.aquaplanning.sat.SimpleSatPrinter;
+import edu.kit.aquaplanning.sat.AbstractSatSolver;
 import edu.kit.aquaplanning.util.Logger;
 
 public class HegemannsSatPlanner extends Planner {
@@ -114,12 +113,7 @@ public class HegemannsSatPlanner extends Planner {
         // Calculate supporting actions for atoms
         initializeSupports(problem);
 
-        SatSolver solver;
-        if (config.satFormulaFile != null) {
-        	solver = new SatSolver(new SimpleSatPrinter(config.satFormulaFile));
-        } else {
-        	solver = new SatSolver();
-        }
+        AbstractSatSolver solver = AbstractSatSolver.getSolver(config);
 
         // Add the initial state unit clauses
         addInitialStateClauses(problem, solver);
@@ -141,7 +135,7 @@ public class HegemannsSatPlanner extends Planner {
             // we will assume that the goal is satisfied after this step
             int[] assumptions = calculateGoalAssumptions(problem, step+1);
 
-            solver.setSolverTimeLimit((int)Math.ceil(timeLimit));
+            solver.setTimeLimit((int) Math.ceil(timeLimit));
 
             Boolean result = solver.isSatisfiable(assumptions);
             if (result != null && result) {
@@ -157,11 +151,10 @@ public class HegemannsSatPlanner extends Planner {
 
         // Decode the plan
         Plan plan = new Plan();
-        int[] model = solver.getModel();
         for (int i = 0; i <= step; i++) {
             for (int r = 0; r < rankedActions.size(); r++) {
                 Action a = rankedActions.get(r);
-                if (model[getActionSatVariable(r, i)] > 0) {
+                if (solver.getValue(getActionSatVariable(r, i)) > 0) {
                     plan.appendAtBack(a);
                 }
             }
@@ -177,7 +170,7 @@ public class HegemannsSatPlanner extends Planner {
         recurrentClauses.addAll(calculateTransitionalClauses());
     }
 
-    private void addRecurrentClauses(SatSolver solver, int step) {
+    private void addRecurrentClauses(AbstractSatSolver solver, int step) {
         if (step == 0) {
             for (int[] clause : recurrentClauses) {
                 solver.addClause(clause);
@@ -286,7 +279,7 @@ public class HegemannsSatPlanner extends Planner {
     /**
      * Clauses that hold in the initial state (first step)
      */
-    private void addInitialStateClauses(GroundPlanningProblem problem, SatSolver solver) {
+    private void addInitialStateClauses(GroundPlanningProblem problem, AbstractSatSolver solver) {
         for (int atomid = 0; atomid < problem.getNumAtoms(); atomid++) {
             int atomSatId = getAtomSatVariable(atomid, 0);
             if (problem.getInitialState().getAtomSet().get(atomid)) {

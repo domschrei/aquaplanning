@@ -121,6 +121,15 @@ public class Configuration {
 			defaultValue = "1337")
 	public int seed = 1337;
 	
+	/* SAT-based planning */
+	
+	public enum SatSolverMode {
+		sat4j, ipasir4j;
+	}
+	@Option(names = {"--sat-mode"}, description = "Which SAT solver to use, i.e. internal SAT4j or external solver via ipasir4j: "
+			+ USAGE_OPTIONS_AND_DEFAULT, defaultValue = "sat4j")
+	public SatSolverMode satSolverMode;
+	
 	
 	/* 
 	 * Post-processing 
@@ -156,6 +165,7 @@ public class Configuration {
 		config.searchStrategy = searchStrategy;
 		config.revisitStates = revisitStates;
 		config.seed = seed;
+		config.satSolverMode = satSolverMode;
 		config.optimizePlan = optimizePlan;
 		config.startTimeMillis = startTimeMillis;
 		config.searchTimeSeconds = searchTimeSeconds;
@@ -170,7 +180,8 @@ public class Configuration {
 				+ verbosityLevel + "\n keepDisjunctions=" + keepDisjunctions + "\n keepEqualities=" + keepEqualities
 				+ "\n plannerType=" + plannerType + "\n heuristic=" + heuristic + "\n heuristicWeight=" + heuristicWeight
 				+ "\n searchStrategy=" + searchStrategy + "\n revisitStates=" + revisitStates + "\n seed=" + seed
-				+ "\n optimizePlan=" + optimizePlan + "\n startTimeMillis=" + startTimeMillis + "\n";
+				+ "\n satSolverMode=" + satSolverMode + "\n optimizePlan=" + optimizePlan 
+				+ "\n startTimeMillis=" + startTimeMillis + "\n";
 	}
 	
 }

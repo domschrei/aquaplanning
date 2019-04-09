@@ -184,6 +184,19 @@ public class Method {
 		return out;
 	}
 	
+	public Task toTask() {
+		Task task = new Task(name);
+		explicitArguments.forEach(arg -> task.addArgument(arg));
+		return task;
+	}
+	
+	public Task toTaskWithImplicitArgs() {
+		Task task = new Task(name);
+		explicitArguments.forEach(arg -> task.addArgument(arg));
+		implicitArguments.forEach(arg -> task.addArgument(arg));
+		return task;
+	}
+	
 	@Override
 	public String toString() {
 		String out = "(" + name;

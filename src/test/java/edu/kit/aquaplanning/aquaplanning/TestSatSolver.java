@@ -1,12 +1,12 @@
 package edu.kit.aquaplanning.aquaplanning;
 
-import edu.kit.aquaplanning.sat.SatSolver;
+import edu.kit.aquaplanning.sat.Sat4jSolver;
 import junit.framework.TestCase;
 
 public class TestSatSolver extends TestCase {
 	
 	public void testSatSolverUnsat() {
-		SatSolver s = new SatSolver();
+		Sat4jSolver s = new Sat4jSolver();
 		s.addClause(new int[] {1,2});
 		s.addClause(new int[] {-1,2});
 		s.addClause(new int[] {1,-2});
@@ -15,7 +15,7 @@ public class TestSatSolver extends TestCase {
 	}
 
 	public void testSatSolverIncremental() {
-		SatSolver s = new SatSolver();
+		Sat4jSolver s = new Sat4jSolver();
 		s.addClause(new int[] {1,4});
 		s.addClause(new int[] {-1,4});
 		s.addClause(new int[] {1,-4});

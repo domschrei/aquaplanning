@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 import edu.kit.aquaplanning.model.ground.Action;
@@ -16,6 +17,7 @@ import edu.kit.aquaplanning.model.ground.htn.Reduction;
 import edu.kit.aquaplanning.model.lifted.Argument;
 import edu.kit.aquaplanning.model.lifted.Type;
 import edu.kit.aquaplanning.model.lifted.condition.AbstractCondition;
+import edu.kit.aquaplanning.model.lifted.condition.Condition;
 import edu.kit.aquaplanning.model.lifted.htn.Method;
 import edu.kit.aquaplanning.model.lifted.htn.Task;
 import edu.kit.aquaplanning.util.Logger;
@@ -173,6 +175,24 @@ public class HtnGrounder {
 		globalVariableStart = initLayer.consolidate(globalVariableStart);
 		hierarchyLayers = new ArrayList<>();
 		hierarchyLayers.add(initLayer);
+		
+		/*
+		Logger.log(Logger.INFO, "Starting to calculate supporting tasks ...");
+		HtnGraph htnGraph = new HtnGraph(htnLiftedProblem);
+		for (String pred : grounder.getState().getOccurringPredicates(false)) {
+			for (Condition c : grounder.getState().getConditions(pred, false)) {
+				Set<Task> tasks = htnGraph.getSupportingLiftedTasks(c);
+				System.out.println(c + " : " + tasks + " (" + tasks.size() + ")");
+			}
+		}
+		for (String pred : grounder.getState().getOccurringPredicates(true)) {
+			for (Condition c : grounder.getState().getConditions(pred, true)) {
+				Set<Task> tasks = htnGraph.getSupportingLiftedTasks(c);
+				System.out.println(c + " : " + tasks + " (" + tasks.size() + ")");
+			}
+		}
+		Logger.log(Logger.INFO, "Finished calculating supporting tasks.");
+		*/
 	}
 	
 	public void computeNextLayer() {
