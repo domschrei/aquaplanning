@@ -17,14 +17,14 @@ public abstract class AbstractSatSolver {
 	
 	public static AbstractSatSolver getSolver(Configuration config) {
 		
-		if (config.satSolverMode == SatSolverMode.sat4j) {
+		if (config.satSolverMode == SatSolverMode.ipasir4j) {
+			return new IpasirSatSolver();
+		} else  {
 			if (config.satFormulaFile != null) {
 				return new Sat4jSolver(new SimpleSatPrinter(config.satFormulaFile));
 			} else {
 				return new Sat4jSolver();
 			}
-		} else {
-			return new IpasirSatSolver();
 		}
 	}
 }
