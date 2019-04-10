@@ -9,7 +9,7 @@ import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.Configuration.HeuristicType;
 import edu.kit.aquaplanning.Configuration.PlannerType;
 import edu.kit.aquaplanning.grounding.Grounder;
-import edu.kit.aquaplanning.grounding.RelaxedPlanningGraphGrounder;
+import edu.kit.aquaplanning.grounding.PlanningGraphGrounder;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
@@ -59,7 +59,7 @@ public class TestPlanners extends TestCase {
 		fullTest("testfiles/equality/domain1.pddl", "testfiles/equality/p1.pddl", config, 6, 6);
 		
 		config.keepDisjunctions = false;
-		config.keepEqualities = true;
+		config.keepRigidConditions = true;
 		fullTest("testfiles/adl/domain1.pddl", "testfiles/adl/p1.pddl", config, 5, 10);
 		fullTest("testfiles/equality/domain1.pddl", "testfiles/equality/p1.pddl", config, 6, 6);
 		
@@ -88,7 +88,7 @@ public class TestPlanners extends TestCase {
 		config.domainFile = "testfiles/gripper/domain.pddl";
 		config.problemFile = "testfiles/gripper/p01.pddl";
 		PlanningProblem pp = new ProblemParser().parse(config.domainFile, config.problemFile);
-		GroundPlanningProblem gpp = new RelaxedPlanningGraphGrounder(config).ground(pp);
+		GroundPlanningProblem gpp = new PlanningGraphGrounder(config).ground(pp);
 		Plan plan = Planner.getPlanner(config).findPlan(gpp);
 		assertTrue(Validator.planIsValid(gpp, plan));
 		System.out.println("Initial plan length: " + plan.getLength());
@@ -112,7 +112,7 @@ public class TestPlanners extends TestCase {
 	}
 	
 	public void testSatPlan() throws FileNotFoundException, IOException {
-		Grounder grounder = new RelaxedPlanningGraphGrounder(new Configuration());
+		Grounder grounder = new PlanningGraphGrounder(new Configuration());
 		for (String domain : SAT_TEST_DOMAINS) {
 			System.out.println("Testing domain \"" + domain + "\" with SAT.");
 			pp = new ProblemParser().parse("testfiles/" + domain + "/domain.pddl", 
@@ -185,7 +185,7 @@ public class TestPlanners extends TestCase {
 		assertTrue("String representation of problem is null", out != null);
 		
 		System.out.println("Grounding ...");
-		Grounder grounder = new RelaxedPlanningGraphGrounder(config);
+		Grounder grounder = new PlanningGraphGrounder(config);
 		gpp = grounder.ground(pp);
 		out = gpp.toString();
 		assertTrue("String representation of ground problem is null", out != null);
@@ -218,14 +218,13 @@ public class TestPlanners extends TestCase {
 		Configuration referenceConfig = new Configuration();
 		referenceConfig.keepDisjunctions = true;
 		referenceConfig.keepRigidConditions = true;
-		referenceConfig.keepEqualities = true;
 		
 		if (!config.equals(referenceConfig)) {
 			System.out.println("Testing against problem with default config ...");
 			
 			// Create a reference ground planning problem under default configuration options
 			PlanningProblem referenceP = new ProblemParser().parse(domainFile, problemFile);
-			GroundPlanningProblem reference = new RelaxedPlanningGraphGrounder(referenceConfig).ground(referenceP);
+			GroundPlanningProblem reference = new PlanningGraphGrounder(referenceConfig).ground(referenceP);
 			
 			// Write the found plan and re-interpret it based on the reference problem
 			FileWriter w = new FileWriter("_tmp_plan.txt");

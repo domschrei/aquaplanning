@@ -6,7 +6,7 @@ import java.net.InetAddress;
 
 import edu.kit.aquaplanning.grounding.Grounder;
 import edu.kit.aquaplanning.grounding.HtnGrounder;
-import edu.kit.aquaplanning.grounding.RelaxedPlanningGraphGrounder;
+import edu.kit.aquaplanning.grounding.PlanningGraphGrounder;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
 import edu.kit.aquaplanning.model.ground.htn.HtnPlanningProblem;
@@ -102,7 +102,7 @@ public class Main {
 			
 			// Step 2: Grounding (to get "flat" sets of actions and atoms)
 			Logger.log(Logger.INFO, "Grounding ...");
-			Grounder grounder = new RelaxedPlanningGraphGrounder(config);
+			Grounder grounder = new PlanningGraphGrounder(config);
 			GroundPlanningProblem planningProblem = grounder.ground(p);
 			if (planningProblem == null) {
 				Logger.log(Logger.ESSENTIAL, "The problem has been found to be unsatisfiable. Exiting.");
@@ -120,7 +120,7 @@ public class Main {
 				// HTN planning problem
 				
 				Logger.log(Logger.INFO, "Initializing HTN grounding ...");
-				HtnGrounder htnGrounder = new HtnGrounder(planningProblem, (RelaxedPlanningGraphGrounder) grounder);
+				HtnGrounder htnGrounder = new HtnGrounder(planningProblem, (PlanningGraphGrounder) grounder);
 				TreeRexPlanner planner = new TreeRexPlanner(config, htnGrounder);
 				plan = planner.findPlan();
 				

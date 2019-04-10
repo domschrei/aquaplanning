@@ -7,31 +7,25 @@ import java.util.Set;
 
 import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.model.ground.Action;
-import edu.kit.aquaplanning.model.ground.Atom;
 import edu.kit.aquaplanning.model.ground.Goal;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
-import edu.kit.aquaplanning.model.ground.Precondition;
-import edu.kit.aquaplanning.model.ground.Precondition.PreconditionType;
 import edu.kit.aquaplanning.model.ground.State;
 import edu.kit.aquaplanning.model.lifted.Argument;
 import edu.kit.aquaplanning.model.lifted.Operator;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.model.lifted.Predicate;
 import edu.kit.aquaplanning.util.Logger;
-import edu.kit.aquaplanning.util.Pair;
 import edu.kit.aquaplanning.model.lifted.condition.Condition;
-import edu.kit.aquaplanning.model.lifted.condition.ConditionSet;
-import edu.kit.aquaplanning.model.lifted.condition.AbstractCondition.ConditionType;
 
 /**
  * Grounder doing a reachability analysis through some 
  * approximated state space until a fixpoint is reached.
  */
-public class RelaxedPlanningGraphGrounder extends BaseGrounder {
+public class PlanningGraphGrounder extends BaseGrounder {
 	
-	private RelaxedPlanningGraph graph;
+	private PlanningGraph graph;
 	
-	public RelaxedPlanningGraphGrounder(Configuration config) {
+	public PlanningGraphGrounder(Configuration config) {
 		super(config);
 	}
 	
@@ -51,9 +45,18 @@ public class RelaxedPlanningGraphGrounder extends BaseGrounder {
 		constants.addAll(problem.getConstants());
 		constants.sort((c1, c2) -> c1.getName().compareTo(c2.getName()));
 		
+		// Will rigid predicates be removed from the problem?
+		boolean reduceAtoms = !config.keepRigidConditions && !config.keepDisjunctions;
+		if (reduceAtoms && !problem.getDerivedPredicates().isEmpty()) {
+			// TODO properly handle it by also simplifying the DPs' semantics
+			Logger.log(Logger.WARN, "Derived predicates are in the problem: "
+					+ "Cannot simplify away rigid conditions.");
+			reduceAtoms = false;
+		}
+		
 		// Will equality predicates remain in the problem?
-		if (config.keepEqualities) {
-			// --yes: add equality conditions
+		if (!reduceAtoms) {
+			// --yes: add equality conditions to initial state
 			Predicate pEquals = problem.getPredicate("=");
 			if (pEquals != null) {
 				// for all objects c: add the condition (= c c)
@@ -68,74 +71,39 @@ public class RelaxedPlanningGraphGrounder extends BaseGrounder {
 				}
 			}
 		}
-
-		boolean reduceAtoms = !config.keepRigidConditions && !config.keepDisjunctions;
-		if (reduceAtoms && !problem.getDerivedPredicates().isEmpty()) {
-			// TODO properly handle it by also simplifying the DPs' semantics
-			Logger.log(Logger.WARN, "Derived predicates are in the problem: Cannot simplify away rigid conditions.");
-			reduceAtoms = false;
-		}
 		
 		// Traverse delete-relaxed state space
-		graph = new RelaxedPlanningGraph(problem);
+		graph = new PlanningGraph(problem);
 		while (graph.hasNextLayer()) {
 			graph.computeNextLayer();
 		}
-		// Generate action objects
+		
+		// Generate action objects from reached operators
 		Logger.log(Logger.INFO_V, "Generating ground and simplified action objects ...");
 		Set<Action> actionSet = new HashSet<>();
-		LiftedState state = getState();
+		LiftedState finalState = getState();
 		for (Operator op : graph.getLiftedActions()) {
 			if (reduceAtoms) {
-				op = simplifyRigidConditions(op, state);
+				op = simplifyRigidConditions(op, finalState);
 			}
 			// Was the operator simplified away?
 			if (op != null) {
 				// -- no
-				Action a = getAction(op);
-				if (a != null) {
-					actionSet.add(a);
-				}
+				actionSet.add(getAction(op));
 			}
 		}
 		actions = new ArrayList<>();
 		actions.addAll(actionSet);
 		actions.sort((a1,a2) -> a1.getName().compareTo(a2.getName()));
 		
-		// Extract initial state
-		State initialState = getInitialState(state, reduceAtoms);
+		// Extract (and simplify) initial state
+		State initialState = getInitialState(finalState, reduceAtoms);
 		
-		// Simplify goal
-		ConditionSet goalSetUnsimplified = new ConditionSet(ConditionType.conjunction);
-		problem.getGoals().forEach(c -> goalSetUnsimplified.add(c));
-		ConditionSet goalSet;
-		if (reduceAtoms) {
-			goalSet = (ConditionSet) simplifyRigidConditions(goalSetUnsimplified, state, "goal");
-			if (goalSet == null) {
-				// TODO unreachable goal; directly return unsatisfiability
-				Logger.log(Logger.INFO, "Goal is unreachable according to planning graph analysis.");
-			}
-		} else {
-			goalSet = goalSetUnsimplified;
-		}
-		Goal goal;
-		Pair<List<Atom>, Precondition> splitGoal = splitAndGroundPrecondition(goalSet);
-		if (splitGoal.getRight() != null) {
-			// Complex goal: add simple AND complex parts
-			Precondition complexGoal = splitGoal.getRight();
-			splitGoal.getLeft().forEach(atom -> {
-				Precondition atomPre = new Precondition(PreconditionType.atom);
-				atomPre.setAtom(atom);
-				complexGoal.add(atomPre);
-			});
-			goal = new Goal(complexGoal);
-		} else {
-			// Simple goal
-			goal = new Goal(splitGoal.getLeft());
-		}
+		// Extract (and simplify) goal
+		Goal goal = getGoal(finalState, reduceAtoms);
 		
 		// Ground derived predicates' semantics
-		groundDerivedAtoms();
+		groundDerivedAtoms(finalState, reduceAtoms);
 		
 		// Assemble finished problem
 		GroundPlanningProblem planningProblem = new GroundPlanningProblem(initialState, actions, 

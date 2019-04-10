@@ -36,7 +36,7 @@ public class HtnGrounder {
 	private Reduction initReduction;
 	private int globalVariableStart = 1;
 	
-	public HtnGrounder(GroundPlanningProblem problem, RelaxedPlanningGraphGrounder grounder) {
+	public HtnGrounder(GroundPlanningProblem problem, PlanningGraphGrounder grounder) {
 		
 		this.groundProblem = problem;		
 		HtnPlanningProblem htnLiftedProblem = (HtnPlanningProblem) grounder.getProblem();

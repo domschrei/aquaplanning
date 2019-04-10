@@ -11,6 +11,7 @@ import edu.kit.aquaplanning.model.ground.Atom;
 import edu.kit.aquaplanning.model.ground.ConditionalEffect;
 import edu.kit.aquaplanning.model.ground.DerivedAtom;
 import edu.kit.aquaplanning.model.ground.Effect;
+import edu.kit.aquaplanning.model.ground.Goal;
 import edu.kit.aquaplanning.model.ground.GroundNumericExpression;
 import edu.kit.aquaplanning.model.ground.NumericAtom;
 import edu.kit.aquaplanning.model.ground.Effect.EffectType;
@@ -57,17 +58,10 @@ public abstract class BaseGrounder implements Grounder {
 	
 	protected List<Argument> constants;	
 	protected List<Action> actions;
-	protected boolean[] atomOccurrancePositive;
-	protected boolean[] atomOccurranceNegative;
 	
 	public BaseGrounder(Configuration config) {
 		this.config = config;
 		this.atomTable = new AtomTable();
-	}
-	
-	public void consolidate() {
-		atomTable.consolidate();
-		
 	}
 	
 	/**
@@ -519,16 +513,6 @@ public abstract class BaseGrounder implements Grounder {
 	 */
 	protected Action getAction(Operator liftedAction) {
 		
-		Action action = null;
-		
-		if (!config.keepEqualities) {			
-			// Resolve all equalities
-			liftedAction = resolveEqualities(liftedAction);
-			if (liftedAction == null)
-				// Inapplicable or inconsistent action
-				return null;
-		}
-		
 		// Assemble action name
 		String actionName = atomTable.getActionName(liftedAction, liftedAction.getArguments());
 		
@@ -538,7 +522,7 @@ public abstract class BaseGrounder implements Grounder {
 		Triple<List<Atom>, List<ConditionalEffect>, Effect> eff = splitAndGroundEffect(liftedAction.getEffect());
 		
 		// Assemble action
-		action = new Action(actionName, pre.getLeft(), pre.getRight(), eff.getLeft(), eff.getMid(), eff.getRight());
+		Action action = new Action(actionName, pre.getLeft(), pre.getRight(), eff.getLeft(), eff.getMid(), eff.getRight());
 		action.setCost(liftedAction.getCost());	
 		return action;
 	}
@@ -596,140 +580,42 @@ public abstract class BaseGrounder implements Grounder {
 		return initialState;
 	}
 	
+	Goal getGoal(LiftedState finalState, boolean reduceAtoms) {
+		
+		ConditionSet goalSetUnsimplified = new ConditionSet(ConditionType.conjunction);
+		problem.getGoals().forEach(c -> goalSetUnsimplified.add(c));
+		ConditionSet goalSet;
+		if (reduceAtoms) {
+			goalSet = (ConditionSet) simplifyRigidConditions(goalSetUnsimplified, finalState, "goal");
+			if (goalSet == null) {
+				// TODO unreachable goal; directly return unsatisfiability
+				Logger.log(Logger.INFO, "Goal is unreachable according to planning graph analysis.");
+			}
+		} else {
+			goalSet = goalSetUnsimplified;
+		}
+		Goal goal;
+		Pair<List<Atom>, Precondition> splitGoal = splitAndGroundPrecondition(goalSet);
+		if (splitGoal.getRight() != null) {
+			// Complex goal: add simple AND complex parts
+			Precondition complexGoal = splitGoal.getRight();
+			splitGoal.getLeft().forEach(atom -> {
+				Precondition atomPre = new Precondition(PreconditionType.atom);
+				atomPre.setAtom(atom);
+				complexGoal.add(atomPre);
+			});
+			goal = new Goal(complexGoal);
+		} else {
+			// Simple goal
+			goal = new Goal(splitGoal.getLeft());
+		}
+		return goal;
+	}
+	
 	// Constant conditions
 	protected final Condition trueCondition = new Condition(new Predicate("_TRUE"));
 	protected final Condition falseCondition = new Condition(new Predicate("_FALSE"));
 	
-	/**
-	 * Given an operator with simplified conditions, resolves all occurring equalities.
-	 * May return null if the precondition is simplified to false.
-	 */
-	private Operator resolveEqualities(Operator op) {
-		
-		// Copy operator
-		Operator newOp = new Operator(op.getName());
-		for (Argument arg : op.getArguments())
-			newOp.addArgument(arg);
-		newOp.setCost(op.getCost());
-		
-		// Simplify precondition
-		AbstractCondition pre = resolveEqualities(op.getPrecondition());
-		if (trueCondition.equals(pre)) {
-			// Precondition is always true
-			newOp.setPrecondition(new ConditionSet(ConditionType.conjunction));
-		} else if (falseCondition.equals(pre)) {
-			// Operator is never applicable; should be removed
-			return null;
-		} else {
-			newOp.setPrecondition(pre);
-		}
-		
-		// Simplify effect
-		AbstractCondition eff = resolveEqualities(op.getEffect());
-		if (trueCondition.equals(eff)) {
-			// Effect is "empty"
-			newOp.setEffect(new ConditionSet(ConditionType.conjunction));
-		} else if (falseCondition.equals(eff)) {
-			// Effect is inconsistent; remove operator
-			return null;
-		} else {
-			newOp.setEffect(eff);
-		}
-		
-		return newOp;
-	}
-	
-	/**
-	 * Given a simplified condition, resolves all occurring equalities
-	 * into true or false, and propagates this up to the whole condition.
-	 * May return <code>trueCondition</code> or <code>falseCondition</code>
-	 * if the condition simplifies to true or false, respectively.
-	 */
-	private AbstractCondition resolveEqualities(AbstractCondition abstractCondition) {
-		
-		// Traverse expression tree
-		return abstractCondition.traverse(cond -> {
-			
-			if (cond.getConditionType() == ConditionType.atomic) {
-				// Check and replace equality conditions
-				Condition atom = (Condition) cond;
-				if (isEqualityCondition(atom)) {
-					if (holdsEqualityCondition(atom)) {
-						return trueCondition;
-					} else {
-						return falseCondition;
-					}
-				}
-				
-			} else if (cond instanceof ConditionSet) {
-				// Propagate simplifications upwards
-				ConditionSet set = (ConditionSet) cond;
-				ConditionSet newSet = new ConditionSet(set.getConditionType());
-				for (AbstractCondition c : set.getConditions()) {
-					if (set.getConditionType() == ConditionType.conjunction 
-							&& falseCondition.equals(c)) {
-						// false atom in a conjunction: whole conjunction is false
-						return falseCondition;
-					} else if (set.getConditionType() == ConditionType.disjunction 
-							&& trueCondition.equals(c)) {
-						// true atom in a disjunction: whole disjunction is true
-						return trueCondition;
-					} else if (!trueCondition.equals(c) && !falseCondition.equals(c)) {
-						// only add non-constant valued conditions
-						newSet.add(c);
-					}
-				}
-				if (newSet.getConditions().isEmpty()) {
-					// Empty conjunction is true, empty disjunction is false
-					return (set.getConditionType() == ConditionType.conjunction ? 
-							trueCondition : falseCondition);
-				}
-				return newSet;
-				
-			} else if (cond.getConditionType() == ConditionType.consequential) {
-				// Simplify conditional effects
-				ConsequentialCondition cc = (ConsequentialCondition) cond;
-				AbstractCondition pre = cc.getPrerequisite();
-				if (trueCondition.equals(pre)) {
-					return resolveEqualities(cc.getConsequence());
-				} else if (falseCondition.equals(pre)) {
-					return trueCondition; // essentially forget about the cond. effect
-				}
-			}
-			
-			return cond;
-			
-		}, AbstractCondition.RECURSE_HEAD);
-	}
-	
-	/**
-	 * Checks whether the given condition is an equality condition.
-	 */
-	private boolean isEqualityCondition(Condition cond) {
-		return cond.getPredicate().getName().equals("=");
-	}
-	
-	/**
-	 * Given an equality condition with constant arguments, 
-	 * checks if the equality holds.
-	 */
-	private boolean holdsEqualityCondition(Condition cond) {
-		
-		if (!isEqualityCondition(cond)) {
-			error("The provided condition does not represent an equality.");
-		}
-		
-		if (cond.getNumArgs() == 2) {
-			if (cond.getArguments().get(0).getName().equals(
-					cond.getArguments().get(1).getName())) {
-				return !cond.isNegated();
-			} else {
-				return cond.isNegated();
-			}
-		}
-		return false;
-	}
-
 	/**
 	 * Compiles all atom names into a flat list, where the ith item
 	 * is the name of the atom of ID i, and returns the list.
@@ -748,7 +634,7 @@ public abstract class BaseGrounder implements Grounder {
 	 * Assembles the logical meaning of all relevant derived atoms
 	 * and grounds the respective expressions.
 	 */
-	protected void groundDerivedAtoms() {
+	protected void groundDerivedAtoms(LiftedState finalState, boolean simplifyRigids) {
 		
 		boolean change = true;
 		while (change) {
@@ -766,7 +652,9 @@ public abstract class BaseGrounder implements Grounder {
 				if (da.getCondition() == null) {
 					// Simplify and ground inner condition
 					AbstractCondition cond = da.getLiftedCondition();
-					cond = resolveEqualities(cond);
+					if (simplifyRigids) {
+						cond = simplifyRigidConditions(cond, finalState, "derived");						
+					}
 					da.setCondition(toPrecondition(cond, false));
 					
 					if (trueCondition.equals(cond)) {

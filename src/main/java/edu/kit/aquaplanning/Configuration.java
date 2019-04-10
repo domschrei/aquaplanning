@@ -74,9 +74,6 @@ public class Configuration {
 	@Option(names = {"-kd", "--keep-disjunctions"}, description = "Do not compile disjunctive conditions "
 			+ "into simple actions, but keep complex logical structure during planning")
 	public boolean keepDisjunctions;
-	@Option(names = {"-kq", "--keep-equalities"}, description = "Do not resolve equality conditions, "
-			+ "but add them as explicit atoms to the initial state")
-	public boolean keepEqualities;
 	@Option(names = {"-kr", "--keep-rigid-conditions"}, description = "Do not simplify away conditions "
 			+ "that are rigid according to the planning graph (-kr collides with -kd)")
 	public boolean keepRigidConditions;
@@ -161,7 +158,6 @@ public class Configuration {
 		config.maxTimeSeconds = maxTimeSeconds;
 		config.numThreads = numThreads;
 		config.keepDisjunctions = keepDisjunctions;
-		config.keepEqualities = keepEqualities;
 		config.plannerType = plannerType;
 		config.heuristic = heuristic;
 		config.heuristicWeight = heuristicWeight;
@@ -180,7 +176,7 @@ public class Configuration {
 		return "Configuration \n domainFile=" + domainFile + "\n problemFile=" + problemFile + "\n planOutputFile="
 				+ planOutputFile + "\n maxIterations=" + maxIterations + "\n maxTimeSeconds=" + maxTimeSeconds
 				+ "\n searchTimeSeconds=" + searchTimeSeconds + "\n numThreads=" + numThreads + "\n verbosityLevel="
-				+ verbosityLevel + "\n keepDisjunctions=" + keepDisjunctions + "\n keepEqualities=" + keepEqualities
+				+ verbosityLevel + "\n keepDisjunctions=" + keepDisjunctions 
 				+ "\n plannerType=" + plannerType + "\n heuristic=" + heuristic + "\n heuristicWeight=" + heuristicWeight
 				+ "\n searchStrategy=" + searchStrategy + "\n revisitStates=" + revisitStates + "\n seed=" + seed
 				+ "\n satSolverMode=" + satSolverMode + "\n optimizePlan=" + optimizePlan 
@@ -196,7 +192,6 @@ public class Configuration {
 		result = prime * result + ((heuristic == null) ? 0 : heuristic.hashCode());
 		result = prime * result + heuristicWeight;
 		result = prime * result + (keepDisjunctions ? 1231 : 1237);
-		result = prime * result + (keepEqualities ? 1231 : 1237);
 		result = prime * result + (keepRigidConditions ? 1231 : 1237);
 		result = prime * result + maxIterations;
 		result = prime * result + maxTimeSeconds;
@@ -237,8 +232,6 @@ public class Configuration {
 		if (heuristicWeight != other.heuristicWeight)
 			return false;
 		if (keepDisjunctions != other.keepDisjunctions)
-			return false;
-		if (keepEqualities != other.keepEqualities)
 			return false;
 		if (keepRigidConditions != other.keepRigidConditions)
 			return false;

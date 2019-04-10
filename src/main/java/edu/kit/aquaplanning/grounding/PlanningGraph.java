@@ -21,7 +21,7 @@ import edu.kit.aquaplanning.util.Logger;
  * and actions are still present. Can be used to ground a planning problem
  * in a cautious way by only considering reachable actions and atoms.
  */
-public class RelaxedPlanningGraph {
+public class PlanningGraph {
 
 	private List<Argument> constants;
 	private List<Set<Condition>> liftedStates;
@@ -34,7 +34,7 @@ public class RelaxedPlanningGraph {
 	 * The graph's layers are computed successively by calling hasNextLayer
 	 * and computeNextLayer.
 	 */
-	public RelaxedPlanningGraph(PlanningProblem problem) {
+	public PlanningGraph(PlanningProblem problem) {
 		
 		this.liftedActions = new ArrayList<>();
 		this.liftedStates = new ArrayList<>();

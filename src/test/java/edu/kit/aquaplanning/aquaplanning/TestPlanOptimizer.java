@@ -5,7 +5,7 @@ import java.io.IOException;
 
 import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.grounding.Grounder;
-import edu.kit.aquaplanning.grounding.RelaxedPlanningGraphGrounder;
+import edu.kit.aquaplanning.grounding.PlanningGraphGrounder;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
@@ -38,7 +38,7 @@ public class TestPlanOptimizer extends TestCase {
 	private void testBenchmark(String domain, String problem, String plan) throws IOException {
 		System.out.println("Testing plan improver on " + plan);
 		PlanningProblem pp = new ProblemParser().parse(domain, problem);
-		Grounder grounder = new RelaxedPlanningGraphGrounder(new Configuration());
+		Grounder grounder = new PlanningGraphGrounder(new Configuration());
 		GroundPlanningProblem gpp = grounder.ground(pp);
 
 		Plan p = PlanParser.parsePlan(plan, gpp);

@@ -1,6 +1,7 @@
 package edu.kit.aquaplanning.grounding;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -258,8 +259,14 @@ public class OperatorIndex {
 				eligibleArguments.add(args);
 			}
 			
+			// Search data structure: stack of partial argument assignments
+			// and corresponding bitvectors indicating which of the operator's conditions
+			// were already checked
 			Stack<ArgumentAssignment> assignmentStack = new Stack<>();
+			Stack<boolean[]> checkedConditionsStack = new Stack<>();
 			assignmentStack.push(new ArgumentAssignment(op.getArguments().size()));
+			checkedConditionsStack.push(new boolean[flatPreconds.size()]);
+			
 			Map<String, Integer> argIndices = operatorArgPositions.get(op.getName());
 			
 			// Find a suitable order of which arguments to instantiate first
@@ -283,6 +290,7 @@ public class OperatorIndex {
 			// pruning wherever some precondition becomes unsatisfiable
 			while (!assignmentStack.isEmpty()) {
 				ArgumentAssignment partialAssignment = assignmentStack.pop();
+				boolean[] checkedConditions = checkedConditionsStack.pop();
 				int decisionLevel = partialAssignment.getDecisionLevel();
 				
 				if (decisionLevel == op.getArguments().size()) {
@@ -310,11 +318,15 @@ public class OperatorIndex {
 					int argPos = orderedArgIndices[decisionLevel];
 					for (Argument arg : eligibleArguments.get(argPos)) {
 						ArgumentAssignment newAssignment = new ArgumentAssignment(partialAssignment);
+						boolean[] newCheckedConditions = Arrays.copyOf(checkedConditions, checkedConditions.length);
 						newAssignment.set(argPos, arg);
 						
 						// Is the assignment consistent up to now?
 						boolean holds = true;
-						precondLoop: for (Condition pre : flatPreconds) {
+						precondLoop: for (int p = 0; p < flatPreconds.size(); p++) {
+							Condition pre = flatPreconds.get(p);
+							if (newCheckedConditions[p])
+								continue;
 							
 							// Build precondition with according arguments
 							final Condition c = new Condition(pre.getPredicate(), pre.isNegated());
@@ -337,12 +349,15 @@ public class OperatorIndex {
 							if (!s.holds(c)) {
 								holds = false;
 								break;
+							} else {
+								newCheckedConditions[p] = true;
 							}
 						}
 						if (holds) {
 							// New assignment is still consistent;
 							// Remember partial assignment for further exploration
 							assignmentStack.push(newAssignment);
+							checkedConditionsStack.push(newCheckedConditions);
 						} // else: inconsistent assignment, discard				
 					}
 				}

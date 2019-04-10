@@ -103,14 +103,13 @@ public class LiftedState {
 		
 		if (condition.isNegated()) {
 			// Negative condition
-			boolean contained = conditionTreeNeg.getOrDefault(condition.getPredicate().getName(), new ArgumentNode(argumentIds))
-					.contains(condition.getArguments());
-			if (contained) {
+			ArgumentNode node = conditionTreeNeg.get(condition.getPredicate().getName());
+			if (node != null && node.contains(condition.getArguments())) {
 				return true;
 			} else {
 				// If neither tree contains the condition, a negative condition is assumed to hold
-				return !conditionTreePos.getOrDefault(condition.getPredicate().getName(), new ArgumentNode(argumentIds))
-						.contains(condition.getArguments());
+				node = conditionTreePos.get(condition.getPredicate().getName());
+				return (node == null || !node.contains(condition.getArguments()));
 			}
 		}
 		// Positive condition
