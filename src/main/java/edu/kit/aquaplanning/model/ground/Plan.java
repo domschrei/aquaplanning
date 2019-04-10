@@ -43,9 +43,7 @@ public class Plan implements Iterable<Action> {
 		StringBuilder builder = new StringBuilder();
 		int step = 0;
 		for (Action action : actions) {
-			builder.append(step + " : " + action.getName()
-				// Remove special symbols from operator splitting
-			.replaceAll("\\$.*\\$", "").replaceAll("\\*.*\\*", "") + "\n");
+			builder.append(step + " : " + action.getCleanedName() + "\n");
 			step++;
 		}
 		return builder.toString();

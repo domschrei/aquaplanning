@@ -6,9 +6,9 @@ import java.util.List;
 
 public class SymbolicReachabilitySolver {
 	
-	private SatSolver satSolver;
+	private Sat4jSolver satSolver;
 	
-	public SymbolicReachabilitySolver(SatSolver satSolver) {
+	public SymbolicReachabilitySolver(Sat4jSolver satSolver) {
 		this.satSolver = satSolver;
 	}
 	

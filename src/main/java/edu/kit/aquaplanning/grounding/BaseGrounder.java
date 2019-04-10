@@ -399,10 +399,25 @@ public abstract class BaseGrounder implements Grounder {
 	 * a planning graph converges to, then all conditions will be removed 
 	 * that are constant true in the given problem ("rigid conditions").
 	 */
-	protected void simplifyRigidConditions(Operator op, LiftedState liftedState) {
-		
-		op.setPrecondition(simplifyRigidConditions(op.getPrecondition(), liftedState, "pre"));
-		op.setEffect(simplifyRigidConditions(op.getEffect(), liftedState, "eff"));
+	protected Operator simplifyRigidConditions(Operator op, LiftedState liftedState) {
+
+		ConditionSet pre = (ConditionSet) simplifyRigidConditions(op.getPrecondition(), liftedState, "pre");
+		ConditionSet eff = (ConditionSet) simplifyRigidConditions(op.getEffect(), liftedState, "eff");
+		if (pre == null) {
+			Logger.log(Logger.ERROR, "Precondition of " + op.toActionString() + " is trivially false after simplification.");
+			System.exit(1);
+		}
+		if (eff == null) {
+			Logger.log(Logger.ERROR, "Effect of " + op.toActionString() + " is trivially false after simplification.");
+			System.exit(1);
+		}
+		if (eff.getConditions().size() > 0) {			
+			op.setPrecondition(pre);
+			op.setEffect(simplifyRigidConditions(op.getEffect(), liftedState, "eff"));
+			return op;
+		} else {
+			return null;
+		}
 	}
 	
 	/**
@@ -461,7 +476,7 @@ public abstract class BaseGrounder implements Grounder {
 				if (((ConditionSet) prerequisite).getConditions().size() == 0) {
 					// Constant true prerequisite
 					if (consequence == null) {
-						System.out.println("ERROR: Contradictory consequence in a conditional effect.");
+						Logger.log(Logger.ERROR, "ERROR: Contradictory consequence in a conditional effect.");
 						System.exit(1);
 					} else if (((ConditionSet) consequence).getConditions().size() == 0) {
 						// The consequence is a trivial statement, too

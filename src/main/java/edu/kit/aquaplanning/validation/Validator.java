@@ -36,7 +36,7 @@ public class Validator {
 		
 		if (!problem.getGoal().isSatisfied(state)) {
 			Logger.log(Logger.ERROR, "Error: The goal " + problem.getGoal() 
-				+ " is not satisfied in the final state " + problem.stateToString(state) + ".");
+				+ " is not satisfied in the final state.");
 			return false;
 		}
 		

@@ -86,12 +86,16 @@ public class RelaxedPlanningGraphGrounder extends BaseGrounder {
 		Set<Action> actionSet = new HashSet<>();
 		LiftedState state = getState();
 		for (Operator op : graph.getLiftedActions()) {
-			if (reduceAtoms) {				
-				simplifyRigidConditions(op, state);
+			if (reduceAtoms) {
+				op = simplifyRigidConditions(op, state);
 			}
-			Action a = getAction(op); // actual grounding
-			if (a != null) {
-				actionSet.add(a);
+			// Was the operator simplified away?
+			if (op != null) {
+				// -- no
+				Action a = getAction(op);
+				if (a != null) {
+					actionSet.add(a);
+				}
 			}
 		}
 		actions = new ArrayList<>();

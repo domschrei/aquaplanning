@@ -1,6 +1,8 @@
 package edu.kit.aquaplanning.aquaplanning;
 
+import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
 
 import edu.kit.aquaplanning.Configuration;
@@ -13,6 +15,7 @@ import edu.kit.aquaplanning.model.ground.Plan;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.optimization.Clock;
 import edu.kit.aquaplanning.optimization.SimplePlanOptimizer;
+import edu.kit.aquaplanning.parsing.PlanParser;
 import edu.kit.aquaplanning.parsing.ProblemParser;
 import edu.kit.aquaplanning.planning.ForwardSearchPlanner;
 import edu.kit.aquaplanning.planning.HegemannsSatPlanner;
@@ -21,7 +24,7 @@ import edu.kit.aquaplanning.planning.SimpleSatPlanner;
 import edu.kit.aquaplanning.planning.SymbolicReachabilityPlanner;
 import edu.kit.aquaplanning.planning.SearchStrategy.Mode;
 import edu.kit.aquaplanning.validation.Validator;
-import junit.framework.TestCase;
+import junit.framework.*;
 
 public class TestPlanners extends TestCase {
 	
@@ -211,7 +214,37 @@ public class TestPlanners extends TestCase {
 		
 		assertTrue("The produced plan is invalid.", Validator.planIsValid(gpp, plan));
 		
+		// "Naive", basic configuration
+		Configuration referenceConfig = new Configuration();
+		referenceConfig.keepDisjunctions = true;
+		referenceConfig.keepRigidConditions = true;
+		referenceConfig.keepEqualities = true;
+		
+		if (!config.equals(referenceConfig)) {
+			System.out.println("Testing against problem with default config ...");
+			
+			// Create a reference ground planning problem under default configuration options
+			PlanningProblem referenceP = new ProblemParser().parse(domainFile, problemFile);
+			GroundPlanningProblem reference = new RelaxedPlanningGraphGrounder(referenceConfig).ground(referenceP);
+			
+			// Write the found plan and re-interpret it based on the reference problem
+			FileWriter w = new FileWriter("_tmp_plan.txt");
+			w.write(plan.toString());
+			w.close();
+			Plan parsedPlan = PlanParser.parsePlan("_tmp_plan.txt", reference);
+			
+			// See if the plan is valid under the reference problem, too
+			assertTrue("The produced plan is invalid under the problem that is generated using default settings.", 
+					Validator.planIsValid(reference, parsedPlan));
+		}
+		
 		System.out.println("Done.\n");
+	}
+	
+	@Override
+	protected void tearDown() throws Exception {
+		super.tearDown();
+		new File("_tmp_plan.txt").delete();
 	}
 
 }

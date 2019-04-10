@@ -261,6 +261,10 @@ public class Action {
 		return name;
 	}
 	
+	public String getCleanedName() {
+		return getName().replaceAll("\\$.*\\$", "").replaceAll("\\*.*\\*", "");
+	}
+	
 	public void setCost(int cost) {
 		this.cost = cost;
 	}

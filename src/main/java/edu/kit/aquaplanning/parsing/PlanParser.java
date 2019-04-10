@@ -11,6 +11,7 @@ import java.util.zip.ZipFile;
 import edu.kit.aquaplanning.model.ground.Action;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
+import edu.kit.aquaplanning.util.Logger;
 
 public class PlanParser {
 	
@@ -30,7 +31,7 @@ public class PlanParser {
 		}
 		HashMap<String, Action> actionMap = new HashMap<>();
 		for (Action a : gpp.getActions()) {
-			actionMap.put(a.getName(), a);
+			actionMap.put(a.getCleanedName(), a);
 		}
 		while (true) {
 			String line = reader.readLine();
@@ -38,7 +39,12 @@ public class PlanParser {
 				break;
 			}
 			String actionName = line.split(":")[1].trim();
-			plan.appendAtBack(actionMap.get(actionName));
+			Action action = actionMap.get(actionName);
+			if (action == null) {
+				Logger.log(Logger.ERROR, "Could not parse action " + actionName + ".");
+				System.exit(1);
+			}
+			plan.appendAtBack(action);
 		}
 		reader.close();
 		if (zf != null) {

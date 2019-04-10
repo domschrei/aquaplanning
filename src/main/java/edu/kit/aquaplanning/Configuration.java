@@ -186,5 +186,101 @@ public class Configuration {
 				+ "\n satSolverMode=" + satSolverMode + "\n optimizePlan=" + optimizePlan 
 				+ "\n startTimeMillis=" + startTimeMillis + "\n";
 	}
-	
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((domainFile == null) ? 0 : domainFile.hashCode());
+		result = prime * result + (eliminateConditionalEffects ? 1231 : 1237);
+		result = prime * result + ((heuristic == null) ? 0 : heuristic.hashCode());
+		result = prime * result + heuristicWeight;
+		result = prime * result + (keepDisjunctions ? 1231 : 1237);
+		result = prime * result + (keepEqualities ? 1231 : 1237);
+		result = prime * result + (keepRigidConditions ? 1231 : 1237);
+		result = prime * result + maxIterations;
+		result = prime * result + maxTimeSeconds;
+		result = prime * result + numThreads;
+		result = prime * result + (optimizePlan ? 1231 : 1237);
+		result = prime * result + ((planOutputFile == null) ? 0 : planOutputFile.hashCode());
+		result = prime * result + ((plannerType == null) ? 0 : plannerType.hashCode());
+		result = prime * result + ((problemFile == null) ? 0 : problemFile.hashCode());
+		result = prime * result + (revisitStates ? 1231 : 1237);
+		result = prime * result + ((satFormulaFile == null) ? 0 : satFormulaFile.hashCode());
+		result = prime * result + ((satSolverMode == null) ? 0 : satSolverMode.hashCode());
+		result = prime * result + ((searchStrategy == null) ? 0 : searchStrategy.hashCode());
+		result = prime * result + searchTimeSeconds;
+		result = prime * result + seed;
+		result = prime * result + (int) (startTimeMillis ^ (startTimeMillis >>> 32));
+		result = prime * result + verbosityLevel;
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Configuration other = (Configuration) obj;
+		if (domainFile == null) {
+			if (other.domainFile != null)
+				return false;
+		} else if (!domainFile.equals(other.domainFile))
+			return false;
+		if (eliminateConditionalEffects != other.eliminateConditionalEffects)
+			return false;
+		if (heuristic != other.heuristic)
+			return false;
+		if (heuristicWeight != other.heuristicWeight)
+			return false;
+		if (keepDisjunctions != other.keepDisjunctions)
+			return false;
+		if (keepEqualities != other.keepEqualities)
+			return false;
+		if (keepRigidConditions != other.keepRigidConditions)
+			return false;
+		if (maxIterations != other.maxIterations)
+			return false;
+		if (maxTimeSeconds != other.maxTimeSeconds)
+			return false;
+		if (numThreads != other.numThreads)
+			return false;
+		if (optimizePlan != other.optimizePlan)
+			return false;
+		if (planOutputFile == null) {
+			if (other.planOutputFile != null)
+				return false;
+		} else if (!planOutputFile.equals(other.planOutputFile))
+			return false;
+		if (plannerType != other.plannerType)
+			return false;
+		if (problemFile == null) {
+			if (other.problemFile != null)
+				return false;
+		} else if (!problemFile.equals(other.problemFile))
+			return false;
+		if (revisitStates != other.revisitStates)
+			return false;
+		if (satFormulaFile == null) {
+			if (other.satFormulaFile != null)
+				return false;
+		} else if (!satFormulaFile.equals(other.satFormulaFile))
+			return false;
+		if (satSolverMode != other.satSolverMode)
+			return false;
+		if (searchStrategy != other.searchStrategy)
+			return false;
+		if (searchTimeSeconds != other.searchTimeSeconds)
+			return false;
+		if (seed != other.seed)
+			return false;
+		if (startTimeMillis != other.startTimeMillis)
+			return false;
+		if (verbosityLevel != other.verbosityLevel)
+			return false;
+		return true;
+	}
 }
