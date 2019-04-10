@@ -1,0 +1,138 @@
+package edu.kit.aquaplanning.planning;
+
+import java.util.ArrayDeque;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Random;
+
+import edu.kit.aquaplanning.Configuration;
+import edu.kit.aquaplanning.model.ground.Action;
+import edu.kit.aquaplanning.model.ground.Atom;
+import edu.kit.aquaplanning.model.ground.AtomSet;
+import edu.kit.aquaplanning.model.ground.Goal;
+import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
+import edu.kit.aquaplanning.model.ground.Plan;
+import edu.kit.aquaplanning.model.ground.State;
+
+/**
+ * A simple forward best-first-search planner. Does not create parallel plans.
+ * Creates very long plans which should be shortened by some post-processing.
+ */
+public class GreedyBestFirstSearchSolver extends Planner {
+	
+	private Random rnd = new Random(42);
+    
+
+
+	public GreedyBestFirstSearchSolver(Configuration config) {
+		super(config);
+		// TODO Auto-generated constructor stub
+	}
+
+	@Override
+	public Plan findPlan(GroundPlanningProblem problem) {
+
+        ArrayDeque<State> stateHistory = new ArrayDeque<>();
+        ArrayDeque<Action> plan = new ArrayDeque<>();
+        //visitedStates = new MoveToFrontHashTable(64*1024*1024);
+        HashSet<AtomSet> visitedStates = new HashSet<>();
+		FullActionIndex aindex = new FullActionIndex(problem);
+
+        State state = new State(problem.getInitialState());
+        Goal goal = problem.getGoal();
+        Collection<Action> applicableActions = aindex.getApplicableActions(state);
+        
+        while (!goal.isSatisfied(state)) {
+            visitedStates.add(state.getAtomSet());
+        	Action best = null;
+        	int bestValue = -1;
+        	
+            for (Action a : applicableActions) {
+            	State newState = a.apply(state);
+            	if (visitedStates.contains(newState.getAtomSet())) {
+            		continue;
+            	} else {
+            		int value = calculateManhattan(newState, goal);
+            		if (value > bestValue) {
+            			bestValue = value;
+            			best = a;
+            		}
+            	}
+            }
+            
+            if (best == null) {
+                if (plan.size() == 0) {
+                	// Plan does not exist
+                	return null;
+                }
+                // backtracking
+                plan.removeLast();
+                State newState = stateHistory.pollLast();
+                updateApplicableActionsChanges(applicableActions, state, newState, aindex);
+                state = newState;
+            } else {
+                // select the best action
+                plan.addLast(best);
+                stateHistory.addLast(state);
+                State newState = best.apply(state);
+                updateApplicableActionsChanges(applicableActions, state, newState, aindex);
+                state = newState;
+            }
+        }
+
+        // make the plan
+        Plan finalplan = new Plan();
+        for (Action a : plan) {
+        	finalplan.appendAtBack(a);
+        }
+        return finalplan;
+    }
+	
+    private void updateApplicableActionsChanges(Collection<Action> actions, State oldState, State newState, FullActionIndex aindex) {
+        // first remove actions that are no more applicable
+        Iterator<Action> iter = actions.iterator();
+        while (iter.hasNext()) {
+        	Action a = iter.next();
+        	if (!a.isApplicable(newState)) {
+        		iter.remove();
+        	}
+        }
+        // add new applicable actions for changed state variables
+        if (aindex.getNoPrecondActions() != null) {
+        	for (Action a : aindex.getNoPrecondActions()) {
+        		if (a.isApplicable(newState)) {
+        			actions.add(a);
+        		}
+        	}
+        }
+        // Check and debug
+        AtomSet changes = oldState.getAtomSet().xor(newState.getAtomSet());
+        int changeId = changes.getFirstTrueAtom();
+        while (changeId != -1) {
+        	int precondIndex = newState.getAtomSet().get(changeId) ? changeId+1 : -changeId-1;
+        	List<Action> cands = aindex.getActionsWithPrecondition(precondIndex);
+        	if (cands != null) {
+        		for (Action a: cands) {
+        			if (a.isApplicable(newState)) {
+        				actions.add(a);
+        			}
+        		}
+        	}
+        	changeId = changes.getNextTrueAtom(changeId+1);
+        }
+    }
+
+	
+	private int calculateManhattan(State state, Goal goal) {
+		int satisfiedGoals = 0;
+		for (Atom g : goal.getAtoms()) {
+			if (state.holds(g)) {
+				satisfiedGoals++;
+			}
+		}
+		return 10*(satisfiedGoals)+rnd.nextInt(10);
+	}
+
+}
