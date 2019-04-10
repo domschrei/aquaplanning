@@ -24,6 +24,17 @@ public class SimpleSatPrinter {
 		this.newClauses = new StringBuilder();
 	}
 	
+	public void addAtMostOneConstraint(IVecInt literals) {
+		for (int i = 0; i < literals.size(); i++) {
+			for (int j = i+1; j < literals.size(); j++) {
+				IVecInt lits = new VecInt(2);
+				lits.set(0, -literals.get(i));
+				lits.set(1, -literals.get(j));
+				addClause(lits);
+			}
+		}
+	}
+	
 	public void addClause(IVecInt literals) {
 		String out = "";
 		for (int i = 0; i < literals.size(); i++) {
