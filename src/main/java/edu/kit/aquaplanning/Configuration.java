@@ -41,6 +41,12 @@ public class Configuration {
 	@Option(paramLabel = "satFile", names = "-SAT", description = "Output SAT formulae to file(s)")
 	public String satFormulaFile;
 	
+	/* Validation */
+	
+	@Option(paramLabel = "planFile", names = {"-?", "--validate"}, description = "Validate the plan "
+			+ "in the provided file (and don't do planning)")
+	public String planFileToValidate;
+	
 	/* Computational bounds */
 	
 	@Option(paramLabel = "maxIterations", names = {"-m", "--max-iterations"}, 

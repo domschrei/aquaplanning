@@ -13,6 +13,7 @@ import edu.kit.aquaplanning.model.ground.htn.HtnPlanningProblem;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.optimization.Clock;
 import edu.kit.aquaplanning.optimization.SimplePlanOptimizer;
+import edu.kit.aquaplanning.parsing.PlanParser;
 import edu.kit.aquaplanning.parsing.ProblemParser;
 import edu.kit.aquaplanning.planning.Planner;
 import edu.kit.aquaplanning.planning.htn.TreeRexPlanner;
@@ -91,7 +92,7 @@ public class Main {
 		// For debugging, you can also override the configuration here, e.g.
 		// config.heuristic = HeuristicType.manhattanGoalDistance;
 		
-		//Thread.sleep(5000);
+		// Thread.sleep(5000);
 		
 		try {	
 			// Step 1: Parsing of domain and problem files
@@ -115,6 +116,21 @@ public class Main {
 			Logger.log(Logger.INFO, "Grounding complete. " + planningProblem.getActions().size() 
 					+ " actions resulted from the grounding.\n");
 			
+			// Operation mode: Validation.
+			if (config.planFileToValidate != null) {	
+				// Validate a provided plan file
+				Logger.log(Logger.INFO, "Parsing plan " + config.planFileToValidate + " ...");
+				Plan plan = PlanParser.parsePlan(config.planFileToValidate, planningProblem);
+				boolean isValid = false;
+				if (plan != null) {
+					Logger.log(Logger.INFO, "Validating plan ...");
+					isValid = Validator.planIsValid(planningProblem, plan);
+				}
+				Logger.log(Logger.ESSENTIAL, "PLAN " + (isValid ? "VALID" : "INVALID") + ". Exiting.");					
+				return;
+			}
+			
+			// Operation mode: Planning.
 			Plan plan = null;
 			if (p instanceof HtnPlanningProblem) {
 				// HTN planning problem
@@ -164,7 +180,7 @@ public class Main {
 			}
 			
 		} catch (Exception e) {
-			Logger.log(Logger.ERROR, "An error occurred.");
+			Logger.log(Logger.ERROR, "An internal error occurred.");
 			e.printStackTrace();
 		}
 	}

@@ -33,18 +33,25 @@ public class PlanParser {
 		for (Action a : gpp.getActions()) {
 			actionMap.put(a.getCleanedName(), a);
 		}
+		int lineNo = 1;
 		while (true) {
 			String line = reader.readLine();
 			if (line == null) {
 				break;
 			}
-			String actionName = line.split(":")[1].trim();
+			String[] words = line.split(":");
+			if (words.length < 2) {
+				Logger.log(Logger.ERROR, "Error: Plan file is syntactically invalid. (line " + lineNo + ")");
+				return null;
+			}
+			String actionName = words[1].trim();
 			Action action = actionMap.get(actionName);
 			if (action == null) {
-				Logger.log(Logger.ERROR, "Could not parse action " + actionName + ".");
-				System.exit(1);
+				Logger.log(Logger.ERROR, "Could not parse action \"" + actionName + "\". (line " + lineNo + ")");
+				return null;
 			}
 			plan.appendAtBack(action);
+			lineNo++;
 		}
 		reader.close();
 		if (zf != null) {
