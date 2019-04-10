@@ -5,8 +5,8 @@ import java.util.ArrayList;
 import edu.kit.aquaplanning.model.ground.Action;
 import edu.kit.aquaplanning.model.ground.Plan;
 import edu.kit.aquaplanning.model.ground.State;
-import edu.kit.aquaplanning.planning.GroundRelaxedPlanningGraph;
-import edu.kit.aquaplanning.planning.SearchNode;
+import edu.kit.aquaplanning.planning.datastructures.GroundRelaxedPlanningGraph;
+import edu.kit.aquaplanning.planning.datastructures.SearchNode;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 
 /**

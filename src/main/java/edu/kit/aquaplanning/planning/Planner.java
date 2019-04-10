@@ -3,6 +3,8 @@ package edu.kit.aquaplanning.planning;
 import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
+import edu.kit.aquaplanning.planning.sat.HegemannsSatPlanner;
+import edu.kit.aquaplanning.planning.sat.SimpleSatPlanner;
 import edu.kit.aquaplanning.util.Logger;
 
 /**
@@ -77,7 +79,7 @@ public abstract class Planner {
 						+ config.numThreads + " threads.");
 			return new PortfolioParallelPlanner(config);
 		case greedy:
-			return new GreedyBestFirstSearchSolver(config);
+			return new GreedyBestFirstSearchPlanner(config);
 		default:
 			break;
 		}

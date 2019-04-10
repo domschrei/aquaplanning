@@ -7,7 +7,7 @@ import java.util.Map;
 
 import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.Configuration.SatSolverMode;
-import edu.kit.aquaplanning.grounding.HtnGrounder;
+import edu.kit.aquaplanning.grounding.htn.HtnGrounder;
 import edu.kit.aquaplanning.model.ground.Action;
 import edu.kit.aquaplanning.model.ground.Atom;
 import edu.kit.aquaplanning.model.ground.AtomSet;

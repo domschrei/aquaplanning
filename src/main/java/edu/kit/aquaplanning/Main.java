@@ -5,8 +5,8 @@ import java.io.IOException;
 import java.net.InetAddress;
 
 import edu.kit.aquaplanning.grounding.Grounder;
-import edu.kit.aquaplanning.grounding.HtnGrounder;
 import edu.kit.aquaplanning.grounding.PlanningGraphGrounder;
+import edu.kit.aquaplanning.grounding.htn.HtnGrounder;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
 import edu.kit.aquaplanning.model.ground.htn.HtnPlanningProblem;

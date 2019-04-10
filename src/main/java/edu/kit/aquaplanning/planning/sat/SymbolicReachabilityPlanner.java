@@ -1,10 +1,11 @@
-package edu.kit.aquaplanning.planning;
+package edu.kit.aquaplanning.planning.sat;
 
 import java.util.List;
 
 import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
+import edu.kit.aquaplanning.planning.Planner;
 import edu.kit.aquaplanning.sat.Sat4jSolver;
 import edu.kit.aquaplanning.sat.SymbolicReachabilityFormula;
 import edu.kit.aquaplanning.sat.SymbolicReachabilitySolver;

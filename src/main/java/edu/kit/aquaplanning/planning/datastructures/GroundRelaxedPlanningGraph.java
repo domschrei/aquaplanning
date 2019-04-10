@@ -1,4 +1,4 @@
-package edu.kit.aquaplanning.planning;
+package edu.kit.aquaplanning.planning.datastructures;
 
 import java.util.List;
 

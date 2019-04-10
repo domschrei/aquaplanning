@@ -1,4 +1,4 @@
-package edu.kit.aquaplanning.grounding;
+package edu.kit.aquaplanning.grounding.datastructures;
 
 import java.util.HashMap;
 import java.util.List;

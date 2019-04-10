@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Set;
 
 import edu.kit.aquaplanning.Configuration;
+import edu.kit.aquaplanning.grounding.datastructures.LiftedState;
 import edu.kit.aquaplanning.model.ground.Action;
 import edu.kit.aquaplanning.model.ground.Goal;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;

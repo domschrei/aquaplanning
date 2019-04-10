@@ -11,8 +11,8 @@ import edu.kit.aquaplanning.model.ground.Atom;
 import edu.kit.aquaplanning.model.ground.ConditionalEffect;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.State;
-import edu.kit.aquaplanning.planning.GroundRelaxedPlanningGraph;
-import edu.kit.aquaplanning.planning.SearchNode;
+import edu.kit.aquaplanning.planning.datastructures.GroundRelaxedPlanningGraph;
+import edu.kit.aquaplanning.planning.datastructures.SearchNode;
 
 /**
  * Fast-forward heuristic using a greedy planning strategy

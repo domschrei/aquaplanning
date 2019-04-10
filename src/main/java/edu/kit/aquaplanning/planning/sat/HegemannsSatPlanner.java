@@ -1,9 +1,10 @@
-package edu.kit.aquaplanning.planning;
+package edu.kit.aquaplanning.planning.sat;
 
 import java.util.*;
 
 import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.model.ground.*;
+import edu.kit.aquaplanning.planning.Planner;
 import edu.kit.aquaplanning.sat.AbstractSatSolver;
 import edu.kit.aquaplanning.util.Logger;
 

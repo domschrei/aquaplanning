@@ -15,17 +15,18 @@ import edu.kit.aquaplanning.model.ground.Goal;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
 import edu.kit.aquaplanning.model.ground.State;
+import edu.kit.aquaplanning.planning.datastructures.FullActionIndex;
 import edu.kit.aquaplanning.util.Logger;
 
 /**
  * A simple forward best-first-search planner. Does not create parallel plans.
  * Creates very long plans which should be shortened by some post-processing.
  */
-public class GreedyBestFirstSearchSolver extends Planner {
+public class GreedyBestFirstSearchPlanner extends Planner {
 	
 	private Random rnd;
     
-	public GreedyBestFirstSearchSolver(Configuration config) {
+	public GreedyBestFirstSearchPlanner(Configuration config) {
 		super(config);
 		rnd = new Random(config.seed);
 	}

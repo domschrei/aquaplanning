@@ -1,4 +1,4 @@
-package edu.kit.aquaplanning.grounding;
+package edu.kit.aquaplanning.grounding.htn;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import edu.kit.aquaplanning.grounding.PlanningGraphGrounder;
 import edu.kit.aquaplanning.model.ground.Action;
 import edu.kit.aquaplanning.model.ground.Atom;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
@@ -157,6 +158,7 @@ public class HtnGrounder {
 			// Add constraints of initTaskNetwork @ pos(+1, if after)
 			Precondition p = initReduction.getConstraint(pos);
 			addCondition(p, pos, initLayer);
+			System.out.println(pos + " : " + initLayer.getReductions(pos).size() + " reductions");
 		}
 		// Add init state and goals @ initTaskNetwork.getSubtasks().size()
 		for (int p = 0; p <= numAtoms; p++) {

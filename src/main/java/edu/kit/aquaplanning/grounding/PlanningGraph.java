@@ -5,6 +5,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import edu.kit.aquaplanning.grounding.datastructures.LiftedState;
+import edu.kit.aquaplanning.grounding.datastructures.OperatorIndex;
 import edu.kit.aquaplanning.model.lifted.Argument;
 import edu.kit.aquaplanning.model.lifted.Operator;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;

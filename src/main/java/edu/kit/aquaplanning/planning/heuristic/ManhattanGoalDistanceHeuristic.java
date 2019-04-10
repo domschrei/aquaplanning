@@ -5,7 +5,7 @@ import java.util.Random;
 import edu.kit.aquaplanning.model.ground.Atom;
 import edu.kit.aquaplanning.model.ground.Goal;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
-import edu.kit.aquaplanning.planning.SearchNode;
+import edu.kit.aquaplanning.planning.datastructures.SearchNode;
 
 /**
  * Simple and greedy heuristic which maps a state to the amount of goals

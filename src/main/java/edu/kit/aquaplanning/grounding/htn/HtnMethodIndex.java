@@ -1,4 +1,4 @@
-package edu.kit.aquaplanning.grounding;
+package edu.kit.aquaplanning.grounding.htn;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -9,6 +9,8 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.function.Function;
 
+import edu.kit.aquaplanning.grounding.datastructures.ArgumentAssignment;
+import edu.kit.aquaplanning.grounding.datastructures.LiftedState;
 import edu.kit.aquaplanning.model.ground.Precondition;
 import edu.kit.aquaplanning.model.ground.htn.Reduction;
 import edu.kit.aquaplanning.model.lifted.Argument;

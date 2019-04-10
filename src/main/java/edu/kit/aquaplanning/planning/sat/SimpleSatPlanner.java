@@ -1,4 +1,4 @@
-package edu.kit.aquaplanning.planning;
+package edu.kit.aquaplanning.planning.sat;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -10,6 +10,7 @@ import edu.kit.aquaplanning.model.ground.Action;
 import edu.kit.aquaplanning.model.ground.Atom;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
+import edu.kit.aquaplanning.planning.Planner;
 import edu.kit.aquaplanning.sat.AbstractSatSolver;
 
 public class SimpleSatPlanner extends Planner {

@@ -9,7 +9,7 @@ import edu.kit.aquaplanning.Configuration.HeuristicType;
 import edu.kit.aquaplanning.Configuration.PlannerType;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
-import edu.kit.aquaplanning.planning.SearchStrategy.Mode;
+import edu.kit.aquaplanning.planning.datastructures.SearchStrategy.Mode;
 import edu.kit.aquaplanning.util.Logger;
 
 /**

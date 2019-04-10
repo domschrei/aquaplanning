@@ -18,11 +18,11 @@ import edu.kit.aquaplanning.optimization.SimplePlanOptimizer;
 import edu.kit.aquaplanning.parsing.PlanParser;
 import edu.kit.aquaplanning.parsing.ProblemParser;
 import edu.kit.aquaplanning.planning.ForwardSearchPlanner;
-import edu.kit.aquaplanning.planning.HegemannsSatPlanner;
 import edu.kit.aquaplanning.planning.Planner;
-import edu.kit.aquaplanning.planning.SimpleSatPlanner;
-import edu.kit.aquaplanning.planning.SymbolicReachabilityPlanner;
-import edu.kit.aquaplanning.planning.SearchStrategy.Mode;
+import edu.kit.aquaplanning.planning.datastructures.SearchStrategy.Mode;
+import edu.kit.aquaplanning.planning.sat.HegemannsSatPlanner;
+import edu.kit.aquaplanning.planning.sat.SimpleSatPlanner;
+import edu.kit.aquaplanning.planning.sat.SymbolicReachabilityPlanner;
 import edu.kit.aquaplanning.validation.Validator;
 import junit.framework.*;
 

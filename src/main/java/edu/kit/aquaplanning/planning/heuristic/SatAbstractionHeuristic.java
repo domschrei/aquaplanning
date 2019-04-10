@@ -3,8 +3,8 @@ package edu.kit.aquaplanning.planning.heuristic;
 import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
-import edu.kit.aquaplanning.planning.SearchNode;
-import edu.kit.aquaplanning.planning.SimpleSatPlanner;
+import edu.kit.aquaplanning.planning.datastructures.SearchNode;
+import edu.kit.aquaplanning.planning.sat.SimpleSatPlanner;
 
 public class SatAbstractionHeuristic extends Heuristic {
 	
