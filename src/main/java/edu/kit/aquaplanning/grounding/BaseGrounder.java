@@ -57,6 +57,8 @@ public abstract class BaseGrounder implements Grounder {
 	
 	protected List<Argument> constants;	
 	protected List<Action> actions;
+	protected boolean[] atomOccurrancePositive;
+	protected boolean[] atomOccurranceNegative;
 	
 	public BaseGrounder(Configuration config) {
 		this.config = config;
@@ -65,6 +67,7 @@ public abstract class BaseGrounder implements Grounder {
 	
 	public void consolidate() {
 		atomTable.consolidate();
+		
 	}
 	
 	/**
@@ -100,7 +103,7 @@ public abstract class BaseGrounder implements Grounder {
 					complexPrecondition.add(derived);
 				}
 				hasComplexPart = true;
-			} else {				
+			} else {
 				atomList.add(atomTable.atom(liftedAtom.getPredicate(), 
 						liftedAtom.getArguments(), liftedAtom.isNegated()));
 			}
@@ -149,7 +152,7 @@ public abstract class BaseGrounder implements Grounder {
 			
 			switch (c.getConditionType()) {
 			case atomic:
-				Condition condition = (Condition) c;
+				Condition condition = (Condition) c;	
 				atomList.add(atomTable.atom(condition.getPredicate(), 
 						condition.getArguments(), condition.isNegated()));
 				break;
@@ -391,6 +394,111 @@ public abstract class BaseGrounder implements Grounder {
 	}
 	
 	/**
+	 * Simplifies non-disjunctive preconditions and effects in the operator
+	 * with respect to the provided super-state. If this state is the final state 
+	 * a planning graph converges to, then all conditions will be removed 
+	 * that are constant true in the given problem ("rigid conditions").
+	 */
+	protected void simplifyRigidConditions(Operator op, LiftedState liftedState) {
+		
+		op.setPrecondition(simplifyRigidConditions(op.getPrecondition(), liftedState, "pre"));
+		op.setEffect(simplifyRigidConditions(op.getEffect(), liftedState, "eff"));
+	}
+	
+	/**
+	 * Simplifies away rigid conditions from the provided condition.
+	 * Only operates on conjunctive conditions; disjunctive conditions are
+	 * ignored and appended verbatim to the output condition.
+	 *  
+	 * @return null, if the condition is unsatisfiable in the state;
+	 * an empty ConditionSet instance, if the condition is constant true;
+	 * a non-empty ConditionSet instance, else
+	 */
+	protected AbstractCondition simplifyRigidConditions(AbstractCondition condition, LiftedState liftedState, String context) { 
+		
+		ConditionSet resultingConditions = new ConditionSet(ConditionType.conjunction);
+		boolean validSimplification = true;
+		
+		List<AbstractCondition> conditions = new ArrayList<>();
+		conditions.add(condition);
+		for (int i = 0; i < conditions.size(); i++) {
+			AbstractCondition c = conditions.get(i);
+			
+			if (c.getConditionType() == ConditionType.conjunction) {
+				conditions.addAll((((ConditionSet) c).getConditions()));
+				
+			} else if (c.getConditionType() == ConditionType.atomic) {
+				
+				Condition cond = (Condition) c;
+				if (cond.getPredicate().isDerived()) {
+					resultingConditions.add(cond);
+					continue;
+				}
+				
+				Condition condNegated = cond.copy();
+				condNegated.setNegated(!cond.isNegated());
+				if (!liftedState.holds(cond)) {
+					// Condition is never satisfiable
+					return null;
+				}
+				if (!liftedState.holds(condNegated)) {
+					// Simplify
+					continue;
+				} else {
+					resultingConditions.add(cond);
+				}
+			
+			} else if (c.getConditionType() == ConditionType.consequential) {
+				
+				// Conditional effect
+				ConsequentialCondition condEff = (ConsequentialCondition) c;
+				AbstractCondition prerequisite = simplifyRigidConditions(condEff.getPrerequisite(), liftedState, "condeff-pre");
+				AbstractCondition consequence = simplifyRigidConditions(condEff.getConsequence(), liftedState, "condeff-cons");
+				if (prerequisite == null) {
+					// Unsatisfiable prerequisite: the whole cond. effect can be removed
+					continue;
+				}
+				if (((ConditionSet) prerequisite).getConditions().size() == 0) {
+					// Constant true prerequisite
+					if (consequence == null) {
+						System.out.println("ERROR: Contradictory consequence in a conditional effect.");
+						System.exit(1);
+					} else if (((ConditionSet) consequence).getConditions().size() == 0) {
+						// The consequence is a trivial statement, too
+						continue;
+					} else {
+						// Just add the consequence (instead of the whole cond. effect)
+						resultingConditions.add(consequence);
+					}
+				} else {
+					// Non-trivial prerequisite: Add simplified cond. effect
+					resultingConditions.add(new ConsequentialCondition(prerequisite, consequence));
+				}
+				
+			} else if (c.getConditionType() == ConditionType.disjunction 
+					|| c.getConditionType() == ConditionType.implication 
+					|| c.getConditionType() == ConditionType.quantification
+					|| c.getConditionType() == ConditionType.negation) {
+				// Disjunctive / complex condition structure: No simplification implemented
+				validSimplification = false;
+				break;
+
+			} else {
+				// Other condition structure such as numeric conditions;
+				// append to output conjunction
+				resultingConditions.add(c);
+			}
+		}
+		
+		if (validSimplification) {
+			return resultingConditions;
+		} else {
+			Logger.log(Logger.WARN, "Simplification not possible: " + condition);
+			return condition;
+		}
+	}
+	
+	/**
 	 * Assemble an Action object out of an operator 
 	 * whose arguments are fully replaced by constants.
 	 */
@@ -423,14 +531,29 @@ public abstract class BaseGrounder implements Grounder {
 	/**
 	 * Grounds and returns the initial state.
 	 */
-	protected State getInitialState() {
+	protected State getInitialState(LiftedState convergedState, boolean reduceAtoms) {
 		
 		List<Atom> initialStateAtoms = new ArrayList<>();
 		problem.getInitialState().forEach(cond -> {
 			if (cond.getConditionType() == ConditionType.atomic) {
-				Condition c = (Condition) cond;
-				initialStateAtoms.add(atomTable.atom(c.getPredicate(), 
-						c.getArguments(), c.isNegated()));
+				
+				if (reduceAtoms) {
+					
+					// Simplify condition (may be removed if always true)
+					ConditionSet simplified = (ConditionSet) simplifyRigidConditions(cond, convergedState, "init");
+					if (simplified.getConditions().size() > 0) {
+						Condition c = (Condition) simplified.getConditions().get(0);
+						initialStateAtoms.add(atomTable.atom(c.getPredicate(), 
+								c.getArguments(), c.isNegated()));					
+					}
+					
+				} else {
+					
+					// Do not simplify initial state
+					Condition c = (Condition) cond;
+					initialStateAtoms.add(atomTable.atom(c.getPredicate(), 
+							c.getArguments(), c.isNegated()));
+				}
 			}
 		});
 		

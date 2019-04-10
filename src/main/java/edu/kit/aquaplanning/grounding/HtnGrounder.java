@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 
 import edu.kit.aquaplanning.model.ground.Action;
@@ -17,7 +16,6 @@ import edu.kit.aquaplanning.model.ground.htn.Reduction;
 import edu.kit.aquaplanning.model.lifted.Argument;
 import edu.kit.aquaplanning.model.lifted.Type;
 import edu.kit.aquaplanning.model.lifted.condition.AbstractCondition;
-import edu.kit.aquaplanning.model.lifted.condition.Condition;
 import edu.kit.aquaplanning.model.lifted.htn.Method;
 import edu.kit.aquaplanning.model.lifted.htn.Task;
 import edu.kit.aquaplanning.util.Logger;

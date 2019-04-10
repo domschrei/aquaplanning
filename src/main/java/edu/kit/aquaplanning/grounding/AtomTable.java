@@ -2,8 +2,10 @@ package edu.kit.aquaplanning.grounding;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import edu.kit.aquaplanning.model.ground.Atom;
 import edu.kit.aquaplanning.model.ground.DerivedAtom;
@@ -31,6 +33,9 @@ public class AtomTable {
 	private Map<String, NumericAtom> numericAtoms;
 	private Map<Integer, String> numericAtomNames;
 	
+	private Set<Atom> positiveAtoms;
+	private Set<Atom> negativeAtoms;
+	
 	private boolean consolidated = false;
 	
 	public AtomTable() {
@@ -40,6 +45,8 @@ public class AtomTable {
 		derivedAtomNames = new HashMap<>();
 		numericAtoms = new HashMap<>();
 		numericAtomNames = new HashMap<>();
+		positiveAtoms = new HashSet<>();
+		negativeAtoms = new HashSet<>();
 	}
 	
 	public void setProblem(PlanningProblem problem) {
@@ -55,7 +62,7 @@ public class AtomTable {
 	 * and constant arguments. If this atom has not been grounded before,
 	 * it will be created.
 	 */
-	private Atom atom(Predicate p, List<Argument> constants) {
+	public Atom atom(Predicate p, List<Argument> constants, boolean negated) {
 		
 		// Check if predicate is simple
 		if (p.isDerived()) {
@@ -74,8 +81,14 @@ public class AtomTable {
 			atoms.put(atomName, new Atom(atomId, atomName, true));
 			atomNames.put(atomId, atomName);
 		}
-		// Return copy of atom
-		return atoms.get(atomName).copy();
+		// Copy of atom
+		Atom atom = atoms.get(atomName).copy();
+		
+		if (negated) positiveAtoms.add(atom);
+		else negativeAtoms.add(atom);
+		
+		atom.set(!negated);
+		return atom;
 	}
 	
 	/**
@@ -126,18 +139,6 @@ public class AtomTable {
 		NumericAtom valuedAtom = numericAtoms.get(atomName).copy();
 		valuedAtom.setValue(value);
 		return valuedAtom;
-	}
-	
-	/**
-	 * Retrieves a copy of the atom corresponding to the provided predicate 
-	 * and constant arguments. If this atom has not been grounded before,
-	 * it will be created.
-	 */
-	public Atom atom(Predicate p, List<Argument> constants, boolean negated) {
-		
-		Atom atom = atom(p, constants);
-		atom.set(!negated);
-		return atom;
 	}
 	
 	/**
@@ -204,6 +205,10 @@ public class AtomTable {
 			atomNames.add(this.numericAtomNames.get(i));
 		}
 		return atomNames;
+	}
+	
+	public Map<String, Atom> getAtoms() {
+		return atoms;
 	}
 	
 	/**

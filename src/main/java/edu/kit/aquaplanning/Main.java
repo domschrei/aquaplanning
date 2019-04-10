@@ -104,6 +104,10 @@ public class Main {
 			Logger.log(Logger.INFO, "Grounding ...");
 			Grounder grounder = new RelaxedPlanningGraphGrounder(config);
 			GroundPlanningProblem planningProblem = grounder.ground(p);
+			if (planningProblem == null) {
+				Logger.log(Logger.ESSENTIAL, "The problem has been found to be unsatisfiable. Exiting.");
+				return;
+			}
 			// Print ground problem
 			if (Logger.INFO_VV <= config.verbosityLevel) {				
 				Logger.log(Logger.INFO_VV, planningProblem.toString());

@@ -92,6 +92,7 @@ public class LiftedState {
 	 * in the state. Checks equality conditions syntactically.
 	 */
 	public boolean holds(Condition condition) {
+		
 		if (condition.getPredicate().getName().equals("=")) {
 			// Equality predicate
 			String arg1 = condition.getArguments().get(0).getName();

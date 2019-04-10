@@ -68,6 +68,13 @@ public class RelaxedPlanningGraphGrounder extends BaseGrounder {
 				}
 			}
 		}
+
+		boolean reduceAtoms = !config.keepRigidConditions && !config.keepDisjunctions;
+		if (reduceAtoms && !problem.getDerivedPredicates().isEmpty()) {
+			// TODO properly handle it by also simplifying the DPs' semantics
+			Logger.log(Logger.WARN, "Derived predicates are in the problem: Cannot simplify away rigid conditions.");
+			reduceAtoms = false;
+		}
 		
 		// Traverse delete-relaxed state space
 		graph = new RelaxedPlanningGraph(problem);
@@ -75,9 +82,13 @@ public class RelaxedPlanningGraphGrounder extends BaseGrounder {
 			graph.computeNextLayer();
 		}
 		// Generate action objects
-		Logger.log(Logger.INFO_V, "Generating ground action objects ...");
+		Logger.log(Logger.INFO_V, "Generating ground and simplified action objects ...");
 		Set<Action> actionSet = new HashSet<>();
+		LiftedState state = getState();
 		for (Operator op : graph.getLiftedActions()) {
+			if (reduceAtoms) {				
+				simplifyRigidConditions(op, state);
+			}
 			Action a = getAction(op); // actual grounding
 			if (a != null) {
 				actionSet.add(a);
@@ -88,11 +99,21 @@ public class RelaxedPlanningGraphGrounder extends BaseGrounder {
 		actions.sort((a1,a2) -> a1.getName().compareTo(a2.getName()));
 		
 		// Extract initial state
-		State initialState = getInitialState();
+		State initialState = getInitialState(state, reduceAtoms);
 		
-		// Extract goal
-		ConditionSet goalSet = new ConditionSet(ConditionType.conjunction);
-		problem.getGoals().forEach(c -> goalSet.add(c));
+		// Simplify goal
+		ConditionSet goalSetUnsimplified = new ConditionSet(ConditionType.conjunction);
+		problem.getGoals().forEach(c -> goalSetUnsimplified.add(c));
+		ConditionSet goalSet;
+		if (reduceAtoms) {
+			goalSet = (ConditionSet) simplifyRigidConditions(goalSetUnsimplified, state, "goal");
+			if (goalSet == null) {
+				// TODO unreachable goal; directly return unsatisfiability
+				Logger.log(Logger.INFO, "Goal is unreachable according to planning graph analysis.");
+			}
+		} else {
+			goalSet = goalSetUnsimplified;
+		}
 		Goal goal;
 		Pair<List<Atom>, Precondition> splitGoal = splitAndGroundPrecondition(goalSet);
 		if (splitGoal.getRight() != null) {

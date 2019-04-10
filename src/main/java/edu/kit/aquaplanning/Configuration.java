@@ -77,8 +77,11 @@ public class Configuration {
 	@Option(names = {"-kq", "--keep-equalities"}, description = "Do not resolve equality conditions, "
 			+ "but add them as explicit atoms to the initial state")
 	public boolean keepEqualities;
-	@Option(names = {"-nc", "--no-keep-cond-effects"}, description = "Compile conditional effects "
-			+ "into multiple STRIPS operators (implies translation into DNF)")
+	@Option(names = {"-kr", "--keep-rigid-conditions"}, description = "Do not simplify away conditions "
+			+ "that are rigid according to the planning graph (-kr collides with -kd)")
+	public boolean keepRigidConditions;
+	@Option(names = {"-rc", "--remove-cond-effects"}, description = "Compile conditional effects "
+			+ "into multiple STRIPS operators (-rc collides with -kd)")
 	public boolean eliminateConditionalEffects;
 	
 	
