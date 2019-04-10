@@ -76,6 +76,10 @@ public abstract class Planner {
 			Logger.log(Logger.INFO, "Doing parallel planning with up to " 
 						+ config.numThreads + " threads.");
 			return new PortfolioParallelPlanner(config);
+		case greedy:
+			return new GreedyBestFirstSearchSolver(config);
+		default:
+			break;
 		}
 		return null;
 	}

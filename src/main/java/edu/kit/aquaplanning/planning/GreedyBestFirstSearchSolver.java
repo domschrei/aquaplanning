@@ -15,6 +15,7 @@ import edu.kit.aquaplanning.model.ground.Goal;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
 import edu.kit.aquaplanning.model.ground.State;
+import edu.kit.aquaplanning.util.Logger;
 
 /**
  * A simple forward best-first-search planner. Does not create parallel plans.
@@ -22,18 +23,16 @@ import edu.kit.aquaplanning.model.ground.State;
  */
 public class GreedyBestFirstSearchSolver extends Planner {
 	
-	private Random rnd = new Random(42);
+	private Random rnd;
     
-
-
 	public GreedyBestFirstSearchSolver(Configuration config) {
 		super(config);
-		// TODO Auto-generated constructor stub
+		rnd = new Random(config.seed);
 	}
 
 	@Override
 	public Plan findPlan(GroundPlanningProblem problem) {
-
+		startSearch();
         ArrayDeque<State> stateHistory = new ArrayDeque<>();
         ArrayDeque<Action> plan = new ArrayDeque<>();
         //visitedStates = new MoveToFrontHashTable(64*1024*1024);
@@ -43,8 +42,10 @@ public class GreedyBestFirstSearchSolver extends Planner {
         State state = new State(problem.getInitialState());
         Goal goal = problem.getGoal();
         Collection<Action> applicableActions = aindex.getApplicableActions(state);
+        int iterations = 0;
         
-        while (!goal.isSatisfied(state)) {
+        while (!goal.isSatisfied(state) && withinComputationalBounds(iterations)) {
+        	iterations++;
             visitedStates.add(state.getAtomSet());
         	Action best = null;
         	int bestValue = -1;
@@ -87,6 +88,7 @@ public class GreedyBestFirstSearchSolver extends Planner {
         for (Action a : plan) {
         	finalplan.appendAtBack(a);
         }
+        Logger.log(Logger.INFO, String.format("successfull greedy search, visited %d states, did %d iterations, found plan of length %d", visitedStates.size(), iterations, plan.size()));
         return finalplan;
     }
 	
