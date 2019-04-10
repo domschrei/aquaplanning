@@ -14,16 +14,18 @@ import edu.kit.aquaplanning.model.ground.State;
 
 public class ActionIndex {
 
-	private Map<Integer, List<Action>> atomActionMap;
-	private List<Action> noPrecondActions;
+	protected Map<Integer, List<Action>> atomActionMap;
+	protected List<Action> noPrecondActions;
 	
-	private void addAction(int index, Action action) {
+	protected void addAction(int index, Action action) {
 		if (!atomActionMap.containsKey(index)) {
 			atomActionMap.put(index, new ArrayList<>());
 		}
 		atomActionMap.get(index).add(action);
 	}
 	
+	protected ActionIndex() {
+	}
 	
 	public ActionIndex(GroundPlanningProblem gpp) {
 		atomActionMap = new HashMap<>();

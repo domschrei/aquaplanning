@@ -100,6 +100,19 @@ public class AtomSet {
 	}
 	
 	/**
+	 * Calculates the logical XOR of this AtomSet with another AtomSets and returns the result.
+	 * @param other
+	 * 		The other AtomSet
+	 * @return
+	 * 		The logical AND of this and the other AtomSet
+	 */
+	public AtomSet xor(AtomSet other) {
+		AtomSet b = (AtomSet) this.clone();
+		b.atoms.xor(other.atoms);
+		return b;
+	}
+	
+	/**
 	 * Sets the provided atom as contained in this set.
 	 */
 	public void set(Atom atom) {
