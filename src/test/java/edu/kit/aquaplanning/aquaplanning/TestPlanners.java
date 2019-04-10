@@ -234,7 +234,7 @@ public class TestPlanners extends TestCase {
 			
 			// See if the plan is valid under the reference problem, too
 			assertTrue("The produced plan is invalid under the problem that is generated using default settings.", 
-					Validator.planIsValid(reference, parsedPlan));
+					parsedPlan == null || Validator.planIsValid(reference, parsedPlan));
 		}
 		
 		System.out.println("Done.\n");

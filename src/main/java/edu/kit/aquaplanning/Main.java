@@ -92,8 +92,6 @@ public class Main {
 		// For debugging, you can also override the configuration here, e.g.
 		// config.heuristic = HeuristicType.manhattanGoalDistance;
 		
-		// Thread.sleep(5000);
-		
 		try {	
 			// Step 1: Parsing of domain and problem files
 			Logger.log(Logger.INFO, "Parsing ...");
