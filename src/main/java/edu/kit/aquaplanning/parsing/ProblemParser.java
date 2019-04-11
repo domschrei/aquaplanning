@@ -513,22 +513,23 @@ public class ProblemParser extends PddlHtnBaseListener {
 				return;
 			} 		
 			
+			List<Argument> dpArgs = new ArrayList<>();
 			for (int childIdx = ctx.children.size()-1; childIdx >= 0; childIdx--) {
 				if (ctx.children.get(childIdx).getChildCount() > 1) {
 					// Typed definition
 					break;
 				}
-				
 				// We don't know the type of this argument, 
 				// so we assume the supertype
 				if (context == ParseContext.predicateDefs) {						
 					predicate.addArgumentType(supertype);
 				} else if (context == ParseContext.derivedPredicateDef) {
-
 					String varName = ctx.children.get(childIdx).getText().toLowerCase();
-					derivedPredicates.get(predicate.getName()).addArgument(new Argument(varName, supertype));
+					dpArgs.add(0, new Argument(varName, supertype));
 				}
 			}
+			// Add arguments to derived predicate in correct order
+			for (Argument arg : dpArgs) derivedPredicates.get(predicate.getName()).addArgument(arg);
 			
 		} else if (context == ParseContext.actionDef || context == ParseContext.methodDef) {
 			// Action or method parameter definition
