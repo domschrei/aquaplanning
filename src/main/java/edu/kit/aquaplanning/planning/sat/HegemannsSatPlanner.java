@@ -124,7 +124,7 @@ public class HegemannsSatPlanner extends Planner {
         // Find the plan
         int step = 0;
         while (true) {
-            Logger.log(Logger.INFO_V, "Step " + step + " - " + (int)Math.ceil(timeLimit) + " seconds limit");
+            Logger.log(Logger.INFO_V, "Step " + step + ": " + (int)Math.ceil(timeLimit) + " seconds limit");
 
             for (int i = 0; i < skipLayers; i++) {
                 addRecurrentClauses(solver, step);
