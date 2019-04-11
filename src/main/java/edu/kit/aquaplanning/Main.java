@@ -158,7 +158,7 @@ public class Main {
 				
 				Logger.log(Logger.INFO, "Planner finished with a plan of length " 
 						+ plan.getLength() + ".");
-				printPlan(config, plan);
+				//printPlan(config, plan);
 				
 				if (config.optimizePlan) {
 					// Employ plan optimization
