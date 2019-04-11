@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.function.Function;
 
+import edu.kit.aquaplanning.grounding.PlanningGraphGrounder;
 import edu.kit.aquaplanning.grounding.datastructures.ArgumentAssignment;
 import edu.kit.aquaplanning.grounding.datastructures.LiftedState;
 import edu.kit.aquaplanning.model.ground.Precondition;
@@ -26,6 +27,7 @@ import edu.kit.aquaplanning.model.lifted.htn.Task;
 public class HtnMethodIndex {
 
 	private PlanningProblem p;
+	private PlanningGraphGrounder grounder;
 	
 	private Set<String> primitiveTaskNames;
 	private Set<String> actionStrings;
@@ -42,9 +44,11 @@ public class HtnMethodIndex {
 		}
 	}
 	
-	public HtnMethodIndex(PlanningProblem p, LiftedState convergedState, List<Operator> instantiatedOperators) {
+	public HtnMethodIndex(PlanningGraphGrounder grounder, 
+			LiftedState convergedState, List<Operator> instantiatedOperators) {
 		
-		this.p = p;
+		this.grounder = grounder;
+		this.p = grounder.getProblem();
 		this.primitiveTaskNames = new HashSet<>();
 		this.actionStrings = new HashSet<>();
 		
@@ -77,7 +81,10 @@ public class HtnMethodIndex {
 			return new ArrayList<>();
 		}
 		if (m.getImplicitArguments().size() == 0) {
-			newReductions.add(new Reduction(m, conditionGrounder));
+			m = simplify(m);
+			if (m != null) {				
+				newReductions.add(new Reduction(m, conditionGrounder));
+			}
 			reductions.put(m, newReductions);
 			return newReductions;
 		}
@@ -129,10 +136,13 @@ public class HtnMethodIndex {
 			if (assignment.getDecisionLevel() == implicitArgs.size()) {
 				
 				// Finished
-				try {
-					newReductions.add(new Reduction(method, conditionGrounder));
-				} catch (IllegalArgumentException e) {
-					continue;
+				method = simplify(method);
+				if (method != null) {
+					try {
+						newReductions.add(new Reduction(method, conditionGrounder));
+					} catch (IllegalArgumentException e) {
+						continue;
+					}
 				}
 				
 			} else {
@@ -160,17 +170,16 @@ public class HtnMethodIndex {
 		Method newMethod = pgm.method.copy();
 		newMethod.setImplicitArgument(refArg, argVal);
 		
-		boolean consistent = checkConsistency(newMethod);
-		if (consistent) {
+		if (checkConsistency(newMethod)) {
 			return new PartiallyGroundMethod(newAssignment, newMethod);
 		} else return null;
 	}
 	
-	private boolean checkConsistency(Method newMethod) {
-			
+	private boolean checkConsistency(Method method) {
+		
 		// If the method contains any primitive tasks,
 		// see if the respective action occurs in the problem
-		for (Task t : newMethod.getSubtasks()) {
+		for (Task t : method.getSubtasks()) {
 			if (primitiveTaskNames.contains(t.getName())) {
 				// Subtask is primitive
 				if (t.getArguments().stream().allMatch(arg -> arg.isConstant())) {
@@ -185,7 +194,7 @@ public class HtnMethodIndex {
 		
 		// If the method contains any constraints,
 		// see if all pos. conditions exist in the lifted superstate
-		for (Constraint c : newMethod.getConstraints()) {
+		for (Constraint c : method.getConstraints()) {
 			AbstractCondition cond = c.getCondition();
 			List<AbstractCondition> conditions = new ArrayList<>();
 			conditions.add(cond);
@@ -210,8 +219,29 @@ public class HtnMethodIndex {
 				}
 			}
 		}
-		
+				
 		return true;
+	}
+	
+	public Method simplify(Method method) {
+		
+		if (!checkConsistency(method)) {
+			return null;
+		}
+		Method newMethod = method.copy();
+		newMethod.getConstraints().clear();
+		for (Constraint c : method.getConstraints()) {
+			AbstractCondition simplified = grounder.simplifyRigidConditions(c.getCondition(), convergedState, "method-constr");
+			if (simplified == null) {
+				// Condition is not satisfiable: method is invalid
+				return null;
+			} else {
+				Constraint newC = c.copy();
+				newC.setCondition(simplified);
+				newMethod.addConstraint(newC);
+			}
+		}
+		return newMethod;
 	}
 	
 	private Map<Argument, Integer> getArgumentOccurrences(Method m) {

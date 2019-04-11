@@ -83,6 +83,7 @@ public class PlanningGraphGrounder extends BaseGrounder {
 		Logger.log(Logger.INFO_V, "Generating ground and simplified action objects ...");
 		Set<Action> actionSet = new HashSet<>();
 		LiftedState finalState = getState();
+		List<Operator> filteredActions = new ArrayList<>();
 		for (Operator op : graph.getLiftedActions()) {
 			if (reduceAtoms) {
 				op = simplifyRigidConditions(op, finalState);
@@ -91,8 +92,10 @@ public class PlanningGraphGrounder extends BaseGrounder {
 			if (op != null) {
 				// -- no
 				actionSet.add(getAction(op));
+				filteredActions.add(op);
 			}
 		}
+		graph.setFilteredActions(filteredActions);
 		actions = new ArrayList<>();
 		actions.addAll(actionSet);
 		actions.sort((a1,a2) -> a1.getName().compareTo(a2.getName()));
@@ -116,7 +119,7 @@ public class PlanningGraphGrounder extends BaseGrounder {
 		return new LiftedState(graph.getLiftedState(graph.getCurrentLayer()));
 	}
 	
-	public List<Operator> getLiftedActions() {
-		return graph.getLiftedActions();
+	public List<Operator> getFilteredActions() {
+		return graph.getFilteredActions();
 	}
 }
