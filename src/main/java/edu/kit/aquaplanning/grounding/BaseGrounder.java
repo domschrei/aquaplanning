@@ -395,7 +395,7 @@ public abstract class BaseGrounder implements Grounder {
 	 * a planning graph converges to, then all conditions will be removed 
 	 * that are constant true in the given problem ("rigid conditions").
 	 */
-	protected Operator simplifyRigidConditions(Operator op, LiftedState liftedState) {
+	public Operator simplifyRigidConditions(Operator op, LiftedState liftedState) {
 
 		ConditionSet pre = (ConditionSet) simplifyRigidConditions(op.getPrecondition(), liftedState, "pre");
 		ConditionSet eff = (ConditionSet) simplifyRigidConditions(op.getEffect(), liftedState, "eff");
@@ -425,7 +425,7 @@ public abstract class BaseGrounder implements Grounder {
 	 * an empty ConditionSet instance, if the condition is constant true;
 	 * a non-empty ConditionSet instance, else
 	 */
-	protected AbstractCondition simplifyRigidConditions(AbstractCondition condition, LiftedState liftedState, String context) { 
+	public AbstractCondition simplifyRigidConditions(AbstractCondition condition, LiftedState liftedState, String context) { 
 		
 		ConditionSet resultingConditions = new ConditionSet(ConditionType.conjunction);
 		boolean validSimplification = true;
@@ -491,6 +491,8 @@ public abstract class BaseGrounder implements Grounder {
 					|| c.getConditionType() == ConditionType.quantification
 					|| c.getConditionType() == ConditionType.negation) {
 				// Disjunctive / complex condition structure: No simplification implemented
+				Logger.log(Logger.WARN, "Simplification not possible: " + c + " (type " + c.getConditionType() + ")");
+				Logger.log(Logger.WARN, "Part of condition " + condition);
 				validSimplification = false;
 				break;
 
@@ -504,7 +506,6 @@ public abstract class BaseGrounder implements Grounder {
 		if (validSimplification) {
 			return resultingConditions;
 		} else {
-			Logger.log(Logger.WARN, "Simplification not possible: " + condition);
 			return condition;
 		}
 	}

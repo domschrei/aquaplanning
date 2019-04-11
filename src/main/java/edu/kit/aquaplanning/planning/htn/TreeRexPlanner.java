@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 
 import edu.kit.aquaplanning.Configuration;
-import edu.kit.aquaplanning.Configuration.SatSolverMode;
 import edu.kit.aquaplanning.grounding.htn.HtnGrounder;
 import edu.kit.aquaplanning.model.ground.Action;
 import edu.kit.aquaplanning.model.ground.Atom;
@@ -19,8 +18,6 @@ import edu.kit.aquaplanning.model.ground.State;
 import edu.kit.aquaplanning.model.ground.htn.HierarchyLayer;
 import edu.kit.aquaplanning.model.ground.htn.Reduction;
 import edu.kit.aquaplanning.sat.AbstractSatSolver;
-import edu.kit.aquaplanning.sat.IpasirSatSolver;
-import edu.kit.aquaplanning.sat.Sat4jSolver;
 import edu.kit.aquaplanning.util.BinaryEncoding;
 import edu.kit.aquaplanning.util.Logger;
 
@@ -30,20 +27,16 @@ public class TreeRexPlanner {
 	private int depth;
 
 	private AbstractSatSolver solver;
-	private SatSolverMode satMode;
+	private Configuration config;
 	
 	public TreeRexPlanner(Configuration config, HtnGrounder grounder) {
 		this.grounder = grounder;
-		this.satMode = config.satSolverMode;
+		this.config = config;
 	}
 	
 	public Plan findPlan() {
 		
-		if (satMode == SatSolverMode.sat4j) {
-			solver = new Sat4jSolver();
-		} else {
-			solver = new IpasirSatSolver();
-		}
+		solver = AbstractSatSolver.getSolver(config);
 		
 		depth = 0;
 		assumptions = new ArrayList<>();
@@ -290,11 +283,18 @@ public class TreeRexPlanner {
 					
 					addToClause(-oldLayer.getReductionVariable(pos, r));
 					String subtask = r.getSubtask(p);
+					boolean successorFound = false;
 					for (Action action : grounder.getActions(subtask)) {
 						addToClause(newLayer.getActionVariable(successorPos+p, action));
+						successorFound = true;
 					}
 					for (Reduction red : grounder.getReductions(subtask)) {
 						addToClause(newLayer.getReductionVariable(successorPos+p, red));
+						successorFound = true;
+					}
+					if (!successorFound) {
+						Logger.log(Logger.ERROR, "Reduction " + r + " does not have any successors on offset " + p);
+						System.exit(1);
 					}
 					finishClause();
 				}

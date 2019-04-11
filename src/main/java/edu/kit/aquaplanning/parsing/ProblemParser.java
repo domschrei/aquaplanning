@@ -513,22 +513,23 @@ public class ProblemParser extends PddlHtnBaseListener {
 				return;
 			} 		
 			
+			List<Argument> dpArgs = new ArrayList<>();
 			for (int childIdx = ctx.children.size()-1; childIdx >= 0; childIdx--) {
 				if (ctx.children.get(childIdx).getChildCount() > 1) {
 					// Typed definition
 					break;
 				}
-				
 				// We don't know the type of this argument, 
 				// so we assume the supertype
 				if (context == ParseContext.predicateDefs) {						
 					predicate.addArgumentType(supertype);
 				} else if (context == ParseContext.derivedPredicateDef) {
-
 					String varName = ctx.children.get(childIdx).getText().toLowerCase();
-					derivedPredicates.get(predicate.getName()).addArgument(new Argument(varName, supertype));
+					dpArgs.add(0, new Argument(varName, supertype));
 				}
 			}
+			// Add arguments to derived predicate in correct order
+			for (Argument arg : dpArgs) derivedPredicates.get(predicate.getName()).addArgument(arg);
 			
 		} else if (context == ParseContext.actionDef || context == ParseContext.methodDef) {
 			// Action or method parameter definition
@@ -538,8 +539,8 @@ public class ProblemParser extends PddlHtnBaseListener {
 			}
 			
 			// Read variables from left to right until a SingleTypeVarList is hit
+			List<Argument> argsBackwards = new ArrayList<>();
 			for (int childIdx = ctx.children.size()-1; childIdx >= 0; childIdx--) {
-				
 				if (ctx.children.get(childIdx).getChildCount() > 1) {
 					// A typed definition begins here
 					break;
@@ -548,14 +549,18 @@ public class ProblemParser extends PddlHtnBaseListener {
 					String varName = ctx.children.get(childIdx).getText().toLowerCase();
 					Type type = supertype;
 					Argument arg = new Argument(varName, type);
-					if (context == ParseContext.methodDef) {
-						currentMethod().addExplicitArgument(arg);
-					} else {						
-						currentOperator().addArgument(arg);
-					}
+					argsBackwards.add(arg);
 				}
 			}
-			
+			// Now append the arguments to the current object in the correct order
+			for (int i = argsBackwards.size()-1; i >= 0; i--) {
+				Argument arg = argsBackwards.get(i);
+				if (context == ParseContext.methodDef) {
+					currentMethod().addExplicitArgument(arg);
+				} else {						
+					currentOperator().addArgument(arg);
+				}
+			}
 		}
 	}
 	
@@ -715,6 +720,14 @@ public class ProblemParser extends PddlHtnBaseListener {
 					ctx.children.get(3).getText().toLowerCase());
 		}
 		method.addConstraint(constraint);
+	}
+	
+	@Override
+	public void exitConstraint(ConstraintContext ctx) {
+		// Simplify constraint
+		List<Constraint> constraints = currentMethod().getConstraints();
+		AbstractCondition c = constraints.get(constraints.size()-1).getCondition();
+		constraints.get(constraints.size()-1).setCondition(c.getDNF());
 	}
 	
 	

@@ -116,8 +116,8 @@ public class HtnGrounder {
 		
 		Logger.log(Logger.INFO, "Creating initial layer ...");
 		
-		methodIndex = new HtnMethodIndex(grounder.getProblem(), 
-				grounder.getState(), grounder.getLiftedActions());
+		methodIndex = new HtnMethodIndex(grounder,
+				grounder.getState(), grounder.getFilteredActions());
 		
 		HierarchyLayer initLayer = new HierarchyLayer();
 		
@@ -128,10 +128,12 @@ public class HtnGrounder {
 			initLayer.addFact(0, p+1);
 		}
 		
-		initReduction = new Reduction(htnLiftedProblem.getInitialTaskNetwork(), conditionGrounder);
+		Method initMethod = htnLiftedProblem.getInitialTaskNetwork();
+		initMethod = methodIndex.simplify(initMethod);
+		initReduction = new Reduction(initMethod, conditionGrounder);
 		
 		for (pos = 0; pos < initReduction.getNumSubtasks(); pos++) {
-			Task task = htnLiftedProblem.getInitialTaskNetwork().getSubtasks().get(pos);
+			Task task = initMethod.getSubtasks().get(pos);
 			String t = initReduction.getSubtask(pos);
 			List<Action> taskActions = actionMap.get(t);
 			if (taskActions != null) {
@@ -328,6 +330,12 @@ public class HtnGrounder {
 		}
 	}
 
+	
+	
+	
+	
+	
+	
 	public GroundPlanningProblem getGroundProblem() {
 		return groundProblem;
 	}

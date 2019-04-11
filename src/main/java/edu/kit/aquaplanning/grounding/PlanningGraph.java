@@ -28,6 +28,7 @@ public class PlanningGraph {
 	private List<Argument> constants;
 	private List<Set<Condition>> liftedStates;
 	private List<List<Operator>> liftedActions;
+	private List<Operator> filteredActions;
 	
 	private OperatorIndex opIndex;
 	
@@ -304,5 +305,13 @@ public class PlanningGraph {
 			}
 		}
 		return false;
+	}
+
+	public List<Operator> getFilteredActions() {
+		return filteredActions;
+	}
+
+	public void setFilteredActions(List<Operator> filteredActions) {
+		this.filteredActions = filteredActions;
 	}
 }
