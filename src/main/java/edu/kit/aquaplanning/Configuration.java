@@ -89,6 +89,8 @@ public class Configuration {
 	@Option(names = {"-rc", "--remove-cond-effects"}, description = "Compile conditional effects "
 			+ "into multiple STRIPS operators (-rc collides with -kd)")
 	public boolean eliminateConditionalEffects;
+	@Option(names = {"-ko", "--keep-action-costs"}, description = "Do not discard action cost statements")
+	public boolean keepActionCosts;
 	
 	
 	/* 

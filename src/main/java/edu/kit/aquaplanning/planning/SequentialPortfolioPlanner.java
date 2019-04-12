@@ -9,19 +9,23 @@ import edu.kit.aquaplanning.planning.datastructures.SearchStrategy.Mode;
 import edu.kit.aquaplanning.util.Logger;
 
 /**
- * A simple portfolio planner which launches a number of different planners in parallel.
+ * A simple portfolio planner which launches a number of different planners one after another.
  */
-public class SequantialPortfolioPlanner extends Planner {
+public class SequentialPortfolioPlanner extends Planner {
 
-	public SequantialPortfolioPlanner(Configuration config) {
+	public SequentialPortfolioPlanner(Configuration config) {
 		super(config);
 	}
 
 	
 	@Override
 	public Plan findPlan(GroundPlanningProblem problem) {
+		
 		startSearch();
 		Plan plan = null;
+		
+		/* 1. Greedy forward search */
+		
 		config.searchTimeSeconds = 200;
 		config.plannerType = PlannerType.greedy;
 		Logger.log(Logger.INFO, "Starting greedy search");
@@ -30,8 +34,13 @@ public class SequantialPortfolioPlanner extends Planner {
 		if (plan != null) {
 			return plan;
 		}
-		// try Trautman
-		config.searchTimeSeconds = 40;
+		
+		/* 2. Slower, more informed forward search */
+		
+		// run "forever" if problem has non-primitive logical conditions 
+		// (SAT planner does not handle these), else run for 40 seconds
+		boolean hasNonprimitiveLogic = problem.hasConditionalEffects() || problem.hasComplexConditions();
+		config.searchTimeSeconds = hasNonprimitiveLogic ? 0 : 40;
 		config.plannerType = PlannerType.forwardSSS;
 		config.searchStrategy = Mode.bestFirst;
 		config.heuristic = HeuristicType.ffTrautmann;
@@ -41,6 +50,9 @@ public class SequantialPortfolioPlanner extends Planner {
 		if (plan != null) {
 			return plan;
 		}
+		
+		/* 3. SAT-based planning */
+		
 		config.plannerType = PlannerType.hegemannSat;
 		config.searchTimeSeconds = 0;
 		p = Planner.getPlanner(config);
@@ -49,6 +61,7 @@ public class SequantialPortfolioPlanner extends Planner {
 		if (plan != null) {
 			return plan;
 		}
+		
 		return plan;
 	}
 }

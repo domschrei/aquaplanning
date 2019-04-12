@@ -92,7 +92,7 @@ public class Main {
 		// For debugging, you can also override the configuration here, e.g.
 		// config.heuristic = HeuristicType.manhattanGoalDistance;
 		
-		try {	
+		try {
 			// Step 1: Parsing of domain and problem files
 			Logger.log(Logger.INFO, "Parsing ...");
 			PlanningProblem p = new ProblemParser().parse(config.domainFile, config.problemFile);
@@ -113,6 +113,8 @@ public class Main {
 			}
 			Logger.log(Logger.INFO, "Grounding complete. " + planningProblem.getActions().size() 
 					+ " actions resulted from the grounding.\n");
+			Logger.log(Logger.INFO, "Ground problem contains " + (planningProblem.hasConditionalEffects() ? "some" : "no") + " conditional effects.");
+			Logger.log(Logger.INFO, "Ground problem contains " + (planningProblem.hasComplexConditions() ? "some" : "no") + " complex conditions.");
 			
 			// Operation mode: Validation.
 			if (config.planFileToValidate != null) {	
@@ -158,7 +160,6 @@ public class Main {
 				
 				Logger.log(Logger.INFO, "Planner finished with a plan of length " 
 						+ plan.getLength() + ".");
-				printPlan(config, plan);
 				
 				if (config.optimizePlan) {
 					// Employ plan optimization
@@ -174,6 +175,7 @@ public class Main {
 				Logger.log(Logger.INFO, "Validating ...");
 				if (Validator.planIsValid(planningProblem, plan)) {
 					Logger.log(Logger.INFO, "Plan has been found to be valid.");
+					printPlan(config, plan);
 				}
 			}
 			

@@ -412,7 +412,7 @@ public abstract class BaseGrounder implements Grounder {
 			op.setEffect(simplifyRigidConditions(op.getEffect(), liftedState, "eff"));
 			return op;
 		} else {
-			return null;
+			return op; //null;
 		}
 	}
 	

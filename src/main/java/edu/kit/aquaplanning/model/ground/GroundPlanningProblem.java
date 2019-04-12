@@ -12,9 +12,12 @@ public class GroundPlanningProblem {
 	private List<Action> actions;
 	
 	private Goal goal;
-	private boolean hasActionCosts;
 	private List<String> atomNames;
 	private List<String> numericAtomNames;
+
+	private boolean hasActionCosts;
+	private Boolean hasConditionalEffects;
+	private Boolean hasComplexConditions;
 	
 	public GroundPlanningProblem(State initState, List<Action> actions, 
 			Goal goal, boolean hasActionCosts, List<String> atomNames, 
@@ -61,6 +64,45 @@ public class GroundPlanningProblem {
 	
 	public boolean hasActionCosts() {
 		return hasActionCosts;
+	}
+	
+	public boolean hasConditionalEffects() {
+		
+		// Already checked? -> Return result
+		if (hasConditionalEffects != null) {
+			return hasConditionalEffects;
+		}
+		
+		// Check if problem contains conditional effects
+		for (Action a : actions) {
+			if (a.getConditionalEffects() != null 
+					&& !a.getConditionalEffects().isEmpty()) {
+				hasConditionalEffects = true;
+				break;
+			}
+		}
+		if (hasConditionalEffects == null)
+			hasConditionalEffects = false;
+		
+		return hasConditionalEffects;
+	}
+	
+	public boolean hasComplexConditions() {
+		
+		if (hasComplexConditions != null)
+			return hasComplexConditions;
+		
+		for (Action a : actions) {
+			if (a.getComplexPrecondition() != null || a.getComplexEffect() != null) {
+				hasComplexConditions = true;
+				break;
+			}
+		}
+		if (hasComplexConditions == null) {
+			hasComplexConditions = false;
+		}
+		
+		return hasComplexConditions;
 	}
 
 	public List<String> getAtomNames() { 

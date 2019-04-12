@@ -172,7 +172,9 @@ public class HtnMethodIndex {
 		
 		if (checkConsistency(newMethod)) {
 			return new PartiallyGroundMethod(newAssignment, newMethod);
-		} else return null;
+		} else {
+			return null;
+		}
 	}
 	
 	private boolean checkConsistency(Method method) {

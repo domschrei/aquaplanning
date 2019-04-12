@@ -25,6 +25,7 @@ import edu.kit.aquaplanning.model.lifted.condition.Condition;
 public class PlanningGraphGrounder extends BaseGrounder {
 	
 	private PlanningGraph graph;
+	private boolean reduceAtoms;
 	
 	public PlanningGraphGrounder(Configuration config) {
 		super(config);
@@ -47,7 +48,7 @@ public class PlanningGraphGrounder extends BaseGrounder {
 		constants.sort((c1, c2) -> c1.getName().compareTo(c2.getName()));
 		
 		// Will rigid predicates be removed from the problem?
-		boolean reduceAtoms = !config.keepRigidConditions && !config.keepDisjunctions;
+		reduceAtoms = !config.keepRigidConditions && !config.keepDisjunctions;
 		if (reduceAtoms && !problem.getDerivedPredicates().isEmpty()) {
 			// TODO properly handle it by also simplifying the DPs' semantics
 			Logger.log(Logger.WARN, "Derived predicates are in the problem: "

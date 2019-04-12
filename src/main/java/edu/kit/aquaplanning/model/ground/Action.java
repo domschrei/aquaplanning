@@ -292,4 +292,12 @@ public class Action {
 	public AtomSet getEffectsNeg() {
 		return effectsNeg;
 	}
+
+	public Precondition getComplexPrecondition() {
+		return complexPrecondition;
+	}
+
+	public Effect getComplexEffect() {
+		return complexEffect;
+	}
 }

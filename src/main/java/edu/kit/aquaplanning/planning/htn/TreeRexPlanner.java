@@ -128,11 +128,18 @@ public class TreeRexPlanner {
 		for (int p = 0; p < r.getNumSubtasks(); p++) {
 			
 			String subtask = r.getSubtask(p);
+			boolean added = false;
 			for (Action a : grounder.getActions(subtask)) {
 				addToClause(layer.getActionVariable(pos+p, a));
+				added = true;
 			}
 			for (Reduction red : grounder.getReductions(subtask)) {
 				addToClause(layer.getReductionVariable(pos+p, red));
+				added = true;
+			}
+			if (!added) {
+				Logger.log(Logger.ERROR, "A position of the initial task network is empty.");
+				System.exit(1);
 			}
 			finishClause();
 			
@@ -175,6 +182,7 @@ public class TreeRexPlanner {
 			addCondition(layer, pos, a.getPreconditionsNeg(), -layer.getActionVariable(pos, a), false, null);
 			addCondition(layer, pos+1, a.getEffectsPos(), -layer.getActionVariable(pos, a), true, facts);
 			addCondition(layer, pos+1, a.getEffectsNeg(), -layer.getActionVariable(pos, a), false, facts);
+			
 			// Add action as support to all facts that may change due to it
 			for (int fact : facts) {
 				List<Action> support = supportingActions.getOrDefault(fact, new ArrayList<>());
@@ -185,6 +193,7 @@ public class TreeRexPlanner {
 		
 		List<Action> actions = new ArrayList<>();
 		actions.addAll(layer.getActions(pos));
+		
 		BinaryEncoding enc = layer.getBinaryEncoding(pos);
 		if (enc == null) {
 			// Pairwise At-Most-One constraints
@@ -221,6 +230,7 @@ public class TreeRexPlanner {
 			int posBefore = layer.getLatestPositionOfFactVariable(pos, fact);
 			if (posBefore < 0) {
 				// Fact never occurs!
+				System.out.println(fact + " never occurs");
 				continue;
 			}
 			
@@ -410,11 +420,17 @@ public class TreeRexPlanner {
 		HierarchyLayer finalLayer = grounder.getHierarchyLayers().get(depth);
 		for (int pos = 0; pos < finalLayer.getSize(); pos++) {
 			for (Action a : finalLayer.getActions(pos)) {
-				if (a == HierarchyLayer.BLANK_ACTION)
-					continue;
+				//if (a == HierarchyLayer.BLANK_ACTION)
+				//	continue;
 				int actionVar = finalLayer.getActionVariable(pos, a);
 				if (solver.getValue(actionVar) > 0) {
 					plan.appendAtBack(a);
+				}
+			}
+			for (Reduction r : finalLayer.getReductions(pos)) {
+				int methodVar = finalLayer.getReductionVariable(pos, r);
+				if (solver.getValue(methodVar) > 0) {
+					System.out.println(pos + " : " + r);
 				}
 			}
 		}
