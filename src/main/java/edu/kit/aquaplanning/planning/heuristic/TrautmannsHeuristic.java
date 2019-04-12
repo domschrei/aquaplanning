@@ -35,7 +35,7 @@ public class TrautmannsHeuristic extends Heuristic {
 		}
 		
 		// Traverse deletion-relaxed planning graph and collect states and applicable actions
-		GroundRelaxedPlanningGraph graph = new GroundRelaxedPlanningGraph(state, problem.getActions());
+		GroundRelaxedPlanningGraph graph = new GroundRelaxedPlanningGraph(problem, state, problem.getActions());
 		List<State> states = new LinkedList<State>();
 		List<List<Action>> actions = new LinkedList<List<Action>>();
 		while (graph.hasNextLayer()) {			

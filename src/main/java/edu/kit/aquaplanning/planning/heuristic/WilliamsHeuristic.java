@@ -86,7 +86,7 @@ public class WilliamsHeuristic extends Heuristic {
         }
 
         // Traverse deletion-relaxed planning graph
-        GroundRelaxedPlanningGraph graph = new GroundRelaxedPlanningGraph(state, problem.getActions());
+        GroundRelaxedPlanningGraph graph = new GroundRelaxedPlanningGraph(problem, state, problem.getActions());
         Deque<State> states = new ArrayDeque<State>();
         states.addFirst(state);
         while (graph.hasNextLayer()) {

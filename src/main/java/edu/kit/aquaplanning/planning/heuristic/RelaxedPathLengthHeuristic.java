@@ -34,7 +34,7 @@ public class RelaxedPathLengthHeuristic extends Heuristic {
 		}
 		
 		// Traverse deletion-relaxed planning graph
-		GroundRelaxedPlanningGraph graph = new GroundRelaxedPlanningGraph(state, problem.getActions());
+		GroundRelaxedPlanningGraph graph = new GroundRelaxedPlanningGraph(problem, state, problem.getActions());
 		int depth = 1; 
 		while (graph.hasNextLayer()) {
 			State nextState = graph.computeNextLayer();

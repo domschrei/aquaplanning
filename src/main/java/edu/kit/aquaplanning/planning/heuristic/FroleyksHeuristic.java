@@ -33,7 +33,7 @@ public class FroleyksHeuristic extends Heuristic {
 		// Traverse deletion-relaxed planning graph
 		List<State> states = new ArrayList<>();
 		states.add(state);
-		GroundRelaxedPlanningGraph graph = new GroundRelaxedPlanningGraph(state, groundProblem.getActions());
+		GroundRelaxedPlanningGraph graph = new GroundRelaxedPlanningGraph(groundProblem, state, groundProblem.getActions());
 		State g_hat = new State(groundProblem.getGoal().getAtoms());
 		while (graph.hasNextLayer()) {
 			State nextState = graph.computeNextLayer();

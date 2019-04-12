@@ -16,8 +16,18 @@ public class FullActionIndex extends ActionIndex {
 	public List<Action> getActionsWithPrecondition(int atomIndex) {
 		return atomActionMap.get(atomIndex);
 	}
-		
+	
 	public FullActionIndex(GroundPlanningProblem gpp) {
+		init(gpp, false);
+	}
+	
+	public FullActionIndex(GroundPlanningProblem gpp, boolean relaxed) {
+		init(gpp, relaxed);
+	}
+	
+	public void init(GroundPlanningProblem gpp, boolean relaxed) {
+		
+		this.relaxed = relaxed;
 		atomActionMap = new HashMap<>();
 		noPrecondActions = new ArrayList<>();
 		for (Action a : gpp.getActions()) {
@@ -28,11 +38,13 @@ public class FullActionIndex extends ActionIndex {
 				addAction(atomid+1, a);
 				atomid = a.getPreconditionsPos().getNextTrueAtom(atomid+1);
 			}
-			atomid = a.getPreconditionsNeg().getFirstTrueAtom();
-			while (atomid >= 0) {
-				hasPreconds = true;
-				addAction(-atomid-1, a);
-				atomid = a.getPreconditionsNeg().getNextTrueAtom(atomid+1);
+			if (!relaxed) {
+				atomid = a.getPreconditionsNeg().getFirstTrueAtom();
+				while (atomid >= 0) {
+					hasPreconds = true;
+					addAction(-atomid-1, a);
+					atomid = a.getPreconditionsNeg().getNextTrueAtom(atomid+1);
+				}
 			}
 			if (!hasPreconds) {
 				noPrecondActions.add(a);
