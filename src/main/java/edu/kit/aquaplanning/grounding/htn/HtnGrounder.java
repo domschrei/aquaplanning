@@ -124,7 +124,7 @@ public class HtnGrounder {
 		// Add complete state @ 0
 		int numAtoms = groundProblem.getNumAtoms();
 		int pos = 0;
-		for (int p = 0; p <= numAtoms; p++) {
+		for (int p = 0; p < numAtoms; p++) {
 			initLayer.addFact(0, p+1);
 		}
 		
@@ -160,10 +160,9 @@ public class HtnGrounder {
 			// Add constraints of initTaskNetwork @ pos(+1, if after)
 			Precondition p = initReduction.getConstraint(pos);
 			addCondition(p, pos, initLayer);
-			System.out.println(pos + " : " + initLayer.getReductions(pos).size() + " reductions");
 		}
 		// Add init state and goals @ initTaskNetwork.getSubtasks().size()
-		for (int p = 0; p <= numAtoms; p++) {
+		for (int p = 0; p < numAtoms; p++) {
 			initLayer.addFact(pos, p+1);
 		}
 		List<Atom> goal = groundProblem.getGoal().getAtoms();

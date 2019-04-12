@@ -168,7 +168,7 @@ public class HierarchyLayer {
 			out += (pos + " : ");
 			int i = 0;
 			for (Reduction r : getReductions(pos)) {
-				out += (r.getBaseMethod().getTaskString() + " , ");
+				out += (r.getBaseMethod().toTaskWithImplicitArgs().toTaskString() + " , ");
 				i++;
 				if (i == 5) {
 					out += "... (" + getReductions(pos).size() + "), ";
