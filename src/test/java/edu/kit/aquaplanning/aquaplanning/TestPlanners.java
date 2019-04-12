@@ -101,8 +101,17 @@ public class TestPlanners extends TestCase {
 				plan.getLength() >= newPlan.getLength());
 	}
 	
+	public void testGreedyOnDefaultDomains() throws FileNotFoundException, IOException {
+		
+		Configuration config = new Configuration();
+		config.plannerType = PlannerType.greedy;
+		for (String domain : DEFAULT_TEST_DOMAINS) {
+			fullTest("testfiles/" + domain + "/domain.pddl", "testfiles/" + domain + "/p01.pddl", config);
+		}
+	}
+	
 	public void testDefaultDomains() throws FileNotFoundException, IOException {
-
+		
 		for (String domain : DEFAULT_TEST_DOMAINS) {
 			fullTest("testfiles/" + domain + "/domain.pddl", "testfiles/" + domain + "/p01.pddl");
 		}
