@@ -84,13 +84,18 @@ public class GreedyBestFirstSearchPlanner extends Planner {
             }
         }
 
-        // make the plan
-        Plan finalplan = new Plan();
-        for (Action a : plan) {
-        	finalplan.appendAtBack(a);
+        if (goal.isSatisfied(state)) {
+	        // make the plan
+	        Plan finalplan = new Plan();
+	        for (Action a : plan) {
+	        	finalplan.appendAtBack(a);
+	        }
+	        Logger.log(Logger.INFO, String.format("successfull greedy search, visited %d states, did %d iterations, found plan of length %d", visitedStates.size(), iterations, plan.size()));
+	        return finalplan;
+        } else {
+	        Logger.log(Logger.INFO, String.format("failed greedy search, visited %d states, did %d iterations", visitedStates.size(), iterations));
+        	return null;
         }
-        Logger.log(Logger.INFO, String.format("successfull greedy search, visited %d states, did %d iterations, found plan of length %d", visitedStates.size(), iterations, plan.size()));
-        return finalplan;
     }
 	
     private void updateApplicableActionsChanges(Collection<Action> actions, State oldState, State newState, FullActionIndex aindex) {

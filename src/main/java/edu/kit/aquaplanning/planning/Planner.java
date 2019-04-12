@@ -80,6 +80,8 @@ public abstract class Planner {
 			return new PortfolioParallelPlanner(config);
 		case greedy:
 			return new GreedyBestFirstSearchPlanner(config);
+		case seqpfolio:
+			return new SequantialPortfolioPlanner(config);
 		default:
 			break;
 		}
