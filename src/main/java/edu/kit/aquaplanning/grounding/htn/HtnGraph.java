@@ -64,7 +64,7 @@ public class HtnGraph {
 		for (Method m : problem.getMethods()) {
 			Task mTask = m.toTask().normalize();
 			Task mTaskImplicit = m.toTaskWithImplicitArgs().normalize();
-			HtnGraphNode node = new HtnGraphNode(mTaskImplicit);
+			HtnGraphNode node = new HtnGraphNode(mTask/*Implicit*/);
 			if (!methodNodes.containsKey(mTask))
 				methodNodes.put(mTask, new ArrayList<>());
 			methodNodes.get(mTask).add(node);
@@ -117,11 +117,11 @@ public class HtnGraph {
 		Set<Task> supportingTasks = new HashSet<>();
 		
 		String predicateName = c.getPredicate().getName();
-		Map<String, List<HtnGraphEdge>> map = (c.isNegated() ? tasksWithNegEffect : tasksWithPosEffect);
+		Map<String, List<HtnGraphEdge>> tasksWithEffect = (c.isNegated() ? tasksWithNegEffect : tasksWithPosEffect);
 		
 		List<HtnGraphEdge> edges = new ArrayList<>();
 		List<List<Argument>> argLists = new ArrayList<>();
-		edges.addAll(map.getOrDefault(predicateName, new ArrayList<>()));
+		edges.addAll(tasksWithEffect.getOrDefault(predicateName, new ArrayList<>()));
 		for (int i = 0; i < edges.size(); i++) {
 			List<Argument> args = new ArrayList<>();
 			for (int argIdx : edges.get(i).argumentIndices) {
@@ -130,28 +130,29 @@ public class HtnGraph {
 			argLists.add(args);
 		}
 		
+		Set<HtnGraphEdge> visitedEdges = new HashSet<>();
+		
 		for (int i = 0; i < edges.size(); i++) {
 			HtnGraphEdge edge = edges.get(i);
 			Task task = edge.parentTask;
 			List<Argument> args = argLists.get(i);
 			
-			Task instantiatedTask = task.getTaskBoundToArguments(task.getArguments(), args);
-			if (supportingTasks.contains(instantiatedTask)) {
-				// Cycle reached; infinite recursion is not cool
-				continue;
-			}
+			Task instantiatedTask = task.getTaskBoundToArguments(task.getArguments(), args, /*setNullArgs=*/true);
 			supportingTasks.add(instantiatedTask);
 			
 			for (HtnGraphNode node : getNodes(task)) {
 				List<HtnGraphEdge> nextEdges = new ArrayList<>();
 				nextEdges.addAll(node.parents);
-				edges.addAll(nextEdges);
+				
 				for (int j = 0; j < nextEdges.size(); j++) {
+					if (visitedEdges.contains(nextEdges.get(j)))
+						continue;
+					
+					edges.add(nextEdges.get(j));
 					List<Argument> nextArgs = new ArrayList<>();
 					for (int argIdx : nextEdges.get(j).argumentIndices) {
 						Argument nextArg = null;
 						if (argIdx >= instantiatedTask.getArguments().size()) {
-							
 						} else if (argIdx >= 0) {
 							nextArg = instantiatedTask.getArguments().get(argIdx);
 						}
@@ -160,6 +161,8 @@ public class HtnGraph {
 					argLists.add(nextArgs);
 				}
 			}
+			
+			visitedEdges.add(edge);
 		}
 		
 		return supportingTasks;

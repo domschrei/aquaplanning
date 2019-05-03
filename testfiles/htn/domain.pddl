@@ -26,14 +26,17 @@
         :parameters (?c - car ?p - place)
         :expansion  (
                         (tag t1 (move ?c ?pbefore ?pbetween))
-                        (tag t2 (move ?c ?pbetween ?p))
+                        (tag t2 (do_move ?c ?p))
                     )
-        :constraints( 
-                    and (before (and 
-                        (at-place ?c ?pbefore) 
-                        (not (road ?pbefore ?p)) 
-                        (road ?pbefore ?pbetween) 
-                        (road ?pbetween ?p)
-                    ) t1))
+        :constraints(and 
+	                	(before (and 
+	                        (at-place ?c ?pbefore) 
+	                        (not (road ?pbefore ?p)) 
+	                        (road ?pbefore ?pbetween)
+	                    ) t1)
+	                	(after (and 
+	                        (at-place ?c ?p)
+	                    ) t2)
+                    )
     )
 )

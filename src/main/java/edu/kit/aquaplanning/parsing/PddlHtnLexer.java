@@ -1,5 +1,5 @@
 package edu.kit.aquaplanning.parsing;
-// Generated from PddlHtn.g4 by ANTLR 4.7.2
+// Generated from PddlHtn.g4 by ANTLR 4.7.1
 import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.Token;
@@ -11,7 +11,7 @@ import org.antlr.v4.runtime.misc.*;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast"})
 public class PddlHtnLexer extends Lexer {
-	static { RuntimeMetaData.checkVersion("4.7.2", RuntimeMetaData.VERSION); }
+	static { RuntimeMetaData.checkVersion("4.7.1", RuntimeMetaData.VERSION); }
 
 	protected static final DFA[] _decisionToDFA;
 	protected static final PredictionContextCache _sharedContextCache =
@@ -42,65 +42,55 @@ public class PddlHtnLexer extends Lexer {
 		"DEFAULT_MODE"
 	};
 
-	private static String[] makeRuleNames() {
-		return new String[] {
-			"T__0", "T__1", "T__2", "T__3", "T__4", "T__5", "T__6", "T__7", "T__8", 
-			"T__9", "T__10", "T__11", "REQUIRE_KEY", "DEFINE", "DOMAIN", "PROBLEM", 
-			"REQUIREMENTS", "TYPES", "EITHER", "FUNCTIONS", "CONSTANTS", "PREDICATES", 
-			"CONSTRAINTS", "ACTION", "PARAMETERS", "PRECONDITION", "EFFECT", "AND", 
-			"OR", "NOT", "IMPLY", "EXISTS", "FORALL", "DURATIVE_ACTION", "DURATION", 
-			"CONDITION", "PREFERENCE", "OVER_ALL", "AT_START", "AT_END", "DERIVED", 
-			"WHEN", "ASSIGN", "INCREASE", "DECREASE", "SCALE_UP", "SCALE_DOWN", "OBJECTS", 
-			"INIT", "GOAL", "METRIC", "MINIMIZE", "MAXIMIZE", "TOTAL_TIME", "IS_VIOLATED", 
-			"ALWAYS", "SOMETIME", "WITHIN", "AT_MOST_ONCE", "SOMETIME_AFTER", "SOMETIME_BEFORE", 
-			"ALWAYS_WITHIN", "HOLD_DURING", "HOLD_AFTER", "METHOD", "EXPANSION", 
-			"TAG", "BEFORE", "AFTER", "BETWEEN", "TASKS", "R_STRIPS", "R_TYPING", 
-			"R_NEGATIVE_PRECONDITIONS", "R_DISJUNCTIVE_PRECONDITIONS", "R_EQUALITY", 
-			"R_EXISTENTIAL_PRECONDITIONS", "R_UNIVERSAL_PRECONDITIONS", "R_QUANTIFIED_PRECONDITIONS", 
-			"R_CONDITIONAL_EFFECTS", "R_FLUENTS", "R_ADL", "R_DURATIVE_ACTIONS", 
-			"R_DERIVED_PREDICATES", "R_TIMED_INITIAL_LITERALS", "R_PREFERENCES", 
-			"R_ACTION_COSTS", "R_HTN", "STR_NUMBER", "NAME", "VARIABLE", "EQUALS", 
-			"NUMBER", "LINE_COMMENT", "WHITESPACE", "A", "B", "C", "D", "E", "F", 
-			"G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", 
-			"U", "V", "W", "X", "Y", "Z", "LETTER", "ANY_CHAR", "DIGIT"
-		};
-	}
-	public static final String[] ruleNames = makeRuleNames();
+	public static final String[] ruleNames = {
+		"T__0", "T__1", "T__2", "T__3", "T__4", "T__5", "T__6", "T__7", "T__8", 
+		"T__9", "T__10", "T__11", "REQUIRE_KEY", "DEFINE", "DOMAIN", "PROBLEM", 
+		"REQUIREMENTS", "TYPES", "EITHER", "FUNCTIONS", "CONSTANTS", "PREDICATES", 
+		"CONSTRAINTS", "ACTION", "PARAMETERS", "PRECONDITION", "EFFECT", "AND", 
+		"OR", "NOT", "IMPLY", "EXISTS", "FORALL", "DURATIVE_ACTION", "DURATION", 
+		"CONDITION", "PREFERENCE", "OVER_ALL", "AT_START", "AT_END", "DERIVED", 
+		"WHEN", "ASSIGN", "INCREASE", "DECREASE", "SCALE_UP", "SCALE_DOWN", "OBJECTS", 
+		"INIT", "GOAL", "METRIC", "MINIMIZE", "MAXIMIZE", "TOTAL_TIME", "IS_VIOLATED", 
+		"ALWAYS", "SOMETIME", "WITHIN", "AT_MOST_ONCE", "SOMETIME_AFTER", "SOMETIME_BEFORE", 
+		"ALWAYS_WITHIN", "HOLD_DURING", "HOLD_AFTER", "METHOD", "EXPANSION", "TAG", 
+		"BEFORE", "AFTER", "BETWEEN", "TASKS", "R_STRIPS", "R_TYPING", "R_NEGATIVE_PRECONDITIONS", 
+		"R_DISJUNCTIVE_PRECONDITIONS", "R_EQUALITY", "R_EXISTENTIAL_PRECONDITIONS", 
+		"R_UNIVERSAL_PRECONDITIONS", "R_QUANTIFIED_PRECONDITIONS", "R_CONDITIONAL_EFFECTS", 
+		"R_FLUENTS", "R_ADL", "R_DURATIVE_ACTIONS", "R_DERIVED_PREDICATES", "R_TIMED_INITIAL_LITERALS", 
+		"R_PREFERENCES", "R_ACTION_COSTS", "R_HTN", "STR_NUMBER", "NAME", "VARIABLE", 
+		"EQUALS", "NUMBER", "LINE_COMMENT", "WHITESPACE", "A", "B", "C", "D", 
+		"E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", 
+		"S", "T", "U", "V", "W", "X", "Y", "Z", "LETTER", "ANY_CHAR", "DIGIT"
+	};
 
-	private static String[] makeLiteralNames() {
-		return new String[] {
-			null, "'('", "')'", "':'", "'-'", "'*'", "'+'", "'/'", "'>'", "'<'", 
-			"'>='", "'<='", "'?'", null, null, null, null, null, null, null, null, 
-			null, null, null, null, null, null, null, null, null, null, null, null, 
-			null, null, null, null, null, null, null, null, null, null, null, null, 
-			null, null, null, null, null, null, null, null, null, null, null, null, 
-			null, null, null, null, null, null, null, null, null, null, null, null, 
-			null, null, null, null, null, null, null, null, null, null, null, null, 
-			null, null, null, null, null, null, null, null, null, null, null, "'='"
-		};
-	}
-	private static final String[] _LITERAL_NAMES = makeLiteralNames();
-	private static String[] makeSymbolicNames() {
-		return new String[] {
-			null, null, null, null, null, null, null, null, null, null, null, null, 
-			null, "REQUIRE_KEY", "DEFINE", "DOMAIN", "PROBLEM", "REQUIREMENTS", "TYPES", 
-			"EITHER", "FUNCTIONS", "CONSTANTS", "PREDICATES", "CONSTRAINTS", "ACTION", 
-			"PARAMETERS", "PRECONDITION", "EFFECT", "AND", "OR", "NOT", "IMPLY", 
-			"EXISTS", "FORALL", "DURATIVE_ACTION", "DURATION", "CONDITION", "PREFERENCE", 
-			"OVER_ALL", "AT_START", "AT_END", "DERIVED", "WHEN", "ASSIGN", "INCREASE", 
-			"DECREASE", "SCALE_UP", "SCALE_DOWN", "OBJECTS", "INIT", "GOAL", "METRIC", 
-			"MINIMIZE", "MAXIMIZE", "TOTAL_TIME", "IS_VIOLATED", "ALWAYS", "SOMETIME", 
-			"WITHIN", "AT_MOST_ONCE", "SOMETIME_AFTER", "SOMETIME_BEFORE", "ALWAYS_WITHIN", 
-			"HOLD_DURING", "HOLD_AFTER", "METHOD", "EXPANSION", "TAG", "BEFORE", 
-			"AFTER", "BETWEEN", "TASKS", "R_STRIPS", "R_TYPING", "R_NEGATIVE_PRECONDITIONS", 
-			"R_DISJUNCTIVE_PRECONDITIONS", "R_EQUALITY", "R_EXISTENTIAL_PRECONDITIONS", 
-			"R_UNIVERSAL_PRECONDITIONS", "R_QUANTIFIED_PRECONDITIONS", "R_CONDITIONAL_EFFECTS", 
-			"R_FLUENTS", "R_ADL", "R_DURATIVE_ACTIONS", "R_DERIVED_PREDICATES", "R_TIMED_INITIAL_LITERALS", 
-			"R_PREFERENCES", "R_ACTION_COSTS", "R_HTN", "STR_NUMBER", "NAME", "VARIABLE", 
-			"EQUALS", "NUMBER", "LINE_COMMENT", "WHITESPACE"
-		};
-	}
-	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
+	private static final String[] _LITERAL_NAMES = {
+		null, "'('", "')'", "':'", "'-'", "'*'", "'+'", "'/'", "'>'", "'<'", "'>='", 
+		"'<='", "'?'", null, null, null, null, null, null, null, null, null, null, 
+		null, null, null, null, null, null, null, null, null, null, null, null, 
+		null, null, null, null, null, null, null, null, null, null, null, null, 
+		null, null, null, null, null, null, null, null, null, null, null, null, 
+		null, null, null, null, null, null, null, null, null, null, null, null, 
+		null, null, null, null, null, null, null, null, null, null, null, null, 
+		null, null, null, null, null, null, null, null, null, "'='"
+	};
+	private static final String[] _SYMBOLIC_NAMES = {
+		null, null, null, null, null, null, null, null, null, null, null, null, 
+		null, "REQUIRE_KEY", "DEFINE", "DOMAIN", "PROBLEM", "REQUIREMENTS", "TYPES", 
+		"EITHER", "FUNCTIONS", "CONSTANTS", "PREDICATES", "CONSTRAINTS", "ACTION", 
+		"PARAMETERS", "PRECONDITION", "EFFECT", "AND", "OR", "NOT", "IMPLY", "EXISTS", 
+		"FORALL", "DURATIVE_ACTION", "DURATION", "CONDITION", "PREFERENCE", "OVER_ALL", 
+		"AT_START", "AT_END", "DERIVED", "WHEN", "ASSIGN", "INCREASE", "DECREASE", 
+		"SCALE_UP", "SCALE_DOWN", "OBJECTS", "INIT", "GOAL", "METRIC", "MINIMIZE", 
+		"MAXIMIZE", "TOTAL_TIME", "IS_VIOLATED", "ALWAYS", "SOMETIME", "WITHIN", 
+		"AT_MOST_ONCE", "SOMETIME_AFTER", "SOMETIME_BEFORE", "ALWAYS_WITHIN", 
+		"HOLD_DURING", "HOLD_AFTER", "METHOD", "EXPANSION", "TAG", "BEFORE", "AFTER", 
+		"BETWEEN", "TASKS", "R_STRIPS", "R_TYPING", "R_NEGATIVE_PRECONDITIONS", 
+		"R_DISJUNCTIVE_PRECONDITIONS", "R_EQUALITY", "R_EXISTENTIAL_PRECONDITIONS", 
+		"R_UNIVERSAL_PRECONDITIONS", "R_QUANTIFIED_PRECONDITIONS", "R_CONDITIONAL_EFFECTS", 
+		"R_FLUENTS", "R_ADL", "R_DURATIVE_ACTIONS", "R_DERIVED_PREDICATES", "R_TIMED_INITIAL_LITERALS", 
+		"R_PREFERENCES", "R_ACTION_COSTS", "R_HTN", "STR_NUMBER", "NAME", "VARIABLE", 
+		"EQUALS", "NUMBER", "LINE_COMMENT", "WHITESPACE"
+	};
 	public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
 
 	/**

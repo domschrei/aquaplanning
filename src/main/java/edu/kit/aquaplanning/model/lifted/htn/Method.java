@@ -110,6 +110,13 @@ public class Method {
 	public List<Argument> getImplicitArguments() {
 		return implicitArguments;
 	}
+	
+	public List<Argument> getAllArguments() {
+		List<Argument> args = new ArrayList<>();
+		args.addAll(explicitArguments);
+		args.addAll(implicitArguments);
+		return args;
+	}
 
 	public Method getMethodBoundToArguments(List<Argument> explicitArgs, List<Argument> implicitArgs) {
 

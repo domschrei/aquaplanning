@@ -44,6 +44,7 @@ public class TreeRexPlanner {
 		Logger.log(Logger.INFO, "Generating depth " + depth);
 
 		HierarchyLayer newLayer = grounder.getHierarchyLayers().get(depth);
+		System.out.println(newLayer);
 		
 		Logger.log(Logger.INFO, "Adding clauses ...");
 		
@@ -72,6 +73,7 @@ public class TreeRexPlanner {
 			HierarchyLayer oldLayer = newLayer;
 			grounder.computeNextLayer();
 			newLayer = grounder.getHierarchyLayers().get(depth);
+			System.out.println(newLayer);
 			
 			Logger.log(Logger.INFO, "Adding clauses ...");
 			
@@ -134,11 +136,13 @@ public class TreeRexPlanner {
 				added = true;
 			}
 			for (Reduction red : grounder.getReductions(subtask)) {
-				addToClause(layer.getReductionVariable(pos+p, red));
-				added = true;
+				if (layer.contains(p, red)) {
+					addToClause(layer.getReductionVariable(pos+p, red));
+					added = true;
+				}
 			}
 			if (!added) {
-				Logger.log(Logger.ERROR, "A position of the initial task network is empty.");
+				Logger.log(Logger.ERROR, "Position " + p + " of the initial task network is empty.");
 				System.exit(1);
 			}
 			finishClause();
@@ -267,6 +271,11 @@ public class TreeRexPlanner {
 			addClause(-oldLayer.getPrimitivenessVariable(pos), newLayer.getPrimitivenessVariable(successorPos));
 			
 			for (Action a : oldLayer.getActions(pos)) {
+				if (!newLayer.contains(successorPos, a)) {
+					// Action turned out to be invalid
+					addClause(-oldLayer.getActionVariable(pos, a));
+					continue;
+				}
 				addClause(-oldLayer.getActionVariable(pos, a), newLayer.getActionVariable(successorPos, a));
 			}
 			
@@ -284,15 +293,36 @@ public class TreeRexPlanner {
 		
 		for (int pos = 0; pos < oldLayer.getSize(); pos++) {
 		
-			for (Reduction r : oldLayer.getReductions(pos)) {
+			loopReductions : for (Reduction r : oldLayer.getReductions(pos)) {
 				
 				int successorPos = oldLayer.getSuccessorPosition(pos);
 				int maxExpansionSize = oldLayer.getSuccessorPosition(pos+1) - successorPos;
+				
+				for (int p = 0; p < r.getNumSubtasks(); p++) {
+					
+					// Check if there is some subtask that turns out to be impossible
+					String subtask = r.getSubtask(p);
+					for (Action action : grounder.getActions(subtask)) {
+						if (!newLayer.contains(successorPos+p, action)) {
+							// There is no such action => the reduction turns out to be impossible
+							addClause(-oldLayer.getReductionVariable(pos, r));
+							continue loopReductions;
+						}
+					}
+					for (Reduction red : grounder.getReductions(subtask)) {
+						if (!newLayer.contains(successorPos+p, red)) {
+							// There is no such sub-reduction => the reduction turns out to be impossible
+							addClause(-oldLayer.getReductionVariable(pos, r));
+							continue loopReductions;
+						}
+					}
+				}
+				
 				int p = 0;
 				for (; p < r.getNumSubtasks(); p++) {
 					
-					addToClause(-oldLayer.getReductionVariable(pos, r));
 					String subtask = r.getSubtask(p);
+					addToClause(-oldLayer.getReductionVariable(pos, r));
 					boolean successorFound = false;
 					for (Action action : grounder.getActions(subtask)) {
 						addToClause(newLayer.getActionVariable(successorPos+p, action));
@@ -302,11 +332,12 @@ public class TreeRexPlanner {
 						addToClause(newLayer.getReductionVariable(successorPos+p, red));
 						successorFound = true;
 					}
-					if (!successorFound) {
-						Logger.log(Logger.ERROR, "Reduction " + r + " does not have any successors on offset " + p);
-						System.exit(1);
-					}
 					finishClause();
+					if (!successorFound) {
+						//Logger.log(Logger.WARN, "Reduction " + r + " does not have any successors on offset " + p);
+						continue loopReductions;
+						//System.exit(1);
+					}
 				}
 				// Fill empty positions with blank actions
 				for (; p < maxExpansionSize; p++) {
@@ -389,6 +420,7 @@ public class TreeRexPlanner {
 	 
 	List<Integer> currentClause;
 	List<Integer> assumptions;
+	int addedClauses = 0;
 	
 	private void addToClause(int lit) {
 		if (currentClause == null)
@@ -400,10 +432,12 @@ public class TreeRexPlanner {
 		int[] array = currentClause.stream().mapToInt(i->i).toArray();
 		addClause(array);
 		currentClause = null;
+		addedClauses++;
 	}
 	
 	private void addClause(int... lits) {
 		solver.addClause(lits);
+		addedClauses++;
 	}
 	
 	private void addAssumption(int lit) {
@@ -420,17 +454,11 @@ public class TreeRexPlanner {
 		HierarchyLayer finalLayer = grounder.getHierarchyLayers().get(depth);
 		for (int pos = 0; pos < finalLayer.getSize(); pos++) {
 			for (Action a : finalLayer.getActions(pos)) {
-				//if (a == HierarchyLayer.BLANK_ACTION)
-				//	continue;
+				if (a == HierarchyLayer.BLANK_ACTION)
+					continue;
 				int actionVar = finalLayer.getActionVariable(pos, a);
 				if (solver.getValue(actionVar) > 0) {
 					plan.appendAtBack(a);
-				}
-			}
-			for (Reduction r : finalLayer.getReductions(pos)) {
-				int methodVar = finalLayer.getReductionVariable(pos, r);
-				if (solver.getValue(methodVar) > 0) {
-					System.out.println(pos + " : " + r);
 				}
 			}
 		}

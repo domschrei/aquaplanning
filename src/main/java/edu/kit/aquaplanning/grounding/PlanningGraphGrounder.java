@@ -3,6 +3,7 @@ package edu.kit.aquaplanning.grounding;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import edu.kit.aquaplanning.Configuration;
@@ -122,5 +123,9 @@ public class PlanningGraphGrounder extends BaseGrounder {
 	
 	public List<Operator> getFilteredActions() {
 		return graph.getFilteredActions();
+	}
+	
+	public Map<String, Integer> getArgumentIndices() {
+		return graph.getArgumentIndices();
 	}
 }

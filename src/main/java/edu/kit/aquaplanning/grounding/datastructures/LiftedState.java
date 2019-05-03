@@ -128,4 +128,8 @@ public class LiftedState {
 		}
 		return out;
 	}
+	
+	public Map<String, Integer> getArgumentIds() {
+		return argumentIds;
+	}
 }

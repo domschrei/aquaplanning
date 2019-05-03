@@ -3,6 +3,7 @@ package edu.kit.aquaplanning.grounding;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import edu.kit.aquaplanning.grounding.datastructures.LiftedState;
@@ -313,5 +314,9 @@ public class PlanningGraph {
 
 	public void setFilteredActions(List<Operator> filteredActions) {
 		this.filteredActions = filteredActions;
+	}
+	
+	public Map<String, Integer> getArgumentIndices() {
+		return opIndex.getArgumentIds();
 	}
 }

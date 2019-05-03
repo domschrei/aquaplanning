@@ -1,5 +1,5 @@
 package edu.kit.aquaplanning.parsing;
-// Generated from PddlHtn.g4 by ANTLR 4.7.2
+// Generated from PddlHtn.g4 by ANTLR 4.7.1
 import org.antlr.v4.runtime.atn.*;
 import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.*;
@@ -11,7 +11,7 @@ import java.util.ArrayList;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast"})
 public class PddlHtnParser extends Parser {
-	static { RuntimeMetaData.checkVersion("4.7.2", RuntimeMetaData.VERSION); }
+	static { RuntimeMetaData.checkVersion("4.7.1", RuntimeMetaData.VERSION); }
 
 	protected static final DFA[] _decisionToDFA;
 	protected static final PredictionContextCache _sharedContextCache =
@@ -56,60 +56,51 @@ public class PddlHtnParser extends Parser {
 		RULE_nameLiteral = 66, RULE_atomicNameFormula = 67, RULE_goal = 68, RULE_initTaskNetwork = 69, 
 		RULE_probConstraints = 70, RULE_prefConGD = 71, RULE_metricSpec = 72, 
 		RULE_optimization = 73, RULE_metricFExp = 74, RULE_conGD = 75;
-	private static String[] makeRuleNames() {
-		return new String[] {
-			"pddlDoc", "domain", "domainName", "requireDef", "typesDef", "typedNameList", 
-			"singleTypeNameList", "type", "primType", "functionsDef", "functionList", 
-			"atomicFunctionSkeleton", "functionSymbol", "functionType", "constantsDef", 
-			"predicatesDef", "atomicFormulaSkeleton", "predicate", "typedVariableList", 
-			"singleTypeVarList", "constraints", "structureDef", "actionDef", "actionSymbol", 
-			"actionDefBody", "goalDesc", "fComp", "atomicTermFormula", "term", "methodDef", 
-			"taskList", "task", "taggedTask", "constraintList", "constraint", "durativeActionDef", 
-			"daDefBody", "daGD", "prefTimedGD", "timedGD", "timeSpecifier", "interval", 
-			"derivedDef", "fExp", "fHead", "effect", "cEffect", "pEffect", "condEffect", 
-			"binaryOp", "binaryComp", "assignOp", "durationConstraint", "simpleDurationConstraint", 
-			"durOp", "durValue", "daEffect", "timedEffect", "fAssignDA", "fExpDA", 
-			"problem", "problemDecl", "problemDomain", "objectDecl", "init", "initEl", 
-			"nameLiteral", "atomicNameFormula", "goal", "initTaskNetwork", "probConstraints", 
-			"prefConGD", "metricSpec", "optimization", "metricFExp", "conGD"
-		};
-	}
-	public static final String[] ruleNames = makeRuleNames();
+	public static final String[] ruleNames = {
+		"pddlDoc", "domain", "domainName", "requireDef", "typesDef", "typedNameList", 
+		"singleTypeNameList", "type", "primType", "functionsDef", "functionList", 
+		"atomicFunctionSkeleton", "functionSymbol", "functionType", "constantsDef", 
+		"predicatesDef", "atomicFormulaSkeleton", "predicate", "typedVariableList", 
+		"singleTypeVarList", "constraints", "structureDef", "actionDef", "actionSymbol", 
+		"actionDefBody", "goalDesc", "fComp", "atomicTermFormula", "term", "methodDef", 
+		"taskList", "task", "taggedTask", "constraintList", "constraint", "durativeActionDef", 
+		"daDefBody", "daGD", "prefTimedGD", "timedGD", "timeSpecifier", "interval", 
+		"derivedDef", "fExp", "fHead", "effect", "cEffect", "pEffect", "condEffect", 
+		"binaryOp", "binaryComp", "assignOp", "durationConstraint", "simpleDurationConstraint", 
+		"durOp", "durValue", "daEffect", "timedEffect", "fAssignDA", "fExpDA", 
+		"problem", "problemDecl", "problemDomain", "objectDecl", "init", "initEl", 
+		"nameLiteral", "atomicNameFormula", "goal", "initTaskNetwork", "probConstraints", 
+		"prefConGD", "metricSpec", "optimization", "metricFExp", "conGD"
+	};
 
-	private static String[] makeLiteralNames() {
-		return new String[] {
-			null, "'('", "')'", "':'", "'-'", "'*'", "'+'", "'/'", "'>'", "'<'", 
-			"'>='", "'<='", "'?'", null, null, null, null, null, null, null, null, 
-			null, null, null, null, null, null, null, null, null, null, null, null, 
-			null, null, null, null, null, null, null, null, null, null, null, null, 
-			null, null, null, null, null, null, null, null, null, null, null, null, 
-			null, null, null, null, null, null, null, null, null, null, null, null, 
-			null, null, null, null, null, null, null, null, null, null, null, null, 
-			null, null, null, null, null, null, null, null, null, null, null, "'='"
-		};
-	}
-	private static final String[] _LITERAL_NAMES = makeLiteralNames();
-	private static String[] makeSymbolicNames() {
-		return new String[] {
-			null, null, null, null, null, null, null, null, null, null, null, null, 
-			null, "REQUIRE_KEY", "DEFINE", "DOMAIN", "PROBLEM", "REQUIREMENTS", "TYPES", 
-			"EITHER", "FUNCTIONS", "CONSTANTS", "PREDICATES", "CONSTRAINTS", "ACTION", 
-			"PARAMETERS", "PRECONDITION", "EFFECT", "AND", "OR", "NOT", "IMPLY", 
-			"EXISTS", "FORALL", "DURATIVE_ACTION", "DURATION", "CONDITION", "PREFERENCE", 
-			"OVER_ALL", "AT_START", "AT_END", "DERIVED", "WHEN", "ASSIGN", "INCREASE", 
-			"DECREASE", "SCALE_UP", "SCALE_DOWN", "OBJECTS", "INIT", "GOAL", "METRIC", 
-			"MINIMIZE", "MAXIMIZE", "TOTAL_TIME", "IS_VIOLATED", "ALWAYS", "SOMETIME", 
-			"WITHIN", "AT_MOST_ONCE", "SOMETIME_AFTER", "SOMETIME_BEFORE", "ALWAYS_WITHIN", 
-			"HOLD_DURING", "HOLD_AFTER", "METHOD", "EXPANSION", "TAG", "BEFORE", 
-			"AFTER", "BETWEEN", "TASKS", "R_STRIPS", "R_TYPING", "R_NEGATIVE_PRECONDITIONS", 
-			"R_DISJUNCTIVE_PRECONDITIONS", "R_EQUALITY", "R_EXISTENTIAL_PRECONDITIONS", 
-			"R_UNIVERSAL_PRECONDITIONS", "R_QUANTIFIED_PRECONDITIONS", "R_CONDITIONAL_EFFECTS", 
-			"R_FLUENTS", "R_ADL", "R_DURATIVE_ACTIONS", "R_DERIVED_PREDICATES", "R_TIMED_INITIAL_LITERALS", 
-			"R_PREFERENCES", "R_ACTION_COSTS", "R_HTN", "STR_NUMBER", "NAME", "VARIABLE", 
-			"EQUALS", "NUMBER", "LINE_COMMENT", "WHITESPACE"
-		};
-	}
-	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
+	private static final String[] _LITERAL_NAMES = {
+		null, "'('", "')'", "':'", "'-'", "'*'", "'+'", "'/'", "'>'", "'<'", "'>='", 
+		"'<='", "'?'", null, null, null, null, null, null, null, null, null, null, 
+		null, null, null, null, null, null, null, null, null, null, null, null, 
+		null, null, null, null, null, null, null, null, null, null, null, null, 
+		null, null, null, null, null, null, null, null, null, null, null, null, 
+		null, null, null, null, null, null, null, null, null, null, null, null, 
+		null, null, null, null, null, null, null, null, null, null, null, null, 
+		null, null, null, null, null, null, null, null, null, "'='"
+	};
+	private static final String[] _SYMBOLIC_NAMES = {
+		null, null, null, null, null, null, null, null, null, null, null, null, 
+		null, "REQUIRE_KEY", "DEFINE", "DOMAIN", "PROBLEM", "REQUIREMENTS", "TYPES", 
+		"EITHER", "FUNCTIONS", "CONSTANTS", "PREDICATES", "CONSTRAINTS", "ACTION", 
+		"PARAMETERS", "PRECONDITION", "EFFECT", "AND", "OR", "NOT", "IMPLY", "EXISTS", 
+		"FORALL", "DURATIVE_ACTION", "DURATION", "CONDITION", "PREFERENCE", "OVER_ALL", 
+		"AT_START", "AT_END", "DERIVED", "WHEN", "ASSIGN", "INCREASE", "DECREASE", 
+		"SCALE_UP", "SCALE_DOWN", "OBJECTS", "INIT", "GOAL", "METRIC", "MINIMIZE", 
+		"MAXIMIZE", "TOTAL_TIME", "IS_VIOLATED", "ALWAYS", "SOMETIME", "WITHIN", 
+		"AT_MOST_ONCE", "SOMETIME_AFTER", "SOMETIME_BEFORE", "ALWAYS_WITHIN", 
+		"HOLD_DURING", "HOLD_AFTER", "METHOD", "EXPANSION", "TAG", "BEFORE", "AFTER", 
+		"BETWEEN", "TASKS", "R_STRIPS", "R_TYPING", "R_NEGATIVE_PRECONDITIONS", 
+		"R_DISJUNCTIVE_PRECONDITIONS", "R_EQUALITY", "R_EXISTENTIAL_PRECONDITIONS", 
+		"R_UNIVERSAL_PRECONDITIONS", "R_QUANTIFIED_PRECONDITIONS", "R_CONDITIONAL_EFFECTS", 
+		"R_FLUENTS", "R_ADL", "R_DURATIVE_ACTIONS", "R_DERIVED_PREDICATES", "R_TIMED_INITIAL_LITERALS", 
+		"R_PREFERENCES", "R_ACTION_COSTS", "R_HTN", "STR_NUMBER", "NAME", "VARIABLE", 
+		"EQUALS", "NUMBER", "LINE_COMMENT", "WHITESPACE"
+	};
 	public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
 
 	/**
@@ -159,7 +150,6 @@ public class PddlHtnParser extends Parser {
 		super(input);
 		_interp = new ParserATNSimulator(this,_ATN,_decisionToDFA,_sharedContextCache);
 	}
-
 	public static class PddlDocContext extends ParserRuleContext {
 		public DomainContext domain() {
 			return getRuleContext(DomainContext.class,0);
@@ -3689,7 +3679,6 @@ public class PddlHtnParser extends Parser {
 	}
 
 	public static class BinaryCompContext extends ParserRuleContext {
-		public TerminalNode EQUALS() { return getToken(PddlHtnParser.EQUALS, 0); }
 		public BinaryCompContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -3947,7 +3936,6 @@ public class PddlHtnParser extends Parser {
 	}
 
 	public static class DurOpContext extends ParserRuleContext {
-		public TerminalNode EQUALS() { return getToken(PddlHtnParser.EQUALS, 0); }
 		public DurOpContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -4755,7 +4743,6 @@ public class PddlHtnParser extends Parser {
 		public NameLiteralContext nameLiteral() {
 			return getRuleContext(NameLiteralContext.class,0);
 		}
-		public TerminalNode EQUALS() { return getToken(PddlHtnParser.EQUALS, 0); }
 		public FHeadContext fHead() {
 			return getRuleContext(FHeadContext.class,0);
 		}

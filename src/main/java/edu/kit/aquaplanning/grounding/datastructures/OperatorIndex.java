@@ -391,4 +391,8 @@ public class OperatorIndex {
 		}
 		return hasPositivePreconds;
 	}
+	
+	public Map<String, Integer> getArgumentIds() {
+		return argumentIds;
+	}
 }

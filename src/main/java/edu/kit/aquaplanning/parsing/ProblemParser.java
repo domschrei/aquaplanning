@@ -83,6 +83,7 @@ import edu.kit.aquaplanning.parsing.PddlHtnParser.TaskContext;
 import edu.kit.aquaplanning.parsing.PddlHtnParser.TypedNameListContext;
 import edu.kit.aquaplanning.parsing.PddlHtnParser.TypedVariableListContext;
 import edu.kit.aquaplanning.parsing.PddlHtnParser.TypesDefContext;
+import edu.kit.aquaplanning.util.Logger;
 
 @SuppressWarnings("deprecation")
 public class ProblemParser extends PddlHtnBaseListener {
@@ -154,6 +155,8 @@ public class ProblemParser extends PddlHtnBaseListener {
 		supertype = new Type("_root_type"); // virtual supertype
 		types.put("_root_type",  supertype);
 		
+		Logger.log(Logger.INFO_V, "Parsing domain file ...");
+
 		// Get domain
         ANTLRInputStream in = new ANTLRInputStream(new FileInputStream(domainFile));
         PddlHtnLexer lexer = new PddlHtnLexer(in);
@@ -162,10 +165,14 @@ public class ProblemParser extends PddlHtnBaseListener {
         parser.setBuildParseTree(true);
         PddlDocContext ctx = parser.pddlDoc();
         
+        Logger.log(Logger.INFO_V, "Traversing domain AST ...");
+        
         // Parse domain
         parsedFile = domainFile;
         ParseTreeWalker walker = new ParseTreeWalker();
         walker.walk(this, ctx);
+        
+        Logger.log(Logger.INFO_V, "Parsing problem file ...");
         
         // Get problem
         in = new ANTLRInputStream(new FileInputStream(problemFile));
@@ -175,10 +182,14 @@ public class ProblemParser extends PddlHtnBaseListener {
         parser.setBuildParseTree(true);
         ctx = parser.pddlDoc();
         
+        Logger.log(Logger.INFO_V, "Traversing problem AST ...");
+        
         // Parse problem
         parsedFile = problemFile;
         walker = new ParseTreeWalker();
         walker.walk(this, ctx);
+        
+        Logger.log(Logger.INFO_V, "Creating lifted planning problem instance ...");
         
         // Create object to return
         PlanningProblem problem;
@@ -640,7 +651,7 @@ public class ProblemParser extends PddlHtnBaseListener {
 	
 	
 	@Override
-	public void enterMethodDef(MethodDefContext ctx) {
+	public void enterMethodDef(MethodDefContext ctx) {		
 		this.context = ParseContext.methodDef;
 		String methodName = ctx.children.get(3).getText().toLowerCase();
 		methodNames.add(methodName);

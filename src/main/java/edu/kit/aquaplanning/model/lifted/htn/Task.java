@@ -37,6 +37,10 @@ public class Task {
 	}
 	
 	public Task getTaskBoundToArguments(List<Argument> refArgs, List<Argument> argVals) {
+		return getTaskBoundToArguments(refArgs, argVals, false);
+	}
+	
+	public Task getTaskBoundToArguments(List<Argument> refArgs, List<Argument> argVals, boolean setNullArgs) {
 		Task t = new Task(name);
 		t.setTag(tag);
 		for (int argIdx = 0; argIdx < arguments.size(); argIdx++) {
@@ -54,8 +58,9 @@ public class Task {
 				}
 			}
 			if (!added)
-				t.addArgument(arg);
+				t.addArgument(setNullArgs ? null : arg);
 		}
+		
 		return t;
 	}
 	

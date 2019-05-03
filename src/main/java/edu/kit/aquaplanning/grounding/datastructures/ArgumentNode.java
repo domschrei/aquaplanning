@@ -53,6 +53,10 @@ public class ArgumentNode {
 		return contains(args, 0);
 	}
 	
+	public boolean containsPartiallyInstantiatedArgs(List<Argument> args) {
+		return containsPartiallyInstantiatedArgs(args, 0);
+	}
+	
 	/**
 	 * Adds a "path" to the tree rooted at this node 
 	 * corresponding to the provided list of arguments
@@ -83,7 +87,7 @@ public class ArgumentNode {
 	private boolean contains(List<Argument> args, int argPos) {
 		if (argPos == args.size()) {
 			// No arguments left to check;
-			// argument list is contained iff the node is a leaf
+			// argument list is contained if this is a leaf
 			return isLeafNode;
 		} else {
 			// Check if the next argument is contained
@@ -97,4 +101,59 @@ public class ArgumentNode {
 			return children.get(argId).contains(args, argPos+1);
 		}
 	}
+	
+	private boolean containsPartiallyInstantiatedArgs(List<Argument> args, int argPos) {
+		
+		if (argPos == args.size()) {
+			// No arguments left to check;
+			// argument list is contained!
+			return true;
+		} else {
+			// Check if the next argument is contained
+			if (args.get(argPos) == null || !args.get(argPos).isConstant()) {
+				// Argument is not instantiated: Check if there is any valid instantiation
+				// of the remaining argument list
+				/* TODO
+				if (isLeafNode) return true;
+				for (int id : children.keySet()) {
+					if (children.get(id).containsPartiallyInstantiatedArgs(args, argPos+1)) {
+						return true;
+					}
+				}
+				// No valid instantiation
+				// Are any arguments left to check?
+				for (int nextPos = argPos+1; nextPos < args.size(); nextPos++) {
+					if (args.get(nextPos) != null && args.get(nextPos).isConstant()) {
+						System.out.println(args + " (failed at pos " + argPos + ")");
+						System.out.println(children);
+						return false; // -- yes
+					}
+				}*/
+				return true; // -- no
+			}
+			
+			String argName = args.get(argPos).getName();
+			int argId = argumentIds.getOrDefault(argName, -1);
+			if (argId < 0 || !children.containsKey(argId)) {
+				// Dead end: argument path is not contained
+				return false;
+			}
+			// Recurse on the corresponding child
+			return children.get(argId).containsPartiallyInstantiatedArgs(args, argPos+1);
+		}
+	}
+	
+	@Override
+	public String toString() {
+		if (isLeafNode)
+			return ".";
+		String out = "{ ";
+		for (String arg : argumentIds.keySet()) {
+			if (children.containsKey(argumentIds.get(arg))) {
+				out += "" + arg + "->" + children.get(argumentIds.get(arg)) + " ";				
+			}
+		}
+		return out + "}";
+	}
+	
 }
