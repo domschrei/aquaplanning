@@ -5,14 +5,14 @@ import java.util.List;
 import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
-import edu.kit.aquaplanning.planning.Planner;
+import edu.kit.aquaplanning.planning.GroundPlanner;
 import edu.kit.aquaplanning.sat.Sat4jSolver;
 import edu.kit.aquaplanning.sat.SymbolicReachabilityFormula;
 import edu.kit.aquaplanning.sat.SymbolicReachabilitySolver;
 import edu.kit.aquaplanning.sat.encoders.ForeachEncoding;
 import edu.kit.aquaplanning.sat.encoders.PlanningToSatEncoder;
 
-public class SymbolicReachabilityPlanner extends Planner {
+public class SymbolicReachabilityPlanner extends GroundPlanner {
 
 	public SymbolicReachabilityPlanner(Configuration config) {
 		super(config);

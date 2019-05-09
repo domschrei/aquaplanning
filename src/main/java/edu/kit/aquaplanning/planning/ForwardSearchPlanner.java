@@ -22,7 +22,7 @@ import edu.kit.aquaplanning.util.Logger;
  * 
  * @author Dominik Schreiber
  */
-public class ForwardSearchPlanner extends Planner {
+public class ForwardSearchPlanner extends GroundPlanner {
 	
 	public ForwardSearchPlanner(Configuration config) {
 		super(config);

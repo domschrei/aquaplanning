@@ -22,7 +22,7 @@ import edu.kit.aquaplanning.util.Logger;
  * A simple forward best-first-search planner. Does not create parallel plans.
  * Creates very long plans which should be shortened by some post-processing.
  */
-public class GreedyBestFirstSearchPlanner extends Planner {
+public class GreedyBestFirstSearchPlanner extends GroundPlanner {
 	
 	private Random rnd;
     

@@ -11,7 +11,7 @@ import edu.kit.aquaplanning.util.Logger;
 /**
  * A simple portfolio planner which launches a number of different planners one after another.
  */
-public class SequentialPortfolioPlanner extends Planner {
+public class SequentialPortfolioPlanner extends GroundPlanner {
 
 	public SequentialPortfolioPlanner(Configuration config) {
 		super(config);
@@ -29,7 +29,7 @@ public class SequentialPortfolioPlanner extends Planner {
 		config.searchTimeSeconds = 200;
 		config.plannerType = PlannerType.greedy;
 		Logger.log(Logger.INFO, "Starting greedy search");
-		Planner p = Planner.getPlanner(config);
+		GroundPlanner p = getGroundPlanner(config);
 		plan = p.findPlan(problem);
 		if (plan != null) {
 			return plan;
@@ -44,7 +44,7 @@ public class SequentialPortfolioPlanner extends Planner {
 		config.plannerType = PlannerType.forwardSSS;
 		config.searchStrategy = Mode.bestFirst;
 		config.heuristic = HeuristicType.ffTrautmann;
-		p = Planner.getPlanner(config);
+		p = getGroundPlanner(config);
 		Logger.log(Logger.INFO, "Starting heuristic search");
 		plan = p.findPlan(problem);
 		if (plan != null) {
@@ -55,7 +55,7 @@ public class SequentialPortfolioPlanner extends Planner {
 		
 		config.plannerType = PlannerType.hegemannSat;
 		config.searchTimeSeconds = 0;
-		p = Planner.getPlanner(config);
+		p = getGroundPlanner(config);
 		Logger.log(Logger.INFO, "Starting Satisfiability Search");
 		plan = p.findPlan(problem);
 		if (plan != null) {
