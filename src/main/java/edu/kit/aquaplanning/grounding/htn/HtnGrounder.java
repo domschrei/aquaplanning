@@ -131,9 +131,6 @@ public class HtnGrounder {
 
 		Logger.log(Logger.INFO, "Calculating lifted support reductions per occurring atom ...");
 
-		supportingTasksPos = new HashMap<>();
-		supportingTasksNeg = new HashMap<>();
-		HtnGraph htnGraph = new HtnGraph(htnLiftedProblem);
 		LiftedState convergedState = grounder.getState();
 		Set<Condition> allConditions = new HashSet<>();
 		for (boolean negated : Arrays.asList(false, true)) {
@@ -143,15 +140,19 @@ public class HtnGrounder {
 				}
 			}			
 		}
+		
+		supportingTasksPos = new HashMap<>();
+		supportingTasksNeg = new HashMap<>();
+		TaskEffectorTable effectors = new TaskEffectorTable(htnLiftedProblem);
 		for (Condition c : allConditions) {
 			int atom = grounder.getAtomTable().atom(c.getPredicate(), c.getArguments(), false).getId();
 			c = c.copy(); c.setNegated(false);
-			supportingTasksPos.put(atom, htnGraph.getSupportingLiftedTasks(c));
+			supportingTasksPos.put(atom, effectors.getSupportingLiftedTasks(c));
+			System.out.println(c + " : " + supportingTasksPos.get(atom));
 			c = c.copy(); c.setNegated(true);
-			supportingTasksNeg.put(atom, htnGraph.getSupportingLiftedTasks(c));
+			supportingTasksNeg.put(atom, effectors.getSupportingLiftedTasks(c));
+			System.out.println(c + " : " + supportingTasksNeg.get(atom));
 		}
-		
-		
 		
 		Logger.log(Logger.INFO, "Creating initial layer ...");
 		
@@ -245,9 +246,10 @@ public class HtnGrounder {
 		
 		for (int pos = 0; pos < lastLayer.getSize(); pos++) {
 			lastLayer.setSuccessor(pos, successorPos);
+			
 			/*
-			System.out.println(groundProblem.stateToString(posState));
-			System.out.println(groundProblem.stateToString(negState));
+			System.out.println(pos + ", pos: " + groundProblem.stateToString(posState));
+			System.out.println(pos + ", neg: " + groundProblem.stateToString(negState));
 			*/
 			
 			int offset = 1;
@@ -413,12 +415,13 @@ public class HtnGrounder {
 			applicable = false;
 		if (!negatives.getAtomSet().none(a.getPreconditionsNeg()))
 			applicable = false;
-		/*if (!applicable) {
+		if (!applicable) {
+			/*
 			System.out.println(a + " not applicable in pos. state " + groundProblem.stateToString(positives) 
 			+ ", neg. state " + groundProblem.stateToString(negatives));
 			System.out.println("  pre pos: " + groundProblem.atomSetToString(a.getPreconditionsPos()));
-			System.out.println("  pre neg: " + groundProblem.atomSetToString(a.getPreconditionsNeg()));
-		}*/
+			System.out.println("  pre neg: " + groundProblem.atomSetToString(a.getPreconditionsNeg()));*/
+		}
 		return applicable;
 	}
 	
@@ -451,6 +454,13 @@ public class HtnGrounder {
 		return true;
 	}
 	
+	/**
+	 * 
+	 * @param actions
+	 * @param reductions
+	 * @param positives
+	 * @param negatives
+	 */
 	public void extendState(Set<Action> actions, Set<Reduction> reductions, State positives, State negatives) {
 		
 		// Build sets of occurring ground methods
@@ -460,7 +470,7 @@ public class HtnGrounder {
 			if (!methods.containsKey(taskName))
 				methods.put(taskName, new ArgumentNode(grounder.getArgumentIndices()));
 			ArgumentNode node = methods.get(taskName);
-			node.add(r.getBaseMethod().getAllArguments());
+			node.add(r.getBaseMethod().getExplicitArguments());
 		}
 		
 		/*
@@ -472,10 +482,10 @@ public class HtnGrounder {
 		for (boolean value : Arrays.asList(true, false)) {
 			
 			AtomSet atoms = (value ? positives : negatives).getAtomSet();
-			for (int atom = 0; atom < atoms.numAtoms(); atom++) {
+			for (int atom = 0; atom < atoms.size(); atom++) {
 				
 				if (atoms.get(atom) == value)
-					continue;		
+					continue; // atom to check is already (un)set
 				
 				// Get all tasks which may change the atom from !value to value
 				Set<Task> support = (value ? supportingTasksPos : supportingTasksNeg).get(atom);
@@ -484,18 +494,23 @@ public class HtnGrounder {
 				}
 				boolean supported = false;
 				for (Task t : support) {
-					if (methods.containsKey(t.getName()) && methods.get(t.getName()).containsPartiallyInstantiatedArgs(t.getArguments())
-						) {
+					if (methods.containsKey(t.getName())) {
+						if (!methods.get(t.getName()).containsPartiallyInstantiatedArgs(t.getArguments())) {
+							//System.out.println("*** " + t.toTaskString());
+							continue;
+						}
+						
 						// Supporting task occurs here: extend state
 						if (value) {
 							positives.getAtomSet().set(atom);
 						} else {
 							negatives.getAtomSet().unset(atom);
 						}
+						
 						supported = true;
 						break;
 					} else {
-						//System.out.println(" >> " + t.getName() + " not in occurring methods");
+						//System.out.println(t.getName() + " not in methods");
 					}
 				}
 				if (!supported) {

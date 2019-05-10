@@ -110,10 +110,10 @@ public class ArgumentNode {
 			return true;
 		} else {
 			// Check if the next argument is contained
-			if (args.get(argPos) == null || !args.get(argPos).isConstant()) {
-				// Argument is not instantiated: Check if there is any valid instantiation
+			if (!args.get(argPos).isConstant()) {
+				// Argument is a variable / not instantiated:
+				// Check if there is any valid instantiation
 				// of the remaining argument list
-				/* TODO
 				if (isLeafNode) return true;
 				for (int id : children.keySet()) {
 					if (children.get(id).containsPartiallyInstantiatedArgs(args, argPos+1)) {
@@ -123,12 +123,20 @@ public class ArgumentNode {
 				// No valid instantiation
 				// Are any arguments left to check?
 				for (int nextPos = argPos+1; nextPos < args.size(); nextPos++) {
-					if (args.get(nextPos) != null && args.get(nextPos).isConstant()) {
-						System.out.println(args + " (failed at pos " + argPos + ")");
-						System.out.println(children);
+					if (args.get(nextPos).isConstant()) {
+						
+						// print
+						/*
+						System.out.println(args + " (failed at pos " + argPos + ": lookahead to pos " + nextPos + ")");
+						for (String arg : argumentIds.keySet()) {
+							int argId = argumentIds.get(arg);
+							if (children.containsKey(argId))
+								System.out.println("  " + arg + " : " + children.get(argId));
+						}
+						*/
 						return false; // -- yes
 					}
-				}*/
+				}
 				return true; // -- no
 			}
 			
