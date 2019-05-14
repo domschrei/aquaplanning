@@ -179,9 +179,12 @@ public class Main {
 				}
 			}
 			
+			
 		} catch (Exception e) {
 			Logger.log(Logger.ERROR, "An internal error occurred.");
 			e.printStackTrace();
 		}
+		
+		Logger.log(Logger.INFO, "Aquaplanning exiting.");
 	}
 }
