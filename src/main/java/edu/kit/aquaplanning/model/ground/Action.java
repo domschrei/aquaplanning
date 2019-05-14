@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.function.Function;
 
 /**
- * Represents an action of a ground planning problem with certain
- * preconditions and effects.
+ * Represents an action of a ground planning problem with certain preconditions
+ * and effects.
  */
 public class Action {
 
@@ -22,19 +22,19 @@ public class Action {
 	private AtomSet effectsPos;
 	private AtomSet effectsNeg;
 	private List<ConditionalEffect> conditionalEffects;
-	
+
 	// Properties of a complex (disjunctive) action,
 	// containing all logic which cannot be expressed with bitsets.
 	// Can be zero if the action has no complex parts.
 	private Precondition complexPrecondition;
 	private Effect complexEffect;
-	
+
 	/**
 	 * Creates a simple action with the provided properties.
 	 */
-	public Action(String name, List<Atom> preconditions, List<Atom> effects, 
+	public Action(String name, List<Atom> preconditions, List<Atom> effects,
 			List<ConditionalEffect> conditionalEffects) {
-		
+
 		this.name = name;
 		this.preconditionsPos = new AtomSet(preconditions, true);
 		this.preconditionsNeg = new AtomSet(preconditions, false);
@@ -46,8 +46,8 @@ public class Action {
 	/**
 	 * Creates a simple action with the provided properties.
 	 */
-	public Action(String name, AtomSet preconditionsPos, AtomSet preconditionsNeg,
-				  AtomSet effectsPos, AtomSet effectsNeg, List<ConditionalEffect> conditionalEffects) {
+	public Action(String name, AtomSet preconditionsPos, AtomSet preconditionsNeg, AtomSet effectsPos,
+			AtomSet effectsNeg, List<ConditionalEffect> conditionalEffects) {
 		this.name = name;
 		this.preconditionsPos = preconditionsPos;
 		this.preconditionsNeg = preconditionsNeg;
@@ -55,7 +55,7 @@ public class Action {
 		this.effectsNeg = effectsNeg;
 		this.conditionalEffects = conditionalEffects;
 	}
-	
+
 	/**
 	 * Creates a "purely" complex action with the provided properties.
 	 */
@@ -70,14 +70,13 @@ public class Action {
 		this.effectsNeg = new AtomSet(Arrays.asList(), false);
 		this.conditionalEffects = new ArrayList<>();
 	}
-	
+
 	/**
-	 * Creates a "hybrid" action which may feature simple bitset-style
-	 * preconditions and effects as well as more complex logical
-	 * expressions.
+	 * Creates a "hybrid" action which may feature simple bitset-style preconditions
+	 * and effects as well as more complex logical expressions.
 	 */
-	public Action(String name, List<Atom> simplePre, Precondition complexPre, 
-			List<Atom> simpleEff, List<ConditionalEffect> condEff, Effect complexEff) {
+	public Action(String name, List<Atom> simplePre, Precondition complexPre, List<Atom> simpleEff,
+			List<ConditionalEffect> condEff, Effect complexEff) {
 		this.name = name;
 		this.preconditionsPos = new AtomSet(simplePre, true);
 		this.preconditionsNeg = new AtomSet(simplePre, false);
@@ -92,7 +91,7 @@ public class Action {
 	 * True iff this action is applicable in the provided state.
 	 */
 	public boolean isApplicable(State state) {
-		
+
 		// Check complex precondition, if present
 		if (complexPrecondition != null && !complexPrecondition.holds(state)) {
 			return false;
@@ -102,16 +101,16 @@ public class Action {
 			return false;
 		if (!state.holdsNone(preconditionsNeg))
 			return false;
-		
+
 		return true;
 	}
-	
+
 	/**
-	 * True iff this action is applicable in the provided state
-	 * in a delete-relaxed sense.
+	 * True iff this action is applicable in the provided state in a delete-relaxed
+	 * sense.
 	 */
 	public boolean isApplicableRelaxed(State state) {
-		
+
 		// Check complex precondition, if present
 		if (complexPrecondition != null && !complexPrecondition.holdsRelaxed(state))
 			return false;
@@ -120,15 +119,14 @@ public class Action {
 			return false;
 		return true;
 	}
-	
+
 	/**
-	 * Returns the result of applying this action to the provided
-	 * state. Attention: This method does not check whether the
-	 * action is applicable in this state! Check this beforehand with
-	 * isApplicable(state).
+	 * Returns the result of applying this action to the provided state. Attention:
+	 * This method does not check whether the action is applicable in this state!
+	 * Check this beforehand with isApplicable(state).
 	 */
 	public State apply(State state) {
-		
+
 		// Apply effects
 		State newState = new State(state);
 		// Bitset effects
@@ -138,33 +136,32 @@ public class Action {
 			// Complex effect
 			newState = complexEffect.applyTo(state);
 		}
-		
+
 		// Apply (simple) conditional effects, if applicable
 		for (ConditionalEffect condEffect : conditionalEffects) {
-			
+
 			// Are all conditions satisfied?
 			boolean isActive = state.holdsAll(condEffect.getConditionsPos());
 			isActive &= state.holdsNone(condEffect.getConditionsNeg());
-			
+
 			if (isActive) {
 				// -- yes: apply the consequences
 				newState.removeAll(condEffect.getEffectsNeg());
 				newState.addAll(condEffect.getEffectsPos());
 			}
 		}
-		
+
 		return newState;
 	}
-	
+
 	/**
-	 * Returns the result of applying this action to the provided
-	 * state, in a delete-relaxed sense. 
-	 * Attention: This method does not check whether the action is 
-	 * applicable in this state! Check this beforehand with
+	 * Returns the result of applying this action to the provided state, in a
+	 * delete-relaxed sense. Attention: This method does not check whether the
+	 * action is applicable in this state! Check this beforehand with
 	 * isApplicableRelaxed(state).
 	 */
 	public State applyRelaxed(State state) {
-		
+
 		// Apply positive effects
 		State newState = new State(state);
 		// Bitset effects
@@ -173,7 +170,7 @@ public class Action {
 			// Complex effect
 			newState = complexEffect.applyRelaxedTo(state);
 		}
-		
+
 		// Apply (simple) positive conditional effects, if applicable
 		for (ConditionalEffect condEffect : conditionalEffects) {
 
@@ -185,53 +182,53 @@ public class Action {
 				newState.addAll(condEffect.getEffectsPos());
 			}
 		}
-				
+
 		return newState;
 	}
-	
+
 	@Override
 	public String toString() {
-		
+
 		return toString((atomSet -> atomSet.toString()));
 	}
-	
+
 	public String toString(Function<AtomSet, String> atomSetToString) {
-		
+
 		String out = "";
 		out += name;
-		if (cost != 0) {			
+		if (cost != 0) {
 			out += "[cost:" + cost + "]";
 		}
 		out += " PRE: { " + (complexPrecondition == null ? "" : complexPrecondition.toString()) + " ";
-		if (preconditionsPos.numAtoms() > 0) {					
-			out += atomSetToString.apply(preconditionsPos) + " "; 
+		if (preconditionsPos.numAtoms() > 0) {
+			out += atomSetToString.apply(preconditionsPos) + " ";
 		}
 		if (preconditionsPos.numAtoms() > 0 && preconditionsNeg.numAtoms() > 0) {
 			out += "; ";
 		}
-		if (preconditionsNeg.numAtoms() > 0) {					
-			out += "NOT " + atomSetToString.apply(preconditionsNeg) + " "; 
+		if (preconditionsNeg.numAtoms() > 0) {
+			out += "NOT " + atomSetToString.apply(preconditionsNeg) + " ";
 		}
 		out += "}";
 		out += " POST: { " + (complexEffect == null ? "" : complexEffect.toString()) + " ";
-		if (effectsPos.numAtoms() > 0) {					
-			out += atomSetToString.apply(effectsPos) + " "; 
+		if (effectsPos.numAtoms() > 0) {
+			out += atomSetToString.apply(effectsPos) + " ";
 		}
 		if (effectsPos.numAtoms() > 0 && effectsNeg.numAtoms() > 0) {
 			out += "; ";
 		}
-		if (effectsNeg.numAtoms() > 0) {					
-			out += "NOT " + atomSetToString.apply(effectsNeg) + " "; 
+		if (effectsNeg.numAtoms() > 0) {
+			out += "NOT " + atomSetToString.apply(effectsNeg) + " ";
 		}
 		out += "}";
 		for (ConditionalEffect eff : conditionalEffects) {
 			out += eff.toString(atomSetToString) + " ";
 		}
 		out += "}";
-		
+
 		return out;
 	}
-	
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -260,15 +257,15 @@ public class Action {
 	public String getName() {
 		return name;
 	}
-	
+
 	public String getCleanedName() {
 		return getName().replaceAll("\\$.*\\$", "").replaceAll("\\*.*\\*", "");
 	}
-	
+
 	public void setCost(int cost) {
 		this.cost = cost;
 	}
-	
+
 	public int getCost() {
 		return cost;
 	}

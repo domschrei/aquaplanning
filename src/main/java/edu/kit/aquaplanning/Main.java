@@ -17,94 +17,96 @@ import picocli.CommandLine;
  */
 public class Main {
 
-  /**
-   * Parses the command line arguments and returns a configuration object. Will
-   * print messages and exit the application depending on requested help and/or
-   * errors which occur during parsing.
-   */
-  public static Configuration parse(String[] args) {
+	/**
+	 * Parses the command line arguments and returns a configuration object. Will
+	 * print messages and exit the application depending on requested help and/or
+	 * errors which occur during parsing.
+	 */
+	public static Configuration parse(String[] args) {
 
-    Configuration config = new Configuration();
-    CommandLine cmd = new CommandLine(config);
+		Configuration config = new Configuration();
+		CommandLine cmd = new CommandLine(config);
 
-    // Too few arguments? -> print usage, exit
-    if (args.length < 2) {
-      cmd.usage(System.out);
-      System.exit(0);
-    }
+		// Too few arguments? -> print usage, exit
+		if (args.length < 2) {
+			cmd.usage(System.out);
+			System.exit(0);
+		}
 
-    // Parse arguments
-    cmd.parse(args);
+		// Parse arguments
+		cmd.parse(args);
 
-    // Usage and version information
-    if (cmd.isUsageHelpRequested()) {
-      cmd.usage(System.out);
-      System.exit(0);
-    }
-    if (cmd.isVersionHelpRequested()) {
-      cmd.printVersionHelp(System.out);
-      System.exit(0);
-    }
+		// Usage and version information
+		if (cmd.isUsageHelpRequested()) {
+			cmd.usage(System.out);
+			System.exit(0);
+		}
+		if (cmd.isVersionHelpRequested()) {
+			cmd.printVersionHelp(System.out);
+			System.exit(0);
+		}
 
-    return config;
-  }
+		return config;
+	}
 
-  /**
-   * Prints the provided plan to stdout. If the config says so, also outputs the
-   * plan to a file.
-   */
-  private static void printPlan(Configuration config, Plan plan) throws IOException {
+	/**
+	 * Prints the provided plan to stdout. If the config says so, also outputs the
+	 * plan to a file.
+	 */
+	private static void printPlan(Configuration config, Plan plan) throws IOException {
 
-    if (config.planOutputFile != null) {
-      // Write plan to file
-      FileWriter w = new FileWriter(config.planOutputFile);
-      w.write(plan.toString());
-      w.close();
-      Logger.log(Logger.INFO, "Plan written to " + config.planOutputFile + ".");
-    } else {
-      // No output file => Always output plan to stdout
-      Logger.log(Logger.ESSENTIAL, "Found plan:\n" + plan.toString());
-    }
-  }
+		if (config.planOutputFile != null) {
+			// Write plan to file
+			FileWriter w = new FileWriter(config.planOutputFile);
+			w.write(plan.toString());
+			w.close();
+			Logger.log(Logger.INFO, "Plan written to " + config.planOutputFile + ".");
+		} else {
+			// No output file => Always output plan to stdout
+			Logger.log(Logger.ESSENTIAL, "Found plan:\n" + plan.toString());
+		}
+	}
 
-  public static void main(String[] args) throws Exception {
+	public static void main(String[] args) throws Exception {
 
-    // Read configuration from command line arguments
-    Configuration config = parse(args);
-    Logger.init(config.verbosityLevel);
+		// Read configuration from command line arguments
+		Configuration config = parse(args);
+		Logger.init(config.verbosityLevel);
 
-    // Welcome message
-    Logger.log(Logger.INFO, "This is Aquaplanning - QUick Automated Planning.");
-    Logger.log(Logger.INFO, "Running on " + InetAddress.getLocalHost().getHostName());
+		// Welcome message
+		Logger.log(Logger.INFO, "This is Aquaplanning - QUick Automated Planning.");
+		Logger.log(Logger.INFO, "Running on " + InetAddress.getLocalHost().getHostName());
 
-    // Configuration defaults are editable in Configuration.java.
-    // For debugging, you can also override the configuration here, e.g.
-    // config.heuristic = HeuristicType.manhattanGoalDistance;
+		// Configuration defaults are editable in Configuration.java.
+		// For debugging, you can also override the configuration here, e.g.
+		// config.heuristic = HeuristicType.manhattanGoalDistance;
 
-    try {
-      // Parsing of domain and problem files
-      Logger.log(Logger.INFO, "Parsing ...");
-      PlanningProblem p = new ProblemParser().parse(config.domainFile, config.problemFile);
-      Logger.log(Logger.INFO_V, p.toString()); // print parsed problem
-      Logger.log(Logger.INFO, "Parsing complete.\n");
+		try {
+			// Parsing of domain and problem files
+			Logger.log(Logger.INFO, "Parsing ...");
+			PlanningProblem p = new ProblemParser().parse(config.domainFile, config.problemFile);
+			Logger.log(Logger.INFO_V, p.toString()); // print parsed problem
+			Logger.log(Logger.INFO, "Parsing complete.\n");
 
-      Planner planner = Planner.getPlanner(p, config);
-      Plan plan = planner.plan(p);
+			Planner planner = Planner.getPlanner(p, config);
+			Plan plan = planner.plan(p);
 
-      // Solution found?
-      if (plan == null) {
-        // -- no
-        Logger.log(Logger.ESSENTIAL, "Could not find any solution.");
-      } else {
-        // -- yes
-        Logger.log(Logger.INFO, "Validating ...");
-        boolean isValid = planner.validatePlan(plan);
-        Logger.log(Logger.ESSENTIAL, "PLAN " + (isValid ? "VALID" : "INVALID"));
-        printPlan(config, plan);
-      }
-    } catch (Exception e) {
-      Logger.log(Logger.ERROR, "An internal error occurred.");
-      e.printStackTrace();
-    }
-  }
+			// Solution found?
+			if (plan == null) {
+				// -- no
+				Logger.log(Logger.ESSENTIAL, "Could not find any solution.");
+			} else {
+				// -- yes
+				Logger.log(Logger.INFO, "Validating ...");
+				boolean isValid = planner.validatePlan(plan);
+				Logger.log(Logger.ESSENTIAL, "PLAN " + (isValid ? "VALID" : "INVALID"));
+				printPlan(config, plan);
+			}
+		} catch (Exception e) {
+			Logger.log(Logger.ERROR, "An internal error occurred.");
+			e.printStackTrace();
+		}
+		
+		Logger.log(Logger.INFO, "Aquaplanning exiting.");
+	}
 }

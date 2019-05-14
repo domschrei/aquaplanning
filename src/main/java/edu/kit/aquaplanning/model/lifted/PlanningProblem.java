@@ -21,12 +21,10 @@ public class PlanningProblem {
 	private Map<Function, Float> initialFunctionValues;
 	private List<AbstractCondition> goals;
 	private boolean hasActionCosts;
-	
-	public PlanningProblem(String domainName, String problemName, Map<String, Type> types, 
-			List<Argument> constants, Map<String, Predicate> predicates, 
-			Map<String, Axiom> derivedPredicates, Map<String, Function> functions,
-			List<Operator> operators, List<Condition> initialState, 
-			Map<Function, Float> initialFunctionValues,
+
+	public PlanningProblem(String domainName, String problemName, Map<String, Type> types, List<Argument> constants,
+			Map<String, Predicate> predicates, Map<String, Axiom> derivedPredicates, Map<String, Function> functions,
+			List<Operator> operators, List<Condition> initialState, Map<Function, Float> initialFunctionValues,
 			List<AbstractCondition> goals, boolean hasActionCosts) {
 		super();
 		this.domainName = domainName;
@@ -42,97 +40,97 @@ public class PlanningProblem {
 		this.goals = goals;
 		this.hasActionCosts = hasActionCosts;
 	}
-	
+
 	public boolean isArgumentOfType(Argument arg, Type type) {
-		
+
 		Type argType = arg.getType();
 		return isTypeSupertypeOfType(argType, type);
 	}
-	
+
 	public boolean isTypeSupertypeOfType(Type argType, Type type) {
-		
+
 		if (argType.equals(type)) {
 			return true;
-		
+
 		} else {
-			
+
 			Stack<String> subtypes = new Stack<>();
 			for (String subtypeName : type.getSubtypes()) {
 				subtypes.push(subtypeName);
 			}
-			
+
 			while (!subtypes.isEmpty()) {
-				
+
 				String subtypeName = subtypes.pop();
 				Type subtype = types.get(subtypeName);
-				
+
 				if (subtype.equals(argType)) {
 					return true;
 				}
-				
+
 				for (String subsubtypeName : subtype.getSubtypes()) {
 					subtypes.push(subsubtypeName);
 				}
 			}
 		}
-		
+
 		return false;
 	}
-	
+
 	public Type getType(String name) {
 		return types.get(name);
 	}
-	
+
 	public List<Argument> getConstants() {
 		return constants;
 	}
-	
+
 	public Predicate getPredicate(String name) {
 		return predicates.get(name);
 	}
-	
+
 	public Map<String, Predicate> getPredicates() {
 		return predicates;
 	}
-	
+
 	public Map<String, Axiom> getDerivedPredicates() {
 		return derivedPredicates;
 	}
-	
+
 	public Map<String, Function> getFunctions() {
 		return functions;
 	}
-	
+
 	public List<Operator> getOperators() {
 		return operators;
 	}
-	
+
 	public List<Condition> getInitialState() {
 		return initialState;
 	}
-	
+
 	public Map<Function, Float> getInitialFunctionValues() {
 		return initialFunctionValues;
 	}
-	
+
 	public List<AbstractCondition> getGoals() {
 		return goals;
 	}
-	
+
 	public boolean hasActionCosts() {
 		return hasActionCosts;
 	}
-	
+
 	@Override
 	public String toString() {
-		
+
 		StringBuilder str = new StringBuilder();
 		str.append("Domain " + domainName + ", instance " + problemName + "\n");
 		str.append("Types:\n");
 		for (Type type : types.values()) {
 			// hide virtual types
-			//if (type.toString().charAt(0) != '_' && type.toString().charAt(0) != '=')
-				str.append("  " + type + "\n");
+			// if (type.toString().charAt(0) != '_' && type.toString().charAt(0) != '=')
+			str.append("  " + type + "\n");
 		}
 		str.append("Constants:\n");
 		for (Argument c : constants) {
@@ -141,8 +139,8 @@ public class PlanningProblem {
 		str.append("Predicates:\n");
 		for (Predicate p : predicates.values()) {
 			// hide virtual predicates
-			//if (p.toString().charAt(0) != '_' && p.toString().charAt(0) != '=')
-				str.append("  " + p + "\n");
+			// if (p.toString().charAt(0) != '_' && p.toString().charAt(0) != '=')
+			str.append("  " + p + "\n");
 		}
 		for (Axiom c : derivedPredicates.values()) {
 			str.append("  " + c.getPredicate() + " := " + c.getCondition() + "\n");
@@ -161,7 +159,7 @@ public class PlanningProblem {
 		}
 		String out = str.toString();
 		if (out.endsWith("\n")) {
-			out = out.substring(0, out.length()-1);
+			out = out.substring(0, out.length() - 1);
 		}
 		return out;
 	}

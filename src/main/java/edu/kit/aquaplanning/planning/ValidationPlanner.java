@@ -10,19 +10,19 @@ import edu.kit.aquaplanning.util.Logger;
 
 public class ValidationPlanner extends GroundPlanner {
 
-  public ValidationPlanner(Configuration config) {
-    super(config);
-  }
+	public ValidationPlanner(Configuration config) {
+		super(config);
+	}
 
-  @Override
-  public Plan findPlan(GroundPlanningProblem problem) {
-    if (Logger.INFO_VV <= config.verbosityLevel) {
-      Logger.log(Logger.INFO_VV, problem.toString());
-    }
-    try {
-      return PlanParser.parsePlan(config.planFileToValidate, problem);
-    } catch (IOException e) {
-      return null;
-    }
-  }
+	@Override
+	public Plan findPlan(GroundPlanningProblem problem) {
+		if (Logger.INFO_VV <= config.verbosityLevel) {
+			Logger.log(Logger.INFO_VV, problem.toString());
+		}
+		try {
+			return PlanParser.parsePlan(config.planFileToValidate, problem);
+		} catch (IOException e) {
+			return null;
+		}
+	}
 }

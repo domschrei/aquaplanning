@@ -10,16 +10,16 @@ public class Type {
 
 	private String name;
 	private List<String> subtypes;
-	
+
 	public Type(String name) {
 		this.setName(name);
 		subtypes = new ArrayList<>();
 	}
-	
+
 	public void addSubtype(String subtype) {
 		subtypes.add(subtype);
 	}
-	
+
 	public void addSubtypes(List<String> subtypes) {
 		for (String newSubtype : subtypes) {
 			if (!this.subtypes.contains(newSubtype)) {
@@ -27,17 +27,17 @@ public class Type {
 			}
 		}
 	}
-	
+
 	public List<String> getSubtypes() {
 		return subtypes;
 	}
-	
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((getName() == null) ? 0 : getName().hashCode());
-		//result = prime * result + ((subtypes == null) ? 0 : subtypes.hashCode());
+		// result = prime * result + ((subtypes == null) ? 0 : subtypes.hashCode());
 		return result;
 	}
 
@@ -55,10 +55,10 @@ public class Type {
 				return false;
 		} else if (!getName().equals(other.getName()))
 			return false;
-		
+
 		return true;
 	}
-	
+
 	@Override
 	public String toString() {
 		String out = getName() + "{ ";

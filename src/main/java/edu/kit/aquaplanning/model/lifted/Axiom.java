@@ -15,13 +15,12 @@ public class Axiom {
 	 */
 	private Predicate predicate;
 	/**
-	 * The arguments of the derived predicate to which
-	 * the inner condition is bound to.
+	 * The arguments of the derived predicate to which the inner condition is bound
+	 * to.
 	 */
 	private List<Argument> arguments;
 	/**
-	 * The inner condition providing the meaning
-	 * of the axiom.
+	 * The inner condition providing the meaning of the axiom.
 	 */
 	private AbstractCondition condition;
 
@@ -34,27 +33,27 @@ public class Axiom {
 		this.predicate = predicate;
 		this.arguments = arguments;
 	}
-	
+
 	public void addArgument(Argument arg) {
 		this.arguments.add(arg);
 	}
-	
+
 	public void setCondition(AbstractCondition condition) {
 		this.condition = condition;
 	}
-	
+
 	public Predicate getPredicate() {
 		return predicate;
 	}
-	
+
 	public List<Argument> getArguments() {
 		return arguments;
 	}
-	
+
 	public AbstractCondition getCondition() {
 		return condition;
 	}
-	
+
 	@Override
 	public String toString() {
 		return predicate + "" + arguments;

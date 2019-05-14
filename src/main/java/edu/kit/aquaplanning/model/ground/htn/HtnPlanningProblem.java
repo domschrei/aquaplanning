@@ -19,17 +19,15 @@ public class HtnPlanningProblem extends PlanningProblem {
 	private Map<String, List<Type>> tasks;
 	private List<Method> methods;
 	private Method initialTaskNetwork;
-	
-	public HtnPlanningProblem(String domainName, String problemName, Map<String, Type> types, 
-			List<Argument> constants, Map<String, Predicate> predicates, 
-			Map<String, Axiom> derivedPredicates, Map<String, Function> functions,
-			List<Operator> operators, List<Condition> initialState, 
-			Map<Function, Float> initialFunctionValues,
-			List<AbstractCondition> goals, boolean hasActionCosts,
-			Map<String, List<Type>> tasks, List<Method> methods, Method initialTaskNetwork) {
-		
-		super(domainName, problemName, types, constants, predicates, derivedPredicates, 
-				functions, operators, initialState, initialFunctionValues, goals, hasActionCosts);
+
+	public HtnPlanningProblem(String domainName, String problemName, Map<String, Type> types, List<Argument> constants,
+			Map<String, Predicate> predicates, Map<String, Axiom> derivedPredicates, Map<String, Function> functions,
+			List<Operator> operators, List<Condition> initialState, Map<Function, Float> initialFunctionValues,
+			List<AbstractCondition> goals, boolean hasActionCosts, Map<String, List<Type>> tasks, List<Method> methods,
+			Method initialTaskNetwork) {
+
+		super(domainName, problemName, types, constants, predicates, derivedPredicates, functions, operators,
+				initialState, initialFunctionValues, goals, hasActionCosts);
 		this.tasks = tasks;
 		this.methods = methods;
 		this.initialTaskNetwork = initialTaskNetwork;
@@ -38,11 +36,11 @@ public class HtnPlanningProblem extends PlanningProblem {
 	public Map<String, List<Type>> getTasks() {
 		return tasks;
 	}
-	
+
 	public List<Method> getMethods() {
 		return methods;
 	}
-	
+
 	public Method getInitialTaskNetwork() {
 		return initialTaskNetwork;
 	}

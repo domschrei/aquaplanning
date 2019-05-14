@@ -14,16 +14,16 @@ import edu.kit.aquaplanning.model.ground.Plan;
 import edu.kit.aquaplanning.util.Logger;
 
 public class PlanParser {
-	
+
 	public static Plan parsePlan(String planFile, GroundPlanningProblem gpp) throws IOException {
 		Plan plan = new Plan();
-		
+
 		BufferedReader reader = null;
 		ZipFile zf = null;
-		
+
 		if (planFile.endsWith(".zip")) {
 			zf = new ZipFile(planFile);
-			InputStream is =  zf.getInputStream(zf.entries().nextElement());
+			InputStream is = zf.getInputStream(zf.entries().nextElement());
 			reader = new BufferedReader(new InputStreamReader(is));
 		} else {
 			FileReader fr = new FileReader(planFile);

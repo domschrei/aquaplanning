@@ -12,24 +12,24 @@ public class Condition extends AbstractCondition {
 	private Predicate predicate;
 	private List<Argument> arguments;
 	private boolean negated;
-	
+
 	public Condition(Predicate predicate) {
 		super(ConditionType.atomic);
 		this.predicate = predicate;
 		this.arguments = new ArrayList<>();
 	}
-	
+
 	public Condition(Predicate predicate, boolean negated) {
 		super(ConditionType.atomic);
 		this.predicate = predicate;
 		this.negated = negated;
 		this.arguments = new ArrayList<>();
 	}
-	
+
 	public void addArgument(Argument arg) {
 		this.arguments.add(arg);
 	}
-		
+
 	public Predicate getPredicate() {
 		return predicate;
 	}
@@ -37,7 +37,7 @@ public class Condition extends AbstractCondition {
 	public int getNumArgs() {
 		return arguments.size();
 	}
-	
+
 	public List<Argument> getArguments() {
 		return arguments;
 	}
@@ -45,21 +45,21 @@ public class Condition extends AbstractCondition {
 	public boolean isNegated() {
 		return negated;
 	}
-	
+
 	public Condition withoutNegation() {
-		
+
 		Condition c = new Condition(predicate);
 		arguments.forEach(arg -> c.addArgument(arg));
 		return c;
 	}
-	
+
 	public void setNegated(boolean negated) {
 		this.negated = negated;
 	}
-	
+
 	@Override
 	public Condition getConditionBoundToArguments(List<Argument> refArgs, List<Argument> argValues) {
-		
+
 		Condition newCondition = new Condition(predicate);
 		newCondition.negated = negated;
 		for (int condArgIdx = 0; condArgIdx < arguments.size(); condArgIdx++) {
@@ -85,40 +85,40 @@ public class Condition extends AbstractCondition {
 		}
 		return newCondition;
 	}
-	
+
 	@Override
 	public AbstractCondition simplify(boolean negated) {
 		Condition c = this.copy();
 		c.setNegated(this.negated != negated);
 		return c;
 	}
-	
+
 	@Override
 	public AbstractCondition getDNF() {
 		return this.copy();
 	}
-	
+
 	public Condition copy() {
-		
+
 		Condition c = new Condition(predicate);
 		arguments.forEach(arg -> c.addArgument(arg.copy()));
 		c.negated = negated;
 		return c;
 	}
-	
-	
+
 	@Override
 	public String toString() {
 		String out = "";
 		if (negated && predicate.getName().equals("=")) {
 			out += "≠( ";
-		} else {			
+		} else {
 			if (negated)
 				out += "¬";
 			out += predicate.getName() + "( ";
 		}
 		for (Argument arg : arguments) {
-			if (arg == null) return null;
+			if (arg == null)
+				return null;
 			out += arg.getName() + " ";
 		}
 		out += ")";
@@ -158,7 +158,7 @@ public class Condition extends AbstractCondition {
 			return false;
 		return true;
 	}
-	
+
 	@Override
 	public AbstractCondition traverse(Function<AbstractCondition, AbstractCondition> map, int recurseMode) {
 		return map.apply(this);

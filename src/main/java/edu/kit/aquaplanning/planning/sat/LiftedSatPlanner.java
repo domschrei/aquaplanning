@@ -14,26 +14,26 @@ import edu.kit.aquaplanning.sat.SymbolicReachabilityFormula;
 
 public class LiftedSatPlanner extends LiftedPlanner {
 
-  public LiftedSatPlanner(Configuration config) {
-    super(config);
-  }
+	public LiftedSatPlanner(Configuration config) {
+		super(config);
+	}
 
-  @Override
-  public Plan plan(PlanningProblem problem) {
-    Map<String, Operator> liftedOperator = new HashMap<String, Operator>();
-    for (Operator o: problem.getOperators()) {
-      liftedOperator.put(o.getName(), o);
-    }
-    PlanningGraphGrounder grounder = new PlanningGraphGrounder(config);
-    GroundPlanningProblem groundedProblem = grounder.ground(problem);
-    return null;
-  }
+	@Override
+	public Plan plan(PlanningProblem problem) {
+		Map<String, Operator> liftedOperator = new HashMap<String, Operator>();
+		for (Operator o : problem.getOperators()) {
+			liftedOperator.put(o.getName(), o);
+		}
+		PlanningGraphGrounder grounder = new PlanningGraphGrounder(config);
+		GroundPlanningProblem groundedProblem = grounder.ground(problem);
+		return null;
+	}
 
-  @Override
-  public boolean validatePlan(Plan plan) {
-    return false;
-  }
+	@Override
+	public boolean validatePlan(Plan plan) {
+		return false;
+	}
 
-  private SymbolicReachabilityFormula encoding;
+	private SymbolicReachabilityFormula encoding;
 
 }

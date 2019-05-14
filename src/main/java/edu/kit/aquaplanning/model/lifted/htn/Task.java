@@ -10,36 +10,36 @@ public class Task {
 	private String name;
 	private List<Argument> arguments;
 	private String tag;
-	
+
 	public Task(String name) {
 		this.name = name;
 		this.arguments = new ArrayList<>();
 	}
-	
+
 	public void addArgument(Argument arg) {
 		this.arguments.add(arg);
 	}
-	
+
 	public void setTag(String tag) {
 		this.tag = tag;
 	}
-	
+
 	public String getTag() {
 		return tag;
 	}
-	
+
 	public List<Argument> getArguments() {
 		return arguments;
 	}
-	
+
 	public String getName() {
 		return name;
 	}
-	
+
 	public Task getTaskBoundToArguments(List<Argument> refArgs, List<Argument> argVals) {
 		return getTaskBoundToArguments(refArgs, argVals, false);
 	}
-	
+
 	public Task getTaskBoundToArguments(List<Argument> refArgs, List<Argument> argVals, boolean setNullArgs) {
 		Task t = new Task(name);
 		t.setTag(tag);
@@ -60,10 +60,10 @@ public class Task {
 			if (!added)
 				t.addArgument(setNullArgs ? null : arg);
 		}
-		
+
 		return t;
 	}
-	
+
 	public void setArgument(Argument refArg, Argument argVal) {
 		for (int argIdx = 0; argIdx < arguments.size(); argIdx++) {
 			if (arguments.get(argIdx).getName().equals(refArg.getName())) {
@@ -71,17 +71,18 @@ public class Task {
 			}
 		}
 	}
-	
+
 	public String toTaskString() {
 		String out = "(" + name + " ";
 		for (Argument arg : arguments) {
-			if (arg == null) return null;
+			if (arg == null)
+				return null;
 			out += arg.getName() + " ";
 		}
-		out = out.substring(0, out.length()-1) + ")";
+		out = out.substring(0, out.length() - 1) + ")";
 		return out;
 	}
-	
+
 	public Task normalize() {
 		Task task = new Task(name);
 		int i = 0;
@@ -91,14 +92,14 @@ public class Task {
 		}
 		return task;
 	}
-	
+
 	@Override
 	public String toString() {
-		String out = (tag != null ? tag+":" : "") + "(" + name + " ";
+		String out = (tag != null ? tag + ":" : "") + "(" + name + " ";
 		for (Argument arg : arguments) {
 			out += arg + " ";
 		}
-		out = out.substring(0, out.length()-1) + ")";
+		out = out.substring(0, out.length() - 1) + ")";
 		return out;
 	}
 
@@ -132,7 +133,7 @@ public class Task {
 			return false;
 		return true;
 	}
-	
+
 	public Task copy() {
 		Task task = new Task(this.name);
 		task.arguments = new ArrayList<>(arguments);

@@ -26,30 +26,31 @@ public class HtnMethodIndex {
 
 	private PlanningProblem p;
 	private PlanningGraphGrounder grounder;
-	
+
 	private Set<String> primitiveTaskNames;
 	private Set<String> actionStrings;
-	private LiftedState convergedState;	
-	
+	private LiftedState convergedState;
+
 	private Map<Method, List<Reduction>> reductions;
-	
+
 	private class PartiallyGroundMethod {
 		ArgumentAssignment assignment;
 		Method method;
+
 		public PartiallyGroundMethod(ArgumentAssignment assignment, Method method) {
 			this.assignment = assignment;
 			this.method = method;
 		}
 	}
-	
-	public HtnMethodIndex(PlanningGraphGrounder grounder, 
-			LiftedState convergedState, List<Operator> instantiatedOperators) {
-		
+
+	public HtnMethodIndex(PlanningGraphGrounder grounder, LiftedState convergedState,
+			List<Operator> instantiatedOperators) {
+
 		this.grounder = grounder;
 		this.p = grounder.getProblem();
 		this.primitiveTaskNames = new HashSet<>();
 		this.actionStrings = new HashSet<>();
-		
+
 		this.convergedState = convergedState;
 		for (Operator op : instantiatedOperators) {
 			primitiveTaskNames.add(op.getName());
@@ -58,20 +59,20 @@ public class HtnMethodIndex {
 
 		this.reductions = new HashMap<>();
 	}
-	
+
 	public List<Reduction> getRelevantReductions(List<Method> methods) {
-		
+
 		List<Reduction> reductions = new ArrayList<>();
 		for (Method m : methods) {
 			reductions.addAll(getRelevantReductions(m));
 		}
 		return reductions;
 	}
-	
+
 	public List<Reduction> getRelevantReductions(Method m) {
-		
+
 		List<Reduction> newReductions = new ArrayList<>();
-		
+
 		if (reductions.containsKey(m)) {
 			return reductions.get(m);
 		}
@@ -80,7 +81,7 @@ public class HtnMethodIndex {
 		}
 		if (m.getImplicitArguments().size() == 0) {
 			m = simplify(m);
-			if (m != null) {				
+			if (m != null) {
 				newReductions.add(new Reduction(m, c -> grounder.toPrecondition(c, false)));
 				reductions.put(m, newReductions);
 
@@ -93,9 +94,9 @@ public class HtnMethodIndex {
 					return new ArrayList<>();
 				}
 			}
-			
+
 		}
-		
+
 		List<List<Argument>> eligibleConstants = new ArrayList<>();
 		for (Argument arg : m.getImplicitArguments()) {
 			List<Argument> constants = new ArrayList<>();
@@ -106,19 +107,19 @@ public class HtnMethodIndex {
 			}
 			eligibleConstants.add(constants);
 		}
-			
+
 		Map<String, Integer> argIndices = new HashMap<>();
 		int pos = 0;
 		for (Argument arg : m.getImplicitArguments()) {
 			argIndices.put(arg.getName(), pos++);
 		}
-		
+
 		List<Argument> sortedArgs = new ArrayList<>();
 		sortedArgs.addAll(m.getImplicitArguments());
 		Map<Argument, Float> argOccurrences = getArgumentOccurrences(m);
 		int[] orderedArgIndices = new int[m.getImplicitArguments().size()];
 		sortedArgs.sort((arg1, arg2) -> {
-			// Sort arguments in decreasing order by the amount 
+			// Sort arguments in decreasing order by the amount
 			// of occurrences in constraints and subtasks
 			float occ1 = argOccurrences.get(arg1);
 			float occ2 = argOccurrences.get(arg2);
@@ -128,20 +129,20 @@ public class HtnMethodIndex {
 		for (Argument arg : sortedArgs) {
 			orderedArgIndices[idx++] = argIndices.get(arg.getName());
 		}
-		
+
 		List<Argument> implicitArgs = m.getImplicitArguments();
 		ArgumentAssignment initAssignment = new ArgumentAssignment(implicitArgs.size());
 		Stack<PartiallyGroundMethod> assignmentStack = new Stack<>();
-		assignmentStack.push(new PartiallyGroundMethod(initAssignment, 
+		assignmentStack.push(new PartiallyGroundMethod(initAssignment,
 				m.getMethodBoundToArguments(m.getExplicitArguments(), m.getImplicitArguments())));
-		
+
 		while (!assignmentStack.isEmpty()) {
-			
+
 			PartiallyGroundMethod pgm = assignmentStack.pop();
 			ArgumentAssignment assignment = pgm.assignment;
 			Method method = pgm.method;
 			if (assignment.getDecisionLevel() == implicitArgs.size()) {
-				
+
 				// Finished
 				method = simplify(method);
 				if (method != null) {
@@ -151,13 +152,13 @@ public class HtnMethodIndex {
 						continue;
 					}
 				}
-				
+
 			} else {
-				
+
 				// Choose an argument assignment
 				int argPos = orderedArgIndices[assignment.getDecisionLevel()];
 				Argument arg = implicitArgs.get(argPos);
-				for (Argument constant : eligibleConstants.get(argPos)) {	
+				for (Argument constant : eligibleConstants.get(argPos)) {
 					PartiallyGroundMethod newPgm = extendAssignment(pgm, argPos, arg, constant);
 					if (newPgm != null) {
 						assignmentStack.push(newPgm);
@@ -165,27 +166,28 @@ public class HtnMethodIndex {
 				}
 			}
 		}
-		
+
 		reductions.put(m, newReductions);
 		return newReductions;
 	}
-	
-	private PartiallyGroundMethod extendAssignment(PartiallyGroundMethod pgm, int argPos, Argument refArg, Argument argVal) {
-		
+
+	private PartiallyGroundMethod extendAssignment(PartiallyGroundMethod pgm, int argPos, Argument refArg,
+			Argument argVal) {
+
 		ArgumentAssignment newAssignment = new ArgumentAssignment(pgm.assignment);
 		newAssignment.set(argPos, argVal);
 		Method newMethod = pgm.method.copy();
 		newMethod.setImplicitArgument(refArg, argVal);
-		
+
 		if (checkConsistency(newMethod)) {
 			return new PartiallyGroundMethod(newAssignment, newMethod);
 		} else {
 			return null;
 		}
 	}
-	
+
 	private boolean checkConsistency(Method method) {
-		
+
 		// If the method contains any primitive tasks,
 		// see if the respective action occurs in the problem
 		for (Task t : method.getSubtasks()) {
@@ -200,7 +202,7 @@ public class HtnMethodIndex {
 				}
 			}
 		}
-		
+
 		// If the method contains any constraints,
 		// see if all pos. conditions exist in the lifted superstate
 		for (Constraint c : method.getConstraints()) {
@@ -228,44 +230,45 @@ public class HtnMethodIndex {
 				}
 			}
 		}
-				
+
 		return true;
 	}
-	
+
 	public Method simplify(Method method) {
-		
+
 		if (!checkConsistency(method)) {
 			return null;
 		}
 		Method newMethod = method.copy();
 		newMethod.getConstraints().clear();
 		for (Constraint c : method.getConstraints()) {
-			AbstractCondition simplified = grounder.simplifyRigidConditions(c.getCondition(), convergedState, "method-constr");
+			AbstractCondition simplified = grounder.simplifyRigidConditions(c.getCondition(), convergedState,
+					"method-constr");
 			if (simplified == null) {
 				// Condition is not satisfiable: method is invalid
 				return null;
 			}
-			
+
 			Constraint newC = c.copy();
 			newC.setCondition(simplified);
 			newMethod.addConstraint(newC);
 		}
 		return newMethod;
 	}
-	
+
 	private Map<Argument, Float> getArgumentOccurrences(Method m) {
-		
+
 		Map<Argument, Float> argOccurrences = new HashMap<>();
 		for (Argument arg : m.getExplicitArguments())
 			argOccurrences.put(arg, 0f);
 		for (Argument arg : m.getImplicitArguments())
 			argOccurrences.put(arg, 0f);
-		
+
 		for (Task t : m.getSubtasks()) {
 			if (primitiveTaskNames.contains(t.getName())) {
 				// Primitive task
 				for (Argument arg : t.getArguments()) {
-					argOccurrences.put(arg, argOccurrences.getOrDefault(arg,0f)+1f/t.getArguments().size());
+					argOccurrences.put(arg, argOccurrences.getOrDefault(arg, 0f) + 1f / t.getArguments().size());
 				}
 			}
 		}
@@ -279,7 +282,7 @@ public class HtnMethodIndex {
 				case atomic:
 					Condition atom = (Condition) cond;
 					for (Argument arg : atom.getArguments()) {
-						argOccurrences.put(arg, argOccurrences.getOrDefault(arg,0f)+1f/atom.getNumArgs());
+						argOccurrences.put(arg, argOccurrences.getOrDefault(arg, 0f) + 1f / atom.getNumArgs());
 					}
 					break;
 				case conjunction:

@@ -27,7 +27,7 @@ public class SymbolicReachabilityPlanner extends GroundPlanner {
 		if (model != null) {
 			return encoder.decodePlan(problem, model);
 		} else {
-			return null; 
+			return null;
 		}
 	}
 

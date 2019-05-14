@@ -10,23 +10,23 @@ import org.sat4j.specs.IVecInt;
 public class SimpleSatPrinter {
 
 	private String filename;
-	
+
 	private String formula;
 	private StringBuilder newClauses;
 	int numVars = 0;
 	int numClauses = 0;
-	
+
 	int counter = 1;
-	
+
 	public SimpleSatPrinter(String filename) {
 		this.filename = filename;
 		this.formula = "";
 		this.newClauses = new StringBuilder();
 	}
-	
+
 	public void addAtMostOneConstraint(IVecInt literals) {
 		for (int i = 0; i < literals.size(); i++) {
-			for (int j = i+1; j < literals.size(); j++) {
+			for (int j = i + 1; j < literals.size(); j++) {
 				IVecInt lits = new VecInt(2);
 				lits.set(0, -literals.get(i));
 				lits.set(1, -literals.get(j));
@@ -34,7 +34,7 @@ public class SimpleSatPrinter {
 			}
 		}
 	}
-	
+
 	public void addClause(IVecInt literals) {
 		String out = "";
 		for (int i = 0; i < literals.size(); i++) {
@@ -44,12 +44,13 @@ public class SimpleSatPrinter {
 		newClauses.append(out + "0\n");
 		numClauses++;
 	}
-	
+
 	public void addAssumptionsAndPrint(IVecInt assumps) {
 		try {
 			String name = filename;
 			if (filename.contains(".")) {
-				name = name.substring(0, filename.lastIndexOf('.')) + "-" + counter + name.substring(filename.lastIndexOf('.'));
+				name = name.substring(0, filename.lastIndexOf('.')) + "-" + counter
+						+ name.substring(filename.lastIndexOf('.'));
 			} else {
 				name += "-" + counter;
 			}
@@ -70,7 +71,7 @@ public class SimpleSatPrinter {
 			e.printStackTrace();
 		}
 	}
-	
+
 	public void print() {
 		addAssumptionsAndPrint(new VecInt());
 	}

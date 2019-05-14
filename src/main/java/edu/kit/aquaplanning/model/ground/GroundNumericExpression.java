@@ -9,26 +9,26 @@ import edu.kit.aquaplanning.model.lifted.NumericExpression.TermType;
 public class GroundNumericExpression {
 
 	private TermType type;
-	
+
 	private float value;
 	private NumericAtom atom;
 	private List<GroundNumericExpression> children;
-	
+
 	public GroundNumericExpression(TermType type) {
 		this.type = type;
 		this.children = new ArrayList<>();
 	}
-	
+
 	public GroundNumericExpression(float value) {
 		this.type = TermType.constant;
 		this.value = value;
 	}
-	
+
 	public GroundNumericExpression(NumericAtom atom) {
 		this.type = TermType.function;
 		this.atom = atom;
 	}
-	
+
 	/**
 	 * Copies the provided ground numeric expression into a new object.
 	 */
@@ -38,11 +38,11 @@ public class GroundNumericExpression {
 		this.atom = other.atom.copy();
 		this.children = new ArrayList<GroundNumericExpression>(other.children);
 	}
-	
+
 	public void add(GroundNumericExpression exp) {
 		this.children.add(exp);
 	}
-	
+
 	public float evaluate(State s) {
 		switch (type) {
 		case constant:
@@ -50,7 +50,7 @@ public class GroundNumericExpression {
 		case function:
 			return s.get(atom);
 		case negation:
-			return - children.get(0).evaluate(s);
+			return -children.get(0).evaluate(s);
 		case addition:
 		case subtraction:
 		case multiplication:
@@ -72,10 +72,10 @@ public class GroundNumericExpression {
 		}
 		return NumericExpression.UNDEFINED;
 	}
-	
+
 	/**
-	 * Determines whether the expression only consists of constant
-	 * values (i.e. no numeric atoms are contained).
+	 * Determines whether the expression only consists of constant values (i.e. no
+	 * numeric atoms are contained).
 	 */
 	public boolean isEffectivelyConstant() {
 		switch (type) {
@@ -91,7 +91,7 @@ public class GroundNumericExpression {
 			return isConstant;
 		}
 	}
-	
+
 	@Override
 	public String toString() {
 		String connection = "";
@@ -103,21 +103,25 @@ public class GroundNumericExpression {
 		case function:
 			return atom.toString();
 		case addition:
-			connection = " + "; break;
+			connection = " + ";
+			break;
 		case subtraction:
-			connection = " - "; break;
+			connection = " - ";
+			break;
 		case multiplication:
-			connection = " * "; break;
+			connection = " * ";
+			break;
 		case division:
-			connection = " / "; break;
+			connection = " / ";
+			break;
 		}
 		String out = "(";
 		for (GroundNumericExpression child : children) {
 			out += child.toString() + connection;
 		}
-		return out.substring(0, out.length()-3) + ")";
+		return out.substring(0, out.length() - 3) + ")";
 	}
-	
+
 	public TermType getType() {
 		return type;
 	}

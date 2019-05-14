@@ -4,48 +4,47 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Represents a numeric expression, i.e. something that can be
- * resolved to a numeric quantity.
+ * Represents a numeric expression, i.e. something that can be resolved to a
+ * numeric quantity.
  */
 public class NumericExpression {
 
 	public static final float UNDEFINED = Float.NaN;
-	
+
 	public enum TermType {
-		constant, function, negation,
-		addition, subtraction, multiplication, division; 
+		constant, function, negation, addition, subtraction, multiplication, division;
 	}
-	
+
 	private TermType type;
-	
+
 	// For constant expressions
 	private float value;
-	
+
 	// For function expressions
 	private Function function;
-	
+
 	// For non-atomic expressions
 	private List<NumericExpression> children;
-	
+
 	public NumericExpression(TermType type) {
 		this.type = type;
 		this.children = new ArrayList<>();
 	}
-	
+
 	public NumericExpression(float constantValue) {
 		this.type = TermType.constant;
 		this.value = constantValue;
 	}
-	
+
 	public NumericExpression(Function function) {
 		this.type = TermType.function;
 		this.function = function;
 	}
-	
+
 	public void add(NumericExpression exp) {
 		this.children.add(exp);
 	}
-	
+
 	public void setFunction(Function function) {
 		this.function = function;
 	}
@@ -65,7 +64,7 @@ public class NumericExpression {
 	public List<NumericExpression> getChildren() {
 		return children;
 	}
-	
+
 	public NumericExpression getExpressionBoundToArguments(List<Argument> refArgs, List<Argument> argValues) {
 		switch (type) {
 		case negation:
@@ -87,10 +86,10 @@ public class NumericExpression {
 			return copy();
 		}
 	}
-	
+
 	public NumericExpression copy() {
 		NumericExpression exp = new NumericExpression(type);
-		if (children != null) {			
+		if (children != null) {
 			exp.children = new ArrayList<>();
 			exp.children.addAll(children);
 		}
@@ -99,7 +98,7 @@ public class NumericExpression {
 		exp.value = value;
 		return exp;
 	}
-	
+
 	@Override
 	public String toString() {
 		String connection = "";
@@ -111,18 +110,22 @@ public class NumericExpression {
 		case function:
 			return function.toString();
 		case addition:
-			connection = " + "; break;
+			connection = " + ";
+			break;
 		case subtraction:
-			connection = " - "; break;
+			connection = " - ";
+			break;
 		case multiplication:
-			connection = " * "; break;
+			connection = " * ";
+			break;
 		case division:
-			connection = " / "; break;
+			connection = " / ";
+			break;
 		}
 		String out = "(";
 		for (NumericExpression child : children) {
 			out += child.toString() + connection;
 		}
-		return out.substring(0, out.length()-3) + ")";
+		return out.substring(0, out.length() - 3) + ")";
 	}
 }

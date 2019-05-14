@@ -6,10 +6,10 @@ import edu.kit.aquaplanning.model.ground.Plan;
 public abstract class PlanOptimizer {
 
 	protected GroundPlanningProblem problem;
-	
+
 	public PlanOptimizer(GroundPlanningProblem problem) {
 		this.problem = problem;
 	}
-	
+
 	public abstract Plan improvePlan(Plan initialPlan, Clock remainingTime);
 }

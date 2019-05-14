@@ -26,35 +26,34 @@ import edu.kit.aquaplanning.model.lifted.Axiom;
 import edu.kit.aquaplanning.model.lifted.NumericExpression;
 
 /**
- * Provides simplification routines for lifted planning problems,
- * in particular for the structure of logical expressions and the
- * resolution of quantifications.
+ * Provides simplification routines for lifted planning problems, in particular
+ * for the structure of logical expressions and the resolution of
+ * quantifications.
  */
 public class Preprocessor {
 
 	private Configuration config;
 	private PlanningProblem problem;
-	
+
 	public Preprocessor(Configuration config) {
 		this.config = config;
 	}
-	
+
 	/**
-	 * Does an in-place preprocessing of the problem at hand.
-	 * Depending on the known configuration, all logical expressions
-	 * are either simplified into a structure where negations occur
-	 * only on an atomic level, or they are even converted into
-	 * disjunctive normal form (DNF). Quantifications are always
-	 * resolved (using the constants defined in the problem).
+	 * Does an in-place preprocessing of the problem at hand. Depending on the known
+	 * configuration, all logical expressions are either simplified into a structure
+	 * where negations occur only on an atomic level, or they are even converted
+	 * into disjunctive normal form (DNF). Quantifications are always resolved
+	 * (using the constants defined in the problem).
 	 */
 	public void preprocess(PlanningProblem problem) {
-		
+
 		this.problem = problem;
-		
+
 		// If necessary and possible, compile away total-cost function
 		// into much simpler per-operator cost attributes
 		extractActionCosts();
-		
+
 		// Eliminate quantifications,
 		// Simplify structure of logical expressions,
 		// Convert to DNF, if desired
@@ -71,12 +70,12 @@ public class Preprocessor {
 			problem.getOperators().addAll(newOperators);
 		}
 	}
-	
+
 	/**
 	 * Simplifies the structure of all logical expressions in the problem.
 	 */
 	private void simplifyProblem(boolean toDNF) {
-		
+
 		// Simplify operators
 		List<Operator> operators = new ArrayList<>();
 		for (Operator op : problem.getOperators()) {
@@ -85,10 +84,10 @@ public class Preprocessor {
 		}
 		problem.getOperators().clear();
 		problem.getOperators().addAll(operators);
-		if (config.eliminateConditionalEffects) {			
+		if (config.eliminateConditionalEffects) {
 			eliminateConditionalEffects();
 		}
-		
+
 		// Simplify goal
 		ConditionSet goalSet = new ConditionSet(ConditionType.conjunction);
 		for (AbstractCondition cond : problem.getGoals()) {
@@ -101,7 +100,7 @@ public class Preprocessor {
 		}
 		problem.getGoals().clear();
 		problem.getGoals().add(newGoal);
-		
+
 		// Simplify derived conditions
 		Map<String, Axiom> derived = problem.getDerivedPredicates();
 		for (Axiom cond : derived.values()) {
@@ -113,47 +112,46 @@ public class Preprocessor {
 			cond.setCondition(c);
 		}
 	}
-	
+
 	private void simplify(Operator op, boolean toDNF) {
-		
+
 		// Preconditions
 		AbstractCondition pre = op.getPrecondition();
 		pre = instantiateQuantifications(pre);
-		pre = pre.simplify(/*negated = */false);
+		pre = pre.simplify(/* negated = */false);
 		if (toDNF) {
 			pre = pre.getDNF();
 		}
 		op.setPrecondition(pre);
-		
+
 		// Effects
 		AbstractCondition eff = op.getEffect();
 		eff = instantiateQuantifications(eff);
-		eff = eff.simplify(/*negated = */false);
+		eff = eff.simplify(/* negated = */false);
 		if (toDNF) {
 			eff = eff.getDNF();
 		}
 		op.setEffect(eff);
 	}
-	
+
 	/**
-	 * Resolves all quantifications occurring in the provided condition.
-	 * Existential quantifications are replaced with a disjunction and
-	 * universal quantifications are replaced with a conjunction.
-	 * Quantified variables in nested conditions are resolved for each
-	 * possible constant defined in the problem.
+	 * Resolves all quantifications occurring in the provided condition. Existential
+	 * quantifications are replaced with a disjunction and universal quantifications
+	 * are replaced with a conjunction. Quantified variables in nested conditions
+	 * are resolved for each possible constant defined in the problem.
 	 */
 	private AbstractCondition instantiateQuantifications(AbstractCondition abstractCondition) {
-		
+
 		// Recursively traverse the condition tree
 		return abstractCondition.traverse(cond -> {
-			
+
 			// Only apply some change for quantifications
 			if (cond.getConditionType() == ConditionType.quantification) {
 				Quantification q = (Quantification) cond;
-				
+
 				// Inner condition is already instantiated (head recursion)
 				AbstractCondition innerCondition = q.getCondition();
-				
+
 				// New, dequantified condition
 				ConditionType type = null;
 				if (q.getQuantifier().equals(Quantifier.universal)) {
@@ -162,56 +160,53 @@ public class Preprocessor {
 					type = ConditionType.disjunction; // exists: big OR
 				}
 				ConditionSet dequantifiedSet = new ConditionSet(type);
-				
-				// For each quantified variable, replace its occurrences 
+
+				// For each quantified variable, replace its occurrences
 				// with all possible constants
-				List<List<Argument>> eligibleArgs = 
-				ArgumentCombinationUtils.getEligibleArguments(q.getVariables(), 
+				List<List<Argument>> eligibleArgs = ArgumentCombinationUtils.getEligibleArguments(q.getVariables(),
 						problem, problem.getConstants());
 				ArgumentCombinationUtils.iterator(eligibleArgs).forEachRemaining(args -> {
-					
-					AbstractCondition deq = innerCondition.getConditionBoundToArguments(
-							q.getVariables(), args);
+
+					AbstractCondition deq = innerCondition.getConditionBoundToArguments(q.getVariables(), args);
 					dequantifiedSet.add(deq);
 				});
-				
+
 				return dequantifiedSet;
 			}
 			return cond;
-			
+
 		}, AbstractCondition.RECURSE_HEAD);
 	}
-	
+
 	/**
-	 * Given an operator in DNF, creates a new operator for each
-	 * element of the disjunction. This leads to a set of operators
-	 * which together can achieve exactly the same as the old operator.
-	 * Conditional effects are split up into multiple effects
-	 * in a similar manner.
+	 * Given an operator in DNF, creates a new operator for each element of the
+	 * disjunction. This leads to a set of operators which together can achieve
+	 * exactly the same as the old operator. Conditional effects are split up into
+	 * multiple effects in a similar manner.
 	 */
 	private List<Operator> split(Operator op) {
-		
+
 		List<Operator> newOperators = new ArrayList<>();
-		
+
 		// Compute flat conditional effects
 		ConditionSet effectSet = new ConditionSet(ConditionType.conjunction);
 		AbstractCondition effect = effectSet;
 		if (op.getEffect().getConditionType() == ConditionType.consequential) {
 			// Top level is a conditional effect
-			
+
 			// Split up conditional effect and add each of them
-			for (ConsequentialCondition cc : split((ConsequentialCondition) op.getEffect())) {							
+			for (ConsequentialCondition cc : split((ConsequentialCondition) op.getEffect())) {
 				effectSet.add(cc);
 			}
 		} else if (op.getEffect().getConditionType() == ConditionType.conjunction) {
 			// Top level is a conjunction
-			
+
 			// For all contained effects:
 			for (AbstractCondition c : ((ConditionSet) op.getEffect()).getConditions()) {
-				
+
 				if (c.getConditionType() == ConditionType.consequential) {
 					// Split conditional effect
-					for (ConsequentialCondition cc : split((ConsequentialCondition) c)) {							
+					for (ConsequentialCondition cc : split((ConsequentialCondition) c)) {
 						effectSet.add(cc);
 					}
 				} else {
@@ -223,25 +218,25 @@ public class Preprocessor {
 			// Top level is atomic
 			effect = op.getEffect();
 		}
-		
+
 		// Split operator along its top-level disjunction
 		if (op.getPrecondition().getConditionType() == ConditionType.disjunction) {
-			
+
 			// Create new operator for each contained element in disjunction
 			int counter = 1;
 			for (AbstractCondition child : ((ConditionSet) op.getPrecondition()).getConditions()) {
-				
+
 				Operator opSplit = new Operator(op.getName() + "$" + counter + "$");
 				for (Argument arg : op.getArguments()) {
 					opSplit.addArgument(arg);
 				}
 				opSplit.setPrecondition(child);
 				opSplit.setEffect(effect);
-				
+
 				newOperators.add(opSplit);
 				counter++;
 			}
-			
+
 		} else {
 			// No disjunction: Operator does not need to be split
 			Operator opSplit = new Operator(op.getName());
@@ -250,21 +245,21 @@ public class Preprocessor {
 			}
 			opSplit.setPrecondition(op.getPrecondition().copy());
 			opSplit.setEffect(effect);
-			
+
 			newOperators.add(opSplit);
 		}
-		
+
 		return newOperators;
 	}
-	
+
 	/**
-	 * If the provided conditional effect (in DNF!) has a disjunction on its
-	 * top level, it is split into multiple conditional effects which together
-	 * are equivalent to the original one. If no disjunction is present,
-	 * the original conditional effect is returned as the only element.
+	 * If the provided conditional effect (in DNF!) has a disjunction on its top
+	 * level, it is split into multiple conditional effects which together are
+	 * equivalent to the original one. If no disjunction is present, the original
+	 * conditional effect is returned as the only element.
 	 */
 	private List<ConsequentialCondition> split(ConsequentialCondition cond) {
-		
+
 		List<ConsequentialCondition> splitConds = new ArrayList<>();
 		if (cond.getPrerequisite().getConditionType() == ConditionType.disjunction) {
 			// For each element in the disjunction, create a new cond. effect
@@ -278,16 +273,16 @@ public class Preprocessor {
 			// The prerequisite is already simple, so add the old cond. effect
 			splitConds.add(cond);
 		}
-		
+
 		return splitConds;
 	}
-	
+
 	private void eliminateConditionalEffects() {
-		
+
 		List<Operator> newOperators = new ArrayList<>();
-		
+
 		for (Operator op : problem.getOperators()) {
-			
+
 			// Partition effects of the operator into conditional and other effects
 			List<ConsequentialCondition> ccs = new ArrayList<>();
 			ConditionSet normalEffects = new ConditionSet(ConditionType.conjunction);
@@ -304,25 +299,25 @@ public class Preprocessor {
 					normalEffects.add(eff);
 				}
 			}
-			
+
 			// Warn if amount of resulting STRIPS actions is large
 			if (ccs.size() > 4) {
-				Logger.log(Logger.WARN, "An operator contains " + ccs.size()
-						+ " conditional effects after simplification. "
-						+ "Attempting compilation into at least " + (int) Math.pow(2, ccs.size()) 
-						+ " STRIPS actions.");
+				Logger.log(Logger.WARN,
+						"An operator contains " + ccs.size() + " conditional effects after simplification. "
+								+ "Attempting compilation into at least " + (int) Math.pow(2, ccs.size())
+								+ " STRIPS actions.");
 			}
-			
+
 			// Create a new operator for each combination of cond. effects
 			for (int condEffChoice = 0; condEffChoice < Math.pow(2, ccs.size()); condEffChoice++) {
-				
+
 				List<AbstractCondition> posPre = new ArrayList<>();
 				List<AbstractCondition> posNeg = new ArrayList<>();
 				List<AbstractCondition> eff = new ArrayList<>();
-				
+
 				int remainder = condEffChoice;
 				for (int ccIdx = 0; ccIdx < ccs.size(); ccIdx++) {
-					int power = (int) Math.pow(2, ccs.size()-ccIdx-1);
+					int power = (int) Math.pow(2, ccs.size() - ccIdx - 1);
 					if (remainder >= power) {
 						remainder -= power;
 						posPre.add(ccs.get(ccIdx).getPrerequisite());
@@ -333,62 +328,62 @@ public class Preprocessor {
 						posNeg.add(n);
 					}
 				}
-				
+
 				String opName = op.getName() + (ccs.size() > 0 ? "*" + condEffChoice + "*" : "");
 				Operator newOp = new Operator(opName);
 				op.getArguments().forEach(arg -> newOp.addArgument(arg));
 				newOp.setCost(op.getCost());
-				
+
 				final ConditionSet preconds = new ConditionSet(ConditionType.conjunction);
 				preconds.add(op.getPrecondition());
 				posPre.forEach(p -> preconds.add(p));
 				posNeg.forEach(p -> preconds.add(p));
 				newOp.setPrecondition(preconds);
-				
+
 				final ConditionSet postconds = new ConditionSet(ConditionType.conjunction);
 				postconds.add(normalEffects);
 				eff.forEach(c -> postconds.add(c));
 				newOp.setEffect(postconds);
-				
-				simplify(newOp, /*toDNF=*/true);
+
+				simplify(newOp, /* toDNF= */true);
 				newOperators.addAll(split(newOp));
 			}
 		}
-		
+
 		problem.getOperators().clear();
 		problem.getOperators().addAll(newOperators);
 	}
-	
+
 	/**
-	 * Removes all occurrences of the numeric fluent (total-cost) 
-	 * and instead defines the cost attributes of operators.
+	 * Removes all occurrences of the numeric fluent (total-cost) and instead
+	 * defines the cost attributes of operators.
 	 */
 	private void extractActionCosts() {
-		
+
 		// Is there a total-cost function?
 		Map<String, Function> functions = problem.getFunctions();
 		if (!functions.containsKey("total-cost")) {
 			return;
 		}
-		
+
 		Function totalCost = functions.get("total-cost");
 		List<Integer> costs = new ArrayList<>();
 
 		// Should action costs definitions be considered overall?
 		if (!config.keepActionCosts) {
 			Logger.log(Logger.INFO, "Clearing all action cost definitions from the problem.");
-			
+
 		} else {
 			// Check if action costs can be extracted into flat integers per operator
-			
+
 			// Compute all functions which never change
 			Set<Function> rigidFunctions = getRigidFunctions();
-			
+
 			// For each operator:
 			boolean error = false;
 			for (Operator op : problem.getOperators()) {
 				int cost = 0;
-				
+
 				// Check precondition
 				AbstractCondition precond = op.getPrecondition();
 				if (precond.toString().contains("(total-cost)")) {
@@ -396,13 +391,13 @@ public class Preprocessor {
 					error = true;
 					break;
 				}
-				
+
 				// Traverse effect, and extract cost increases
 				List<AbstractCondition> effects = new ArrayList<>();
 				effects.add(op.getEffect());
 				while (!effects.isEmpty()) {
 					AbstractCondition c = effects.remove(0);
-					
+
 					if (c.getConditionType() == ConditionType.numericEffect) {
 						NumericEffect eff = (NumericEffect) c;
 						if (eff.getFunction().equals(totalCost)) {
@@ -425,12 +420,13 @@ public class Preprocessor {
 									}
 								}
 								if (!error) {
-									Logger.log(Logger.WARN, "(total-cost) function is increased "
-											+ "by an effectively constant value, but simplification "
-											+ "to an actual constant is not implemented yet.");
+									Logger.log(Logger.WARN,
+											"(total-cost) function is increased "
+													+ "by an effectively constant value, but simplification "
+													+ "to an actual constant is not implemented yet.");
 									error = true;
 								}
-							} 
+							}
 						}
 					} else if (c.getConditionType() == ConditionType.conjunction) {
 						// Process children as well
@@ -438,34 +434,34 @@ public class Preprocessor {
 					} else if (c.getConditionType() == ConditionType.consequential) {
 						// Check if total-cost occurs here
 						if (c.toString().contains("(total-cost)")) {
-							Logger.log(Logger.WARN, "(total-cost) function appears "
-									+ "in a conditional effect.");
+							Logger.log(Logger.WARN, "(total-cost) function appears " + "in a conditional effect.");
 							error = true;
 						}
-					} 
+					}
 				}
 				// Can total-cost be compiled away here?
 				if (error) {
 					// -- no
-					Logger.log(Logger.WARN, "The (total-cost) function will be kept "
-							+ "as a full-featured numeric fluent in the problem "
-							+ "definition. This can affect performance.");
+					Logger.log(Logger.WARN,
+							"The (total-cost) function will be kept "
+									+ "as a full-featured numeric fluent in the problem "
+									+ "definition. This can affect performance.");
 					return;
 				}
 				// Remember found cost for this operator
 				costs.add(cost);
 			}
 		}
-		
+
 		// Remove all total-cost numeric effects from the operators
 		for (int i = 0; i < problem.getOperators().size(); i++) {
-			
+
 			Operator op = problem.getOperators().get(i);
 			if (config.keepActionCosts)
 				op.setCost(costs.get(i));
-			
+
 			AbstractCondition cond = op.getEffect();
-			
+
 			// Traverse effect condition, removing all total-cost effects
 			cond = cond.traverse((c -> {
 				if (c.getConditionType() == ConditionType.numericEffect) {
@@ -476,23 +472,23 @@ public class Preprocessor {
 				}
 				return c;
 			}), AbstractCondition.RECURSE_HEAD);
-			
+
 			op.setEffect(cond);
 		}
-		
+
 		// Remove total-cost from functions
 		problem.getFunctions().remove("total-cost");
 		problem.getInitialFunctionValues().remove(totalCost);
 	}
-	
+
 	private Set<Function> getRigidFunctions() {
-		
+
 		// Set of all functions
 		final Set<Function> functionSet = new TreeSet<>((f1, f2) -> f1.getName().compareTo(f2.getName()));
 		for (Function f : problem.getFunctions().values()) {
 			functionSet.add(f);
 		}
-		
+
 		// Filter functions by occurrence in an operator effect
 		for (Operator op : problem.getOperators()) {
 			AbstractCondition effect = op.getEffect();
@@ -505,10 +501,10 @@ public class Preprocessor {
 				}
 			}, AbstractCondition.RECURSE_HEAD);
 		}
-		
+
 		return functionSet;
 	}
-	
+
 	private List<Function> getContainedFunctions(NumericExpression exp) {
 		List<Function> functions = new ArrayList<>();
 		switch (exp.getType()) {

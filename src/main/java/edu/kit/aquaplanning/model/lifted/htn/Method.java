@@ -12,10 +12,10 @@ public class Method {
 	private String name;
 	private List<Argument> explicitArguments;
 	private List<Argument> implicitArguments;
-	
+
 	private List<Task> subtasks;
 	private List<Constraint> constraints;
-	
+
 	public Method(String name) {
 		this.name = name;
 		this.explicitArguments = new ArrayList<>();
@@ -23,31 +23,31 @@ public class Method {
 		this.subtasks = new ArrayList<>();
 		this.constraints = new ArrayList<>();
 	}
-	
+
 	public void addExplicitArgument(Argument arg) {
 		this.explicitArguments.add(arg);
 	}
-	
+
 	public void addImplicitArgument(Argument arg) {
 		this.implicitArguments.add(arg);
 	}
-	
+
 	public void addSubtask(Task task) {
 		this.subtasks.add(task);
 	}
-	
+
 	public void addConstraint(Constraint constr) {
 		this.constraints.add(constr);
 	}
-	
+
 	public void tagLastSubtask(String tag) {
-		this.subtasks.get(subtasks.size()-1).setTag(tag);
+		this.subtasks.get(subtasks.size() - 1).setTag(tag);
 	}
-	
+
 	public void addConditionToLastConstraint(AbstractCondition c) {
-		this.constraints.get(constraints.size()-1).setCondition(c);
+		this.constraints.get(constraints.size() - 1).setCondition(c);
 	}
-	
+
 	public Type getTypeOfArgument(String argStr) {
 		for (Argument arg : explicitArguments) {
 			if (arg.getName().equals(argStr)) {
@@ -61,7 +61,7 @@ public class Method {
 		}
 		return null;
 	}
-	
+
 	public boolean hasArgument(String argStr) {
 		for (Argument arg : explicitArguments) {
 			if (arg.getName().equals(argStr)) {
@@ -75,7 +75,7 @@ public class Method {
 		}
 		return false;
 	}
-	
+
 	public void updateArgumentType(String argStr, Type type) {
 		for (Argument arg : explicitArguments) {
 			if (arg.getName().equals(argStr)) {
@@ -90,7 +90,7 @@ public class Method {
 			}
 		}
 	}
-	
+
 	public String getName() {
 		return name;
 	}
@@ -102,15 +102,15 @@ public class Method {
 	public List<Constraint> getConstraints() {
 		return constraints;
 	}
-	
+
 	public List<Argument> getExplicitArguments() {
 		return explicitArguments;
 	}
-	
+
 	public List<Argument> getImplicitArguments() {
 		return implicitArguments;
 	}
-	
+
 	public List<Argument> getAllArguments() {
 		List<Argument> args = new ArrayList<>();
 		args.addAll(explicitArguments);
@@ -121,12 +121,14 @@ public class Method {
 	public Method getMethodBoundToArguments(List<Argument> explicitArgs, List<Argument> implicitArgs) {
 
 		if (explicitArgs.size() != this.explicitArguments.size()) {
-			throw new RuntimeException("Illegal number of binding arguments: " + this.explicitArguments + " , " + explicitArgs);
+			throw new RuntimeException(
+					"Illegal number of binding arguments: " + this.explicitArguments + " , " + explicitArgs);
 		}
 		if (implicitArgs.size() != this.implicitArguments.size()) {
-			throw new RuntimeException("Illegal number of binding arguments: " + this.implicitArguments + " , " + implicitArgs);
+			throw new RuntimeException(
+					"Illegal number of binding arguments: " + this.implicitArguments + " , " + implicitArgs);
 		}
-		
+
 		List<Argument> refArgs = new ArrayList<>();
 		List<Argument> argVals = new ArrayList<>();
 		List<Argument> newExplicits = new ArrayList<>();
@@ -153,7 +155,7 @@ public class Method {
 				newImplicits.add(oldArg);
 			}
 		}
-		
+
 		Method m = new Method(name);
 		m.implicitArguments = newImplicits;
 		m.explicitArguments = newExplicits;
@@ -165,9 +167,9 @@ public class Method {
 		}
 		return m;
 	}
-	
+
 	public void setImplicitArgument(Argument refArg, Argument argVal) {
-		
+
 		for (int i = 0; i < implicitArguments.size(); i++) {
 			if (implicitArguments.get(i).getName().equals(refArg.getName())) {
 				implicitArguments.set(i, argVal);
@@ -181,29 +183,29 @@ public class Method {
 			c.setArgument(refArg, argVal);
 		}
 	}
-	
+
 	public String getTaskString() {
 		String out = "(" + name + " ";
 		for (Argument arg : explicitArguments) {
 			out += arg.getName() + " ";
 		}
-		out = out.substring(0, out.length()-1) + ")";
+		out = out.substring(0, out.length() - 1) + ")";
 		return out;
 	}
-	
+
 	public Task toTask() {
 		Task task = new Task(name);
 		explicitArguments.forEach(arg -> task.addArgument(arg));
 		return task;
 	}
-	
+
 	public Task toTaskWithImplicitArgs() {
 		Task task = new Task(name);
 		explicitArguments.forEach(arg -> task.addArgument(arg));
 		implicitArguments.forEach(arg -> task.addArgument(arg));
 		return task;
 	}
-	
+
 	@Override
 	public String toString() {
 		String out = "(" + name;
@@ -267,7 +269,7 @@ public class Method {
 			return false;
 		return true;
 	}
-	
+
 	public Method copy() {
 		Method m = new Method(name);
 		m.constraints = new ArrayList<>();

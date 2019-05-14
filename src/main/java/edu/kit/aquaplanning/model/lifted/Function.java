@@ -8,37 +8,37 @@ public class Function {
 	private String name;
 	private List<Type> argumentTypes;
 	private List<Argument> arguments;
-	
+
 	public Function(String name) {
 		this.name = name;
 		this.arguments = new ArrayList<>();
 		this.argumentTypes = new ArrayList<>();
 	}
-	
+
 	public void addArgument(Argument arg) {
 		this.arguments.add(arg);
 	}
-	
+
 	public void addArgumentType(Type type) {
 		this.argumentTypes.add(type);
 	}
-	
+
 	public String getName() {
 		return name;
 	}
-	
+
 	public List<Argument> getArguments() {
 		return arguments;
 	}
-	
+
 	public List<Type> getArgumentTypes() {
 		return argumentTypes;
 	}
-	
+
 	public int getNumArgs() {
 		return argumentTypes.size();
 	}
-	
+
 	public Function getFunctionBoundToArguments(List<Argument> refArgs, List<Argument> argValues) {
 		Function f = new Function(name);
 		for (Argument arg : arguments) {
@@ -55,7 +55,7 @@ public class Function {
 		}
 		return f;
 	}
-	
+
 	@Override
 	public String toString() {
 		String out = "";
@@ -66,7 +66,7 @@ public class Function {
 		out += ")";
 		return out;
 	}
-	
+
 	public String toString(List<Argument> args) {
 		String out = "";
 		out += name + "( ";

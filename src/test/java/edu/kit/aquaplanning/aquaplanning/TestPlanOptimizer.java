@@ -17,14 +17,12 @@ import edu.kit.aquaplanning.validation.Validator;
 import junit.framework.TestCase;
 
 public class TestPlanOptimizer extends TestCase {
-	
-	
-	
+
 	public void testOptimizer() throws IOException {
 		File benchdir = new File("benchmarks");
 		for (File domdir : benchdir.listFiles()) {
 			String domain = domdir.getCanonicalPath() + "/domain.pddl";
-			//File domain
+			// File domain
 			for (File f : domdir.listFiles()) {
 				if (f.getName().endsWith(".plan.zip")) {
 					String plan = f.getCanonicalPath();
@@ -34,7 +32,7 @@ public class TestPlanOptimizer extends TestCase {
 			}
 		}
 	}
-	
+
 	private void testBenchmark(String domain, String problem, String plan) throws IOException {
 		System.out.println("Testing plan improver on " + plan);
 		PlanningProblem pp = new ProblemParser().parse(domain, problem);
@@ -48,7 +46,8 @@ public class TestPlanOptimizer extends TestCase {
 		SimplePlanOptimizer spo = new SimplePlanOptimizer(gpp);
 		Plan p2 = spo.improvePlan(p, new Clock(1000));
 		System.out.println("new plan valid: " + Validator.planIsValid(gpp, p2));
-		System.out.println(String.format("Plan was improved from %d actions to %d actions", p.getLength(), p2.getLength()));
+		System.out.println(
+				String.format("Plan was improved from %d actions to %d actions", p.getLength(), p2.getLength()));
 	}
 
 }

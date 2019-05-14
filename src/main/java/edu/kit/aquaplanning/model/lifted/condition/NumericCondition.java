@@ -11,54 +11,60 @@ public class NumericCondition extends AbstractCondition {
 	public enum Comparator {
 		greater, greaterEquals, lower, lowerEquals, equals, notEquals;
 	}
-	
+
 	private Comparator comparator;
 	private NumericExpression expLeft;
 	private NumericExpression expRight;
-	
+
 	public NumericCondition(Comparator comparator) {
 		super(ConditionType.numericPrecondition);
 		this.comparator = comparator;
 	}
-	
+
 	public NumericCondition(String comparator) {
 		super(ConditionType.numericPrecondition);
 		switch (comparator) {
 		case ">":
-			this.comparator = Comparator.greater; break;
+			this.comparator = Comparator.greater;
+			break;
 		case ">=":
-			this.comparator = Comparator.greaterEquals; break;
+			this.comparator = Comparator.greaterEquals;
+			break;
 		case "<":
-			this.comparator = Comparator.lower; break;
+			this.comparator = Comparator.lower;
+			break;
 		case "<=":
-			this.comparator = Comparator.lowerEquals; break;
+			this.comparator = Comparator.lowerEquals;
+			break;
 		case "=":
-			this.comparator = Comparator.equals; break;
+			this.comparator = Comparator.equals;
+			break;
 		case "!=":
-			this.comparator = Comparator.notEquals; break;
+			this.comparator = Comparator.notEquals;
+			break;
 		}
 	}
-	
+
 	public void setExpLeft(NumericExpression expLeft) {
 		this.expLeft = expLeft;
 	}
-	
+
 	public void setExpRight(NumericExpression expRight) {
 		this.expRight = expRight;
 	}
-	
+
 	public Comparator getComparator() {
 		return comparator;
 	}
-	
+
 	public NumericExpression getExpLeft() {
 		return expLeft;
 	}
-	
+
 	public NumericExpression getExpRight() {
 		return expRight;
 	}
-	
+
 	@Override
 	public String toString() {
 		String out = "";
@@ -85,10 +91,10 @@ public class NumericCondition extends AbstractCondition {
 		out = expLeft.toString() + " " + out + " " + expRight.toString();
 		return out;
 	}
-	
+
 	@Override
 	public AbstractCondition getConditionBoundToArguments(List<Argument> refArgs, List<Argument> argValues) {
-		
+
 		NumericCondition copy = copy();
 		copy.expLeft = copy.expLeft.getExpressionBoundToArguments(refArgs, argValues);
 		copy.expRight = copy.expRight.getExpressionBoundToArguments(refArgs, argValues);
@@ -135,7 +141,7 @@ public class NumericCondition extends AbstractCondition {
 		c.setExpRight(expRight.copy());
 		return c;
 	}
-	
+
 	@Override
 	public AbstractCondition traverse(Function<AbstractCondition, AbstractCondition> map, int recurseMode) {
 		return map.apply(this);

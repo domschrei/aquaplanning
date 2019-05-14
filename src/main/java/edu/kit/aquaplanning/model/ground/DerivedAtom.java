@@ -8,13 +8,13 @@ public class DerivedAtom {
 	private String name;
 	private AbstractCondition liftedCondition;
 	private Precondition condition;
-	
+
 	public DerivedAtom(int id, String name, AbstractCondition liftedCondition) {
 		this.id = id;
 		this.name = name;
 		this.liftedCondition = liftedCondition;
 	}
-	
+
 	/**
 	 * Copies the provided derived atom into a new object.
 	 */
@@ -24,7 +24,7 @@ public class DerivedAtom {
 		this.liftedCondition = other.liftedCondition.copy();
 		this.condition = new Precondition(other.condition);
 	}
-	
+
 	public void setCondition(Precondition condition) {
 		this.condition = condition;
 	}
@@ -32,12 +32,15 @@ public class DerivedAtom {
 	public int getId() {
 		return id;
 	}
+
 	public String getName() {
 		return name;
 	}
+
 	public Precondition getCondition() {
 		return condition;
 	}
+
 	public AbstractCondition getLiftedCondition() {
 		return liftedCondition;
 	}
@@ -63,7 +66,7 @@ public class DerivedAtom {
 			return false;
 		return true;
 	}
-	
+
 	@Override
 	public String toString() {
 		return getName();

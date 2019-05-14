@@ -22,13 +22,13 @@ import junit.framework.TestCase;
 public class TestParallelPlanning extends TestCase {
 
 	public void testSatPlanner() throws IOException {
-		Configuration config = new Configuration();	
+		Configuration config = new Configuration();
 		config.searchTimeSeconds = 3;
 		SimpleSatPlanner spp = new SimpleSatPlanner(config);
 		spp.setIgnoreAtMostOneAction(true);
 		testOnAll(spp);
 	}
-	
+
 	public void testSatHeuristic() throws IOException {
 		Configuration config = new Configuration();
 		config.numThreads = 1;
@@ -38,7 +38,7 @@ public class TestParallelPlanning extends TestCase {
 		ForwardSearchPlanner fsp = new ForwardSearchPlanner(config);
 		testOnAll(fsp);
 	}
-	
+
 	public void testParallelPlanner() throws IOException {
 		Configuration config = new Configuration();
 		config.numThreads = 8;
@@ -54,13 +54,13 @@ public class TestParallelPlanning extends TestCase {
 			for (File f : domdir.listFiles()) {
 				if (f.getName().startsWith("p") && f.getName().endsWith(".pddl")) {
 					String problem = f.getCanonicalPath();
-					//testBenchmark(domain, problem);
+					// testBenchmark(domain, problem);
 					testPlannerOnBenchmark(planner, domain, problem);
 				}
 			}
 		}
 	}
-	
+
 	private void testPlannerOnBenchmark(Planner planner, String domain, String problem) throws IOException {
 		System.out.println("Testing planner on " + domain + ", " + problem);
 		PlanningProblem pp = new ProblemParser().parse(domain, problem);

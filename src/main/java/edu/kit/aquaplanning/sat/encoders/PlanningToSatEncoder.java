@@ -9,6 +9,7 @@ import edu.kit.aquaplanning.sat.SymbolicReachabilityFormula;
 public interface PlanningToSatEncoder {
 	/**
 	 * Encode a planning problem into 4 sat formulas
+	 * 
 	 * @param problem
 	 * @return
 	 */

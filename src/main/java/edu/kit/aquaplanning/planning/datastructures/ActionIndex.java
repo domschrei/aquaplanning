@@ -16,29 +16,31 @@ public class ActionIndex {
 
 	protected Map<Integer, List<Action>> atomActionMap;
 	protected List<Action> noPrecondActions;
-	
+
 	protected boolean relaxed;
-	
+
 	protected void addAction(int index, Action action) {
 		if (!atomActionMap.containsKey(index)) {
 			atomActionMap.put(index, new ArrayList<>());
 		}
 		atomActionMap.get(index).add(action);
 	}
-	
-	protected ActionIndex() {}
+
+	protected ActionIndex() {
+	}
+
 	protected ActionIndex(boolean relaxed) {
 		this.relaxed = relaxed;
 	}
-	
+
 	public ActionIndex(GroundPlanningProblem gpp, boolean relaxed) {
 		init(gpp, relaxed);
 	}
-	
+
 	public ActionIndex(GroundPlanningProblem gpp) {
 		init(gpp, false);
 	}
-	
+
 	public void init(GroundPlanningProblem gpp, boolean relaxed) {
 		this.relaxed = relaxed;
 		atomActionMap = new HashMap<>();
@@ -46,11 +48,11 @@ public class ActionIndex {
 		for (Action a : gpp.getActions()) {
 			int posx = a.getPreconditionsPos().getFirstTrueAtom();
 			if (posx >= 0) {
-				addAction(posx+1, a);
+				addAction(posx + 1, a);
 			} else if (!relaxed) {
 				int negx = a.getPreconditionsNeg().getFirstTrueAtom();
 				if (negx >= 0) {
-					addAction(-negx-1, a);
+					addAction(-negx - 1, a);
 				} else {
 					noPrecondActions.add(a);
 				}
@@ -59,26 +61,26 @@ public class ActionIndex {
 			}
 		}
 	}
-	
+
 	public Collection<Action> getApplicableActions(State state) {
-		
+
 		HashSet<Action> result = new HashSet<>();
-		
+
 		// Add actions without any (simple) preconditions
 		for (Action candidate : noPrecondActions) {
 			// Still check applicability (derived predicates etc.)
-			if (!relaxed && candidate.isApplicable(state)) {				
+			if (!relaxed && candidate.isApplicable(state)) {
 				result.add(candidate);
 			}
-			if (relaxed && candidate.isApplicableRelaxed(state)) {				
+			if (relaxed && candidate.isApplicableRelaxed(state)) {
 				result.add(candidate);
 			}
 		}
-		
+
 		// Add actions with preconditions
 		AtomSet stateAtoms = state.getAtomSet();
 		for (int atomId = 0; atomId < stateAtoms.size(); atomId++) {
-			int index = stateAtoms.get(atomId) ? atomId+1 : -atomId-1;
+			int index = stateAtoms.get(atomId) ? atomId + 1 : -atomId - 1;
 			if (!atomActionMap.containsKey(index)) {
 				continue;
 			}
@@ -91,7 +93,7 @@ public class ActionIndex {
 				}
 			}
 		}
-		
+
 		return result;
 	}
 }

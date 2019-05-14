@@ -12,7 +12,7 @@ public class ConditionalEffect {
 	private AtomSet effectsNeg;
 
 	public ConditionalEffect() {
-		
+
 		this.conditionsPos = new AtomSet(new ArrayList<>());
 		this.conditionsNeg = new AtomSet(new ArrayList<>());
 		this.effectsPos = new AtomSet(new ArrayList<>());
@@ -26,7 +26,7 @@ public class ConditionalEffect {
 		this.effectsPos = new AtomSet(effects, true);
 		this.effectsNeg = new AtomSet(effects, false);
 	}
-	
+
 	public AtomSet getConditionsPos() {
 		return conditionsPos;
 	}
@@ -42,15 +42,15 @@ public class ConditionalEffect {
 	public AtomSet getEffectsNeg() {
 		return effectsNeg;
 	}
-	
+
 	@Override
 	public String toString() {
-		
+
 		return toString(atomSet -> atomSet.toString());
 	}
-	
+
 	public String toString(Function<AtomSet, String> atomSetToString) {
-		
+
 		String out = "";
 		out += "{ ";
 		out += atomSetToString.apply(conditionsPos) + " ; NOT " + atomSetToString.apply(conditionsNeg) + " ";

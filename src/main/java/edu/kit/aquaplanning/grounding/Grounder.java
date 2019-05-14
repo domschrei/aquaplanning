@@ -6,5 +6,5 @@ import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 public interface Grounder {
 
 	public GroundPlanningProblem ground(PlanningProblem problem);
-	
+
 }

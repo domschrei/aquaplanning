@@ -7,10 +7,10 @@ import edu.kit.aquaplanning.planning.datastructures.SearchNode;
 import edu.kit.aquaplanning.planning.sat.SimpleSatPlanner;
 
 public class SatAbstractionHeuristic extends Heuristic {
-	
+
 	private GroundPlanningProblem problem;
 	private SimpleSatPlanner satPlanner;
-	
+
 	public SatAbstractionHeuristic(GroundPlanningProblem problem, Configuration config) {
 		super();
 		this.problem = new GroundPlanningProblem(problem);

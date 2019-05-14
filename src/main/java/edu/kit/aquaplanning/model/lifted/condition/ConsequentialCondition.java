@@ -9,45 +9,45 @@ public class ConsequentialCondition extends AbstractCondition {
 
 	private AbstractCondition prerequisite;
 	private AbstractCondition consequence;
-	
+
 	public ConsequentialCondition(AbstractCondition prerequisite, AbstractCondition consequence) {
 		super(ConditionType.consequential);
 		this.prerequisite = prerequisite;
 		this.consequence = consequence;
 	}
-	
+
 	public ConsequentialCondition() {
 		super(ConditionType.consequential);
 	}
-	
+
 	public void setPrerequisite(AbstractCondition cond) {
 		this.prerequisite = cond;
 	}
-	
+
 	public void setConsequence(AbstractCondition cond) {
 		this.consequence = cond;
 	}
-	
+
 	public AbstractCondition getPrerequisite() {
 		return prerequisite;
 	}
-	
+
 	public AbstractCondition getConsequence() {
 		return consequence;
 	}
-	
+
 	@Override
 	public ConsequentialCondition getConditionBoundToArguments(List<Argument> refArgs, List<Argument> argValues) {
-		
+
 		ConsequentialCondition c = new ConsequentialCondition();
 		c.setPrerequisite(prerequisite.getConditionBoundToArguments(refArgs, argValues));
 		c.setConsequence(consequence.getConditionBoundToArguments(refArgs, argValues));
 		return c;
 	}
-	
+
 	@Override
 	public AbstractCondition simplify(boolean negated) {
-		
+
 		if (negated) {
 			throw new IllegalArgumentException("Negated conditional effect is not legal.");
 		}
@@ -56,16 +56,16 @@ public class ConsequentialCondition extends AbstractCondition {
 		c.setConsequence(consequence.simplify(false));
 		return c;
 	}
-	
+
 	@Override
 	public AbstractCondition getDNF() {
-		
+
 		ConsequentialCondition c = new ConsequentialCondition();
 		c.setPrerequisite(prerequisite.getDNF());
 		c.setConsequence(consequence);
 		return c;
 	}
-	
+
 	@Override
 	public String toString() {
 		String out = "";
@@ -107,37 +107,37 @@ public class ConsequentialCondition extends AbstractCondition {
 			return false;
 		return true;
 	}
-	
+
 	@Override
 	public ConsequentialCondition copy() {
-		
+
 		ConsequentialCondition cc = new ConsequentialCondition();
 		cc.setPrerequisite(prerequisite.copy());
 		cc.setConsequence(consequence.copy());
 		return cc;
 	}
-	
+
 	@Override
 	public AbstractCondition traverse(Function<AbstractCondition, AbstractCondition> map, int recurseMode) {
-		
+
 		ConsequentialCondition result;
-		
+
 		// Apply the inner function, if tail recursion is done
 		if (recurseMode == AbstractCondition.RECURSE_TAIL) {
 			result = (ConsequentialCondition) map.apply(this);
 		} else {
 			result = copy();
 		}
-		
+
 		// Recurse
 		result.prerequisite = (result.prerequisite.traverse(map, recurseMode));
 		result.consequence = (result.consequence.traverse(map, recurseMode));
-		
+
 		// Apply the inner function, if head recursion is done
 		if (recurseMode == AbstractCondition.RECURSE_HEAD) {
 			return map.apply(result);
 		}
-		
+
 		return result;
 	}
 }

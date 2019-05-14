@@ -20,30 +20,31 @@ import edu.kit.aquaplanning.planning.datastructures.SearchNode;
 public class TrautmannsHeuristic extends Heuristic {
 
 	private GroundPlanningProblem problem;
-	
+
 	public TrautmannsHeuristic(GroundPlanningProblem groundProblem) {
 		this.problem = groundProblem;
 	}
-	
+
 	@Override
 	public int value(SearchNode node) {
 		State state = node.state;
-		
+
 		// Is the goal already satisfied (in a relaxed definition)?
 		if (problem.getGoal().isSatisfiedRelaxed(state)) {
 			return 0;
 		}
-		
-		// Traverse deletion-relaxed planning graph and collect states and applicable actions
+
+		// Traverse deletion-relaxed planning graph and collect states and applicable
+		// actions
 		GroundRelaxedPlanningGraph graph = new GroundRelaxedPlanningGraph(problem, state, problem.getActions());
 		List<State> states = new LinkedList<State>();
 		List<List<Action>> actions = new LinkedList<List<Action>>();
-		while (graph.hasNextLayer()) {			
+		while (graph.hasNextLayer()) {
 			// Goal reached?
 			if (problem.getGoal().isSatisfiedRelaxed(state)) {
 				break;
 			}
-			
+
 			states.add(0, state);
 			List<Action> localActions = new LinkedList<>();
 			for (Action action : problem.getActions()) {
@@ -52,36 +53,35 @@ public class TrautmannsHeuristic extends Heuristic {
 				}
 			}
 			actions.add(0, localActions);
-			
+
 			state = graph.computeNextLayer();
 		}
-		
+
 		if (!problem.getGoal().isSatisfiedRelaxed(state)) {
 			// Goals could not be reached: unsolvable from this state
-			return Integer.MAX_VALUE;			
+			return Integer.MAX_VALUE;
 		}
-		
+
 		// Compute relaxed plan
 		List<Atom> goal = problem.getGoal().getPositiveAtoms();
 		Iterator<State> itStates = states.iterator();
 		Iterator<List<Action>> itActions = actions.iterator();
 		int chosenActions = 0;
-		while(itStates.hasNext()) {
+		while (itStates.hasNext()) {
 			state = itStates.next();
 			List<Action> localActions = itActions.next();
-			
+
 			// check which atoms are satisfied by the preceding state and which not
 			List<Atom> satisfied = new LinkedList<>();
 			List<Atom> unsatisfied = new LinkedList<>();
 			for (Atom atom : goal) {
 				if (state.holds(atom)) {
 					satisfied.add(atom);
-				}
-				else {
+				} else {
 					unsatisfied.add(atom);
 				}
 			}
-			
+
 			// Get actions that satisfy the unsatisfied atoms
 			Map<Action, List<Atom>> satisfiers = new LinkedHashMap<>();
 			for (Action action : localActions) {
@@ -91,8 +91,7 @@ public class TrautmannsHeuristic extends Heuristic {
 							satisfiers.put(action, new LinkedList<>());
 						}
 						satisfiers.get(action).add(atom);
-					}
-					else {
+					} else {
 						for (ConditionalEffect eff : action.getConditionalEffects()) {
 							if (eff.getEffectsPos().get(atom)) {
 								if (!satisfiers.containsKey(action)) {
@@ -105,7 +104,7 @@ public class TrautmannsHeuristic extends Heuristic {
 					}
 				}
 			}
-			
+
 			// Choose actions until all atoms are satisfied
 			goal = new LinkedList<>(satisfied);
 			while (!satisfiers.isEmpty()) {
@@ -123,9 +122,10 @@ public class TrautmannsHeuristic extends Heuristic {
 		}
 		return chosenActions;
 	}
-	
+
 	/**
 	 * Returns the action with the best rating.
+	 * 
 	 * @param satisfiers the map from actions to satisfied atoms
 	 * @return the action with the best rating.
 	 */
@@ -143,11 +143,12 @@ public class TrautmannsHeuristic extends Heuristic {
 		}
 		return bestAction;
 	}
-	
+
 	/**
 	 * Removes the given atoms from the given map
+	 * 
 	 * @param satisfiers the map from actions to satisfied atoms
-	 * @param atoms the list of atoms which shall be removed
+	 * @param atoms      the list of atoms which shall be removed
 	 */
 	private void remove(Map<Action, List<Atom>> satisfiers, List<Atom> atoms) {
 		atoms = new LinkedList<>(atoms);
@@ -161,16 +162,16 @@ public class TrautmannsHeuristic extends Heuristic {
 		for (Action action : delete)
 			satisfiers.remove(action);
 	}
-	
+
 	/**
-	 * Compares the two given actions using the given satisfied atoms.
-	 * Returns a negative integer, zero, or a positive integer as the
-	 * first action is less than, equal to, or greater than the second.
-	 * The action that is regarded as greater is the one that will be
-	 * chosen first.
-	 * @param a1 the first action
+	 * Compares the two given actions using the given satisfied atoms. Returns a
+	 * negative integer, zero, or a positive integer as the first action is less
+	 * than, equal to, or greater than the second. The action that is regarded as
+	 * greater is the one that will be chosen first.
+	 * 
+	 * @param a1     the first action
 	 * @param atoms1 the goal atoms which are satisfied by a1
-	 * @param a2 the second action
+	 * @param a2     the second action
 	 * @param atoms2 the goal atoms which are satisfied by a2
 	 * @return
 	 */

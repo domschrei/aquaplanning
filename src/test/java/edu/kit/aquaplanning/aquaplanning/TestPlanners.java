@@ -28,42 +28,42 @@ import edu.kit.aquaplanning.validation.Validator;
 import junit.framework.TestCase;
 
 public class TestPlanners extends TestCase {
-	
-	public static final String[] DEFAULT_TEST_DOMAINS = {"barman", "rover", "childsnack", 
-			"gripper", "zenotravel", "nurikabe", "petrinetalignment", "settlers", "GED", "floortile"};
-	public static final String[] SAT_TEST_DOMAINS = {"barman", "rover", "childsnack", 
-			"gripper", "zenotravel", "nurikabe", "GED", "floortile"};
-	public static final String[] ADL_TEST_DOMAINS = {"openstacks"};
-	
+
+	public static final String[] DEFAULT_TEST_DOMAINS = { "barman", "rover", "childsnack", "gripper", "zenotravel",
+			"nurikabe", "petrinetalignment", "settlers", "GED", "floortile" };
+	public static final String[] SAT_TEST_DOMAINS = { "barman", "rover", "childsnack", "gripper", "zenotravel",
+			"nurikabe", "GED", "floortile" };
+	public static final String[] ADL_TEST_DOMAINS = { "openstacks" };
+
 	private PlanningProblem pp;
 	private GroundPlanningProblem gpp;
-	
+
 	public void testQuantifications() throws FileNotFoundException, IOException {
 
 		fullTest("testfiles/quantifications/domain.pddl", "testfiles/quantifications/p1.pddl", 1, 1);
 		fullTest("testfiles/quantifications/domain.pddl", "testfiles/quantifications/p2.pddl", 1, 1);
 	}
-	
+
 	public void testDerivedPredicates() throws FileNotFoundException, IOException {
 
 		fullTest("testfiles/derivedPredicates/domain1.pddl", "testfiles/derivedPredicates/p1.pddl", 2, 2);
 		fullTest("testfiles/derivedPredicates/domain2.pddl", "testfiles/derivedPredicates/p2.pddl", 1, 1);
 		fullTest("testfiles/derivedPredicates/domain3.pddl", "testfiles/derivedPredicates/p3.pddl", 1, 1);
 	}
-	
+
 	public void testAdlFeatures() throws FileNotFoundException, IOException {
 
 		Configuration config = new Configuration();
-		
+
 		config.keepDisjunctions = true;
 		fullTest("testfiles/adl/domain1.pddl", "testfiles/adl/p1.pddl", config, 5, 10);
 		fullTest("testfiles/equality/domain1.pddl", "testfiles/equality/p1.pddl", config, 6, 6);
-		
+
 		config.keepDisjunctions = false;
 		config.keepRigidConditions = true;
 		fullTest("testfiles/adl/domain1.pddl", "testfiles/adl/p1.pddl", config, 5, 10);
 		fullTest("testfiles/equality/domain1.pddl", "testfiles/equality/p1.pddl", config, 6, 6);
-		
+
 		config.keepDisjunctions = true;
 		fullTest("testfiles/adl/domain1.pddl", "testfiles/adl/p1.pddl", config, 5, 10);
 		fullTest("testfiles/equality/domain1.pddl", "testfiles/equality/p1.pddl", config, 6, 6);
@@ -71,15 +71,14 @@ public class TestPlanners extends TestCase {
 		fullTest("testfiles/adl/domain2.pddl", "testfiles/adl/p2.pddl", 1, 10);
 		fullTest("testfiles/equality/domain2.pddl", "testfiles/equality/p2.pddl", 1, 1);
 	}
-	
+
 	public void testNumericPlanning() throws FileNotFoundException, IOException {
-		
-		fullTest("testfiles/RPG-with-numeric-fluents/domain.pddl", 
-				 "testfiles/RPG-with-numeric-fluents/p01.pddl");
+
+		fullTest("testfiles/RPG-with-numeric-fluents/domain.pddl", "testfiles/RPG-with-numeric-fluents/p01.pddl");
 	}
-	
+
 	public void testPlanOptimization() throws FileNotFoundException, IOException {
-		
+
 		Configuration config = new Configuration();
 		config.optimizePlan = true;
 		config.revisitStates = true;
@@ -98,21 +97,20 @@ public class TestPlanners extends TestCase {
 		assertTrue(Validator.planIsValid(gpp, newPlan));
 		System.out.println("New plan length: " + newPlan.getLength());
 		System.out.println(newPlan);
-		assertTrue("The plan optimization somehow worsened the plan.",
-				plan.getLength() >= newPlan.getLength());
+		assertTrue("The plan optimization somehow worsened the plan.", plan.getLength() >= newPlan.getLength());
 	}
-	
+
 	public void testGreedyOnDefaultDomains() throws FileNotFoundException, IOException {
-		
+
 		Configuration config = new Configuration();
 		config.plannerType = PlannerType.greedy;
 		for (String domain : DEFAULT_TEST_DOMAINS) {
 			fullTest("testfiles/" + domain + "/domain.pddl", "testfiles/" + domain + "/p01.pddl", config);
 		}
 	}
-	
+
 	public void testDefaultDomains() throws FileNotFoundException, IOException {
-		
+
 		for (String domain : DEFAULT_TEST_DOMAINS) {
 			fullTest("testfiles/" + domain + "/domain.pddl", "testfiles/" + domain + "/p01.pddl");
 		}
@@ -120,27 +118,26 @@ public class TestPlanners extends TestCase {
 			fullTest("testfiles/" + domain + "/domain.pddl", "testfiles/" + domain + "/p01.pddl");
 		}
 	}
-	
+
 	public void testSatPlan() throws FileNotFoundException, IOException {
 		Grounder grounder = new PlanningGraphGrounder(new Configuration());
 		for (String domain : SAT_TEST_DOMAINS) {
 			System.out.println("Testing domain \"" + domain + "\" with SAT.");
-			pp = new ProblemParser().parse("testfiles/" + domain + "/domain.pddl", 
-					"testfiles/" + domain + "/p01.pddl");
+			pp = new ProblemParser().parse("testfiles/" + domain + "/domain.pddl", "testfiles/" + domain + "/p01.pddl");
 			gpp = grounder.ground(pp);
 			testSatPlan(gpp);
 			testHegemannsSatPlan(gpp);
 			testReachabilityPlanner(gpp);
 		}
 	}
-	
+
 	private void testSatPlan(GroundPlanningProblem gpp) {
 		GroundPlanner planner = new SimpleSatPlanner(new Configuration());
 		Plan plan = planner.findPlan(gpp);
 		System.out.println(plan);
 		assertNotNull(plan);
 		assertTrue(plan.getLength() > 0);
-		assertTrue(Validator.planIsValid(gpp, plan));	
+		assertTrue(Validator.planIsValid(gpp, plan));
 	}
 
 	private void testHegemannsSatPlan(GroundPlanningProblem gpp) {
@@ -151,7 +148,7 @@ public class TestPlanners extends TestCase {
 		assertTrue(plan.getLength() > 0);
 		assertTrue(Validator.planIsValid(gpp, plan));
 	}
-	
+
 	private void testReachabilityPlanner(GroundPlanningProblem gpp) {
 		GroundPlanner planner = new SymbolicReachabilityPlanner(new Configuration());
 		Plan plan = planner.findPlan(gpp);
@@ -166,43 +163,41 @@ public class TestPlanners extends TestCase {
 		fullTest("testfiles/RPG/domain.pddl", "testfiles/RPG/p01.pddl", 5, Integer.MAX_VALUE);
 		fullTest("testfiles/TM/domain.pddl", "testfiles/TM/p_det.pddl", 8, 8);
 	}
-	
+
 	private void fullTest(String domainFile, String problemFile) throws FileNotFoundException, IOException {
 		fullTest(domainFile, problemFile, new Configuration());
 	}
-	
-	private void fullTest(String domainFile, String problemFile, Configuration config) 
+
+	private void fullTest(String domainFile, String problemFile, Configuration config)
 			throws FileNotFoundException, IOException {
-		
+
 		fullTest(domainFile, problemFile, config, 1, Integer.MAX_VALUE);
 	}
-	
-	private void fullTest(String domainFile, String problemFile, int minPlanLength, int maxPlanLength) 
+
+	private void fullTest(String domainFile, String problemFile, int minPlanLength, int maxPlanLength)
 			throws FileNotFoundException, IOException {
-		
+
 		fullTest(domainFile, problemFile, new Configuration(), minPlanLength, maxPlanLength);
 	}
-	
-	private void fullTest(String domainFile, String problemFile, Configuration config, int minPlanLength, int maxPlanLength) 
-			throws FileNotFoundException, IOException {
-		
-		System.out.println("Testing domain \"" + domainFile 
-				+ "\", problem \"" + problemFile + "\".");
-		
+
+	private void fullTest(String domainFile, String problemFile, Configuration config, int minPlanLength,
+			int maxPlanLength) throws FileNotFoundException, IOException {
+
+		System.out.println("Testing domain \"" + domainFile + "\", problem \"" + problemFile + "\".");
+
 		System.out.println("Parsing ...");
 		pp = new ProblemParser().parse(domainFile, problemFile);
 		String out = pp.toString();
 		assertTrue("String representation of problem is null", out != null);
-		
+
 		System.out.println("Grounding ...");
 		Grounder grounder = new PlanningGraphGrounder(config);
 		gpp = grounder.ground(pp);
 		out = gpp.toString();
 		assertTrue("String representation of ground problem is null", out != null);
-		
-		assertTrue("No actions have been produced during grounding.",
-				gpp.getActions().size() > 0);
-		
+
+		assertTrue("No actions have been produced during grounding.", gpp.getActions().size() > 0);
+
 		System.out.println("Planning ...");
 		if (config.searchStrategy == null) {
 			config.searchStrategy = Mode.bestFirst;
@@ -210,46 +205,46 @@ public class TestPlanners extends TestCase {
 		}
 		GroundPlanner planner = new ForwardSearchPlanner(config);
 		Plan plan = planner.findPlan(gpp);
-		
+
 		System.out.println(plan);
-		
+
 		assertTrue("No plan has been found.", plan != null);
-		
-		assertTrue("The produced plan of length " + plan.getLength() 
-		+ " is shorter than the minimum valid plan length (" + minPlanLength + ").", 
-		plan.getLength() >= minPlanLength);
-		assertTrue("The produced plan of length " + plan.getLength() 
-		+ " is larger than the maximum valid plan length (" + maxPlanLength + ").", 
-		plan.getLength() <= maxPlanLength);
-		
+
+		assertTrue("The produced plan of length " + plan.getLength()
+				+ " is shorter than the minimum valid plan length (" + minPlanLength + ").",
+				plan.getLength() >= minPlanLength);
+		assertTrue("The produced plan of length " + plan.getLength() + " is larger than the maximum valid plan length ("
+				+ maxPlanLength + ").", plan.getLength() <= maxPlanLength);
+
 		assertTrue("The produced plan is invalid.", Validator.planIsValid(gpp, plan));
-		
+
 		// "Naive", basic configuration
 		Configuration referenceConfig = new Configuration();
 		referenceConfig.keepDisjunctions = true;
 		referenceConfig.keepRigidConditions = true;
-		
+
 		if (!config.equals(referenceConfig)) {
 			System.out.println("Testing against problem with default config ...");
-			
-			// Create a reference ground planning problem under default configuration options
+
+			// Create a reference ground planning problem under default configuration
+			// options
 			PlanningProblem referenceP = new ProblemParser().parse(domainFile, problemFile);
 			GroundPlanningProblem reference = new PlanningGraphGrounder(referenceConfig).ground(referenceP);
-			
+
 			// Write the found plan and re-interpret it based on the reference problem
 			FileWriter w = new FileWriter("_tmp_plan.txt");
 			w.write(plan.toString());
 			w.close();
 			Plan parsedPlan = PlanParser.parsePlan("_tmp_plan.txt", reference);
-			
+
 			// See if the plan is valid under the reference problem, too
-			assertTrue("The produced plan is invalid under the problem that is generated using default settings.", 
+			assertTrue("The produced plan is invalid under the problem that is generated using default settings.",
 					parsedPlan == null || Validator.planIsValid(reference, parsedPlan));
 		}
-		
+
 		System.out.println("Done.\n");
 	}
-	
+
 	@Override
 	protected void tearDown() throws Exception {
 		super.tearDown();
