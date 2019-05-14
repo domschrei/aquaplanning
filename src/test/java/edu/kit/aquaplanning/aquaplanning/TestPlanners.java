@@ -89,6 +89,7 @@ public class TestPlanners extends TestCase {
 		config.domainFile = "testfiles/gripper/domain.pddl";
 		config.problemFile = "testfiles/gripper/p01.pddl";
 		PlanningProblem pp = new ProblemParser().parse(config.domainFile, config.problemFile);
+		GroundPlanningProblem gpp = new PlanningGraphGrounder(config).ground(pp);
 		Plan plan = Planner.getPlanner(pp, config).plan(pp);
 		assertTrue(Validator.planIsValid(gpp, plan));
 		System.out.println("Initial plan length: " + plan.getLength());

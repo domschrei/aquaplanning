@@ -82,7 +82,7 @@ public class Main {
     // config.heuristic = HeuristicType.manhattanGoalDistance;
 
     try {
-      // Step 1: Parsing of domain and problem files
+      // Parsing of domain and problem files
       Logger.log(Logger.INFO, "Parsing ...");
       PlanningProblem p = new ProblemParser().parse(config.domainFile, config.problemFile);
       Logger.log(Logger.INFO_V, p.toString()); // print parsed problem
@@ -94,9 +94,7 @@ public class Main {
       // Solution found?
       if (plan == null) {
         // -- no
-
         Logger.log(Logger.ESSENTIAL, "Could not find any solution.");
-
       } else {
         // -- yes
         Logger.log(Logger.INFO, "Validating ...");
@@ -104,7 +102,6 @@ public class Main {
         Logger.log(Logger.ESSENTIAL, "PLAN " + (isValid ? "VALID" : "INVALID"));
         printPlan(config, plan);
       }
-
     } catch (Exception e) {
       Logger.log(Logger.ERROR, "An internal error occurred.");
       e.printStackTrace();

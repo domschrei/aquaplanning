@@ -19,13 +19,6 @@ public class ValidationPlanner extends GroundPlanner {
     if (Logger.INFO_VV <= config.verbosityLevel) {
       Logger.log(Logger.INFO_VV, problem.toString());
     }
-    Logger.log(Logger.INFO,
-        "Grounding complete. " + problem.getActions().size() + " actions resulted from the grounding.\n");
-    Logger.log(Logger.INFO,
-        "Ground problem contains " + (problem.hasConditionalEffects() ? "some" : "no") + " conditional effects.");
-    Logger.log(Logger.INFO,
-        "Ground problem contains " + (problem.hasComplexConditions() ? "some" : "no") + " complex conditions.");
-    Logger.log(Logger.INFO, "Parsing plan " + config.planFileToValidate + " ...");
     try {
       return PlanParser.parsePlan(config.planFileToValidate, problem);
     } catch (IOException e) {

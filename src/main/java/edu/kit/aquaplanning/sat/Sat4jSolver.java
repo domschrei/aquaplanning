@@ -116,6 +116,9 @@ public class Sat4jSolver extends AbstractSatSolver {
    * @return
    */
   public Boolean isSatisfiable() {
+    if (assumptions == null) {
+      return isSatisfiable(new int[0]);
+    }
     int[] array = assumptions.stream().mapToInt(i -> i).toArray();
     assumptions = null;
     return isSatisfiable(array);
