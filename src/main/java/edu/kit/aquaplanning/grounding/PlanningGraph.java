@@ -3,8 +3,11 @@ package edu.kit.aquaplanning.grounding;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
+import edu.kit.aquaplanning.grounding.datastructures.LiftedState;
+import edu.kit.aquaplanning.grounding.datastructures.OperatorIndex;
 import edu.kit.aquaplanning.model.lifted.Argument;
 import edu.kit.aquaplanning.model.lifted.Operator;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
@@ -26,6 +29,7 @@ public class PlanningGraph {
 	private List<Argument> constants;
 	private List<Set<Condition>> liftedStates;
 	private List<List<Operator>> liftedActions;
+	private List<Operator> filteredActions;
 	
 	private OperatorIndex opIndex;
 	
@@ -302,5 +306,17 @@ public class PlanningGraph {
 			}
 		}
 		return false;
+	}
+
+	public List<Operator> getFilteredActions() {
+		return filteredActions;
+	}
+
+	public void setFilteredActions(List<Operator> filteredActions) {
+		this.filteredActions = filteredActions;
+	}
+	
+	public Map<String, Integer> getArgumentIndices() {
+		return opIndex.getArgumentIds();
 	}
 }

@@ -54,18 +54,25 @@ public class IpasirSatSolver extends AbstractSatSolver {
 		result = IPASIR_RESULT.INDETERMINATE;
 		
 		if (timeoutSeconds >= 0) {
-			Thread thread = new Thread(() -> {
+						
+			Thread mainThread = Thread.currentThread();
+			Thread satThread = new Thread(() -> {
 				result = solver.solve();
+				Logger.log(Logger.INFO_V, "[SAT THREAD] solve() terminated. Interrupting main thread ...");
+				mainThread.interrupt();
 			});
-			thread.start();
+			satThread.start();
 			
 			try {
 				Thread.sleep(timeoutSeconds * 1000);
+				Logger.log(Logger.INFO_V, "[MAIN THREAD] Timeout, interrupting solver thread.");
 				solver.interrupt();
-				thread.join();
+				Thread.sleep(100000); // wait for solver to finish; interrupts this thread
 			} catch (InterruptedException e) {
-				e.printStackTrace();
+				// Interrupted: SAT solver finished
+				Logger.log(Logger.INFO_V, "[MAIN THREAD] SAT process terminated.");
 			}
+			
 		} else {
 			result = solver.solve();
 		}

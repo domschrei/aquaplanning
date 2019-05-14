@@ -63,6 +63,13 @@ public class AtomSet {
 	public boolean get(int id) {
 		return atoms.get(id);
 	}
+
+	public void set(int id) {
+		atoms.set(id);
+	}
+	public void unset(int id) {
+		atoms.set(id, false);
+	}
 	
 	/**
 	 * True iff all atoms which are set in the provided other AtomSet

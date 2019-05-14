@@ -15,17 +15,18 @@ import edu.kit.aquaplanning.model.ground.Goal;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
 import edu.kit.aquaplanning.model.ground.State;
+import edu.kit.aquaplanning.planning.datastructures.FullActionIndex;
 import edu.kit.aquaplanning.util.Logger;
 
 /**
  * A simple forward best-first-search planner. Does not create parallel plans.
  * Creates very long plans which should be shortened by some post-processing.
  */
-public class GreedyBestFirstSearchSolver extends Planner {
+public class GreedyBestFirstSearchPlanner extends GroundPlanner {
 	
 	private Random rnd;
     
-	public GreedyBestFirstSearchSolver(Configuration config) {
+	public GreedyBestFirstSearchPlanner(Configuration config) {
 		super(config);
 		rnd = new Random(config.seed);
 	}
@@ -83,13 +84,18 @@ public class GreedyBestFirstSearchSolver extends Planner {
             }
         }
 
-        // make the plan
-        Plan finalplan = new Plan();
-        for (Action a : plan) {
-        	finalplan.appendAtBack(a);
+        if (goal.isSatisfied(state)) {
+	        // make the plan
+	        Plan finalplan = new Plan();
+	        for (Action a : plan) {
+	        	finalplan.appendAtBack(a);
+	        }
+	        Logger.log(Logger.INFO, String.format("successfull greedy search, visited %d states, did %d iterations, found plan of length %d", visitedStates.size(), iterations, plan.size()));
+	        return finalplan;
+        } else {
+	        Logger.log(Logger.INFO, String.format("failed greedy search, visited %d states, did %d iterations", visitedStates.size(), iterations));
+        	return null;
         }
-        Logger.log(Logger.INFO, String.format("successfull greedy search, visited %d states, did %d iterations, found plan of length %d", visitedStates.size(), iterations, plan.size()));
-        return finalplan;
     }
 	
     private void updateApplicableActionsChanges(Collection<Action> actions, State oldState, State newState, FullActionIndex aindex) {

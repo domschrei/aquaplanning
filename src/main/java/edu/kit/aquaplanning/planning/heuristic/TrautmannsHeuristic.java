@@ -11,8 +11,8 @@ import edu.kit.aquaplanning.model.ground.Atom;
 import edu.kit.aquaplanning.model.ground.ConditionalEffect;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.State;
-import edu.kit.aquaplanning.planning.GroundRelaxedPlanningGraph;
-import edu.kit.aquaplanning.planning.SearchNode;
+import edu.kit.aquaplanning.planning.datastructures.GroundRelaxedPlanningGraph;
+import edu.kit.aquaplanning.planning.datastructures.SearchNode;
 
 /**
  * Fast-forward heuristic using a greedy planning strategy
@@ -35,7 +35,7 @@ public class TrautmannsHeuristic extends Heuristic {
 		}
 		
 		// Traverse deletion-relaxed planning graph and collect states and applicable actions
-		GroundRelaxedPlanningGraph graph = new GroundRelaxedPlanningGraph(state, problem.getActions());
+		GroundRelaxedPlanningGraph graph = new GroundRelaxedPlanningGraph(problem, state, problem.getActions());
 		List<State> states = new LinkedList<State>();
 		List<List<Action>> actions = new LinkedList<List<Action>>();
 		while (graph.hasNextLayer()) {			

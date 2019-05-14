@@ -1,11 +1,9 @@
-package edu.kit.aquaplanning.grounding;
+package edu.kit.aquaplanning.grounding.datastructures;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import edu.kit.aquaplanning.model.ground.Atom;
 import edu.kit.aquaplanning.model.ground.DerivedAtom;
@@ -23,20 +21,16 @@ import edu.kit.aquaplanning.model.lifted.condition.AbstractCondition;
  * numeric atoms and derived atoms.
  */
 public class AtomTable {
-
+	
 	private PlanningProblem problem;
 	
+	//private Map<String, AtomLookup> atoms;
 	private Map<String, Atom> atoms;
 	private Map<Integer, String> atomNames;
 	private Map<String, DerivedAtom> derivedAtoms;
 	private Map<Integer, String> derivedAtomNames;
 	private Map<String, NumericAtom> numericAtoms;
 	private Map<Integer, String> numericAtomNames;
-	
-	private Set<Atom> positiveAtoms;
-	private Set<Atom> negativeAtoms;
-	
-	private boolean consolidated = false;
 	
 	public AtomTable() {
 		atoms = new HashMap<>();
@@ -45,16 +39,10 @@ public class AtomTable {
 		derivedAtomNames = new HashMap<>();
 		numericAtoms = new HashMap<>();
 		numericAtomNames = new HashMap<>();
-		positiveAtoms = new HashSet<>();
-		negativeAtoms = new HashSet<>();
 	}
 	
 	public void setProblem(PlanningProblem problem) {
 		this.problem = problem;
-	}
-	
-	public void consolidate() {
-		consolidated = true;
 	}
 	
 	/**
@@ -73,9 +61,6 @@ public class AtomTable {
 		String atomName = getAtomName(p, constants);
 		// Does the action already exists?
 		if (!atoms.containsKey(atomName)) {
-			if (consolidated) {
-				return null;
-			}
 			// -- no: create new atom
 			int atomId = atoms.size();
 			atoms.put(atomName, new Atom(atomId, atomName, true));
@@ -83,9 +68,6 @@ public class AtomTable {
 		}
 		// Copy of atom
 		Atom atom = atoms.get(atomName).copy();
-		
-		if (negated) positiveAtoms.add(atom);
-		else negativeAtoms.add(atom);
 		
 		atom.set(!negated);
 		return atom;
@@ -110,9 +92,6 @@ public class AtomTable {
 		// Does the action already exists?
 		if (!derivedAtoms.containsKey(atomName)) {
 			// -- no: create new atom
-			if (consolidated) {
-				return null;
-			}
 			Axiom axiom = problem.getDerivedPredicates().get(p.getName());
 			int atomId = - (atoms.size() + derivedAtoms.size());
 			AbstractCondition cond = axiom.getCondition().getConditionBoundToArguments(
@@ -128,9 +107,6 @@ public class AtomTable {
 		
 		String atomName = getAtomName(f);
 		if (!numericAtoms.containsKey(atomName)) {
-			if (consolidated) {
-				return null;
-			}
 			int atomId = numericAtoms.size();
 			NumericAtom atom = new NumericAtom(atomId, atomName, Float.NaN);
 			numericAtoms.put(atomName, atom);
@@ -205,10 +181,6 @@ public class AtomTable {
 			atomNames.add(this.numericAtomNames.get(i));
 		}
 		return atomNames;
-	}
-	
-	public Map<String, Atom> getAtoms() {
-		return atoms;
 	}
 	
 	/**

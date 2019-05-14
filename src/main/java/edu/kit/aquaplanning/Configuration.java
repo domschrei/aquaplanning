@@ -1,6 +1,9 @@
 package edu.kit.aquaplanning;
 
-import edu.kit.aquaplanning.planning.SearchStrategy;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+
+import edu.kit.aquaplanning.planning.datastructures.SearchStrategy;
 import edu.kit.aquaplanning.util.Logger;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -37,6 +40,12 @@ public class Configuration {
 	
 	@Option(paramLabel = "satFile", names = "-SAT", description = "Output SAT formulae to file(s)")
 	public String satFormulaFile;
+	
+	/* Validation */
+	
+	@Option(paramLabel = "planFile", names = {"-?", "--validate"}, description = "Validate the plan "
+			+ "in the provided file (and don't do planning)")
+	public String planFileToValidate;
 	
 	/* Computational bounds */
 	
@@ -80,6 +89,8 @@ public class Configuration {
 	@Option(names = {"-rc", "--remove-cond-effects"}, description = "Compile conditional effects "
 			+ "into multiple STRIPS operators (-rc collides with -kd)")
 	public boolean eliminateConditionalEffects;
+	@Option(names = {"-ko", "--keep-action-costs"}, description = "Do not discard action cost statements")
+	public boolean keepActionCosts;
 	
 	
 	/* 
@@ -87,7 +98,7 @@ public class Configuration {
 	 */
 	
 	public enum PlannerType {
-		forwardSSS, satBased, hegemannSat, parallel, greedy;
+		forwardSSS, satBased, hegemannSat, parallel, greedy, seqpfolio, liftedSat;
 	}
 	@Option(paramLabel = "plannerType", names = {"-p", "--planner"}, 
 			description = "Planner type to use: " + USAGE_OPTIONS_AND_DEFAULT, 
@@ -151,129 +162,57 @@ public class Configuration {
 	public Configuration copy() {
 		
 		Configuration config = new Configuration();
-		config.domainFile = domainFile;
-		config.problemFile = problemFile;
-		config.planOutputFile = planOutputFile;
-		config.maxIterations = maxIterations;
-		config.maxTimeSeconds = maxTimeSeconds;
-		config.numThreads = numThreads;
-		config.keepDisjunctions = keepDisjunctions;
-		config.plannerType = plannerType;
-		config.heuristic = heuristic;
-		config.heuristicWeight = heuristicWeight;
-		config.searchStrategy = searchStrategy;
-		config.revisitStates = revisitStates;
-		config.seed = seed;
-		config.satSolverMode = satSolverMode;
-		config.optimizePlan = optimizePlan;
-		config.startTimeMillis = startTimeMillis;
-		config.searchTimeSeconds = searchTimeSeconds;
+		try {
+			for (Field field : this.getClass().getDeclaredFields()) {
+				if (!Modifier.isFinal(field.getModifiers()))
+					field.set(config, field.get(this));
+			}
+		} catch (IllegalArgumentException | IllegalAccessException e) {
+			e.printStackTrace();
+		}
 		return config;
 	}
 
 	@Override
 	public String toString() {
-		return "Configuration \n domainFile=" + domainFile + "\n problemFile=" + problemFile + "\n planOutputFile="
-				+ planOutputFile + "\n maxIterations=" + maxIterations + "\n maxTimeSeconds=" + maxTimeSeconds
-				+ "\n searchTimeSeconds=" + searchTimeSeconds + "\n numThreads=" + numThreads + "\n verbosityLevel="
-				+ verbosityLevel + "\n keepDisjunctions=" + keepDisjunctions 
-				+ "\n plannerType=" + plannerType + "\n heuristic=" + heuristic + "\n heuristicWeight=" + heuristicWeight
-				+ "\n searchStrategy=" + searchStrategy + "\n revisitStates=" + revisitStates + "\n seed=" + seed
-				+ "\n satSolverMode=" + satSolverMode + "\n optimizePlan=" + optimizePlan 
-				+ "\n startTimeMillis=" + startTimeMillis + "\n";
+		
+		StringBuilder out = new StringBuilder("Configuration {\n");
+		try {
+			for (Field field : this.getClass().getDeclaredFields()) {
+				if (!Modifier.isFinal(field.getModifiers()))
+					out.append("  " + field.getName() + " : " + field.get(this) + "\n");
+			}
+		} catch (IllegalArgumentException | IllegalAccessException e) {
+			e.printStackTrace();
+		}
+		out.append("}");
+		return out.toString();
 	}
 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((domainFile == null) ? 0 : domainFile.hashCode());
-		result = prime * result + (eliminateConditionalEffects ? 1231 : 1237);
-		result = prime * result + ((heuristic == null) ? 0 : heuristic.hashCode());
-		result = prime * result + heuristicWeight;
-		result = prime * result + (keepDisjunctions ? 1231 : 1237);
-		result = prime * result + (keepRigidConditions ? 1231 : 1237);
-		result = prime * result + maxIterations;
-		result = prime * result + maxTimeSeconds;
-		result = prime * result + numThreads;
-		result = prime * result + (optimizePlan ? 1231 : 1237);
-		result = prime * result + ((planOutputFile == null) ? 0 : planOutputFile.hashCode());
-		result = prime * result + ((plannerType == null) ? 0 : plannerType.hashCode());
-		result = prime * result + ((problemFile == null) ? 0 : problemFile.hashCode());
-		result = prime * result + (revisitStates ? 1231 : 1237);
-		result = prime * result + ((satFormulaFile == null) ? 0 : satFormulaFile.hashCode());
-		result = prime * result + ((satSolverMode == null) ? 0 : satSolverMode.hashCode());
-		result = prime * result + ((searchStrategy == null) ? 0 : searchStrategy.hashCode());
-		result = prime * result + searchTimeSeconds;
-		result = prime * result + seed;
-		result = prime * result + (int) (startTimeMillis ^ (startTimeMillis >>> 32));
-		result = prime * result + verbosityLevel;
+		
+		try {
+			for (Field field : this.getClass().getDeclaredFields()) {
+				Object obj = field.get(this);
+				if (!Modifier.isFinal(field.getModifiers()))
+					result = prime * result + (obj == null ? 0 : obj.hashCode());
+			}
+		} catch (IllegalArgumentException | IllegalAccessException e) {
+			e.printStackTrace();
+		}
+		
 		return result;
 	}
 
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
+		if (obj == null) return false;
+		if (!(obj instanceof Configuration)) {
 			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		Configuration other = (Configuration) obj;
-		if (domainFile == null) {
-			if (other.domainFile != null)
-				return false;
-		} else if (!domainFile.equals(other.domainFile))
-			return false;
-		if (eliminateConditionalEffects != other.eliminateConditionalEffects)
-			return false;
-		if (heuristic != other.heuristic)
-			return false;
-		if (heuristicWeight != other.heuristicWeight)
-			return false;
-		if (keepDisjunctions != other.keepDisjunctions)
-			return false;
-		if (keepRigidConditions != other.keepRigidConditions)
-			return false;
-		if (maxIterations != other.maxIterations)
-			return false;
-		if (maxTimeSeconds != other.maxTimeSeconds)
-			return false;
-		if (numThreads != other.numThreads)
-			return false;
-		if (optimizePlan != other.optimizePlan)
-			return false;
-		if (planOutputFile == null) {
-			if (other.planOutputFile != null)
-				return false;
-		} else if (!planOutputFile.equals(other.planOutputFile))
-			return false;
-		if (plannerType != other.plannerType)
-			return false;
-		if (problemFile == null) {
-			if (other.problemFile != null)
-				return false;
-		} else if (!problemFile.equals(other.problemFile))
-			return false;
-		if (revisitStates != other.revisitStates)
-			return false;
-		if (satFormulaFile == null) {
-			if (other.satFormulaFile != null)
-				return false;
-		} else if (!satFormulaFile.equals(other.satFormulaFile))
-			return false;
-		if (satSolverMode != other.satSolverMode)
-			return false;
-		if (searchStrategy != other.searchStrategy)
-			return false;
-		if (searchTimeSeconds != other.searchTimeSeconds)
-			return false;
-		if (seed != other.seed)
-			return false;
-		if (startTimeMillis != other.startTimeMillis)
-			return false;
-		if (verbosityLevel != other.verbosityLevel)
-			return false;
-		return true;
+		}
+		return hashCode() == ((Configuration) obj).hashCode();
 	}
 }

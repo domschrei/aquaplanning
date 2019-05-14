@@ -1,4 +1,4 @@
-package edu.kit.aquaplanning.grounding;
+package edu.kit.aquaplanning.grounding.datastructures;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,10 +24,42 @@ import edu.kit.aquaplanning.model.lifted.condition.ConditionSet;
 public class OperatorIndex {
 
 	/**
+	 * Holds some lookup information about a (lifted) operator.
+	 */
+	private class OperatorInfo {
+		/**
+		 * The instantiated operators so far originating from this operator
+		 */
+		public ArgumentNode instantiatedOperators;
+		/**
+		 * The flat atomic conditions that are contained in the operator
+		 */
+		public List<Condition> conditions;
+		/**
+		 * Maps each argument name to its position in the argument list
+		 */
+		public Map<String, Integer> argPositions;
+		/**
+		 * True iff this.conditions contains any non-negated conditions
+		 */
+		public boolean hasPositiveConditions;
+		
+		public OperatorInfo(PlanningProblem p, Operator op) {
+			this.conditions = new ArrayList<>();
+			this.hasPositiveConditions = getFlatPreconditions(op, this.conditions);
+			this.instantiatedOperators = new ArgumentNode(argumentIds);
+			this.argPositions = new HashMap<>();
+			for (int i = 0; i < op.getArguments().size(); i++) {
+				argPositions.put(op.getArguments().get(i).getName(), i);
+			}
+		}
+	}
+	
+	/**
 	 * Maps the name of an operator to the argument combinations
 	 * with which it has already been instantiated.
 	 */
-	private Map<String, ArgumentNode> instantiatedOperators;
+	private Map<String, OperatorInfo> operatorInformation;
 	/**
 	 * Maps the name of a predicate to operators which may become applicable
 	 * if some condition of that predicate becomes true.
@@ -40,11 +72,6 @@ public class OperatorIndex {
 	 */
 	private List<Operator> operatorsWithoutPreconditions;
 	/**
-	 * Maps the name of an operator to a mapping of (argument names
-	 * to their position within the operator's parameters).
-	 */
-	private Map<String, Map<String, Integer>> operatorArgPositions;
-	/**
 	 * Maps each constant in the problem to a positive ID.
 	 */
 	private Map<String, Integer> argumentIds;
@@ -53,22 +80,25 @@ public class OperatorIndex {
 	
 	public OperatorIndex(PlanningProblem p) {
 		
-		this.instantiatedOperators = new HashMap<>();
+		this.operatorInformation = new HashMap<>();
 		this.posPredicateOperatorMap = new HashMap<>();
 		this.negPredicateOperatorMap = new HashMap<>();
 		this.operatorsWithoutPreconditions = new ArrayList<>();
-		this.operatorArgPositions = new HashMap<>();
 		this.p = p;
+		
+		// Initialize argument IDs
+		argumentIds = new HashMap<>();
+		int id = 1;
+		for (Argument constant : p.getConstants()) {
+			argumentIds.put(constant.getName(), id++);
+		}
 		
 		// For each operator
 		opLoop: for (Operator op : p.getOperators()) {
 			
-			// Process arguments
-			Map<String, Integer> argPositions = new HashMap<>();
-			for (int i = 0; i < op.getArguments().size(); i++) {
-				argPositions.put(op.getArguments().get(i).getName(), i);
-			}
-			operatorArgPositions.put(op.getName(), argPositions);
+			// Initialize and gather some lookup data on the operator
+			OperatorInfo info = new OperatorInfo(p, op);
+			operatorInformation.put(op.getName(), info);
 			
 			// Process preconditions
 			List<AbstractCondition> preconds = new ArrayList<>();
@@ -104,13 +134,6 @@ public class OperatorIndex {
 			// add operator to operators without precondition
 			operatorsWithoutPreconditions.add(op);			
 		}
-		
-		// Initialize argument IDs
-		argumentIds = new HashMap<>();
-		int id = 1;
-		for (Argument constant : p.getConstants()) {
-			argumentIds.put(constant.getName(), id++);
-		}
 	}
 	
 	/**
@@ -134,36 +157,13 @@ public class OperatorIndex {
 		// For each operator which may be instantiateable
 		for (Operator op : filteredOps) {
 			
+			OperatorInfo info = operatorInformation.get(op.getName());
+			
 			List<ArgumentAssignment> partialArgAssignments = new ArrayList<>();
 			partialArgAssignments.add(new ArgumentAssignment(op.getArguments().size()));
 			
-			// Compile preconditions into flat list of (positive or negative) conditions
-			List<Condition> flatPosPreconds = new ArrayList<>();
-			List<Condition> flatPreconds = new ArrayList<>();
-			List<AbstractCondition> preconds = new ArrayList<>();
-			preconds.add(op.getPrecondition());
-			for (int preIdx = 0; preIdx < preconds.size(); preIdx++) {
-				AbstractCondition pre = preconds.get(preIdx);
-				switch (pre.getConditionType()) {
-				case conjunction:
-					preconds.addAll(((ConditionSet) pre).getConditions());
-					break;
-				case atomic:
-					Condition opCond = (Condition) pre;
-					if (opCond.getPredicate().isDerived()) {
-						// Derived predicate -- ignore
-						break;
-					} else {
-						flatPreconds.add(opCond);
-						if (!opCond.isNegated()) {
-							flatPosPreconds.add(opCond);
-						}
-						break;
-					}
-				default:
-					break;				
-				}
-			}
+			// Get flat list of (positive or negative) conditions
+			List<Condition> flatPreconds = info.conditions;
 			
 			// For each parameter position, contains the possible arguments there
 			List<Set<Argument>> eligibleArgumentSets = new ArrayList<>();
@@ -183,7 +183,7 @@ public class OperatorIndex {
 			}
 			
 			// For each of the operator's simple preconditions
-			for (Condition pre : flatPosPreconds) {
+			for (Condition pre : flatPreconds) {
 				
 				if (pre.isNegated())
 					continue;
@@ -246,8 +246,8 @@ public class OperatorIndex {
 				for (Argument constant : p.getConstants()) {
 					if (p.isArgumentOfType(constant, op.getArgumentTypes().get(pos))) {
 						
-						if (flatPosPreconds.isEmpty()) {
-							// No preconditions: any constant of correct type is allowed
+						if (!info.hasPositiveConditions) {
+							// No positive preconditions: any constant of correct type is allowed
 							args.add(constant);
 						} else if (eligibleArgumentSets.get(pos).contains(constant) 
 								&& !ineligibleArgumentSets.get(pos).contains(constant)) {
@@ -267,7 +267,7 @@ public class OperatorIndex {
 			assignmentStack.push(new ArgumentAssignment(op.getArguments().size()));
 			checkedConditionsStack.push(new boolean[flatPreconds.size()]);
 			
-			Map<String, Integer> argIndices = operatorArgPositions.get(op.getName());
+			Map<String, Integer> argIndices = info.argPositions;
 			
 			// Find a suitable order of which arguments to instantiate first
 			int[] orderedArgIndices = new int[op.getArguments().size()];
@@ -298,18 +298,14 @@ public class OperatorIndex {
 					
 					// Has this operator not been instantiated yet?
 					args = partialAssignment.toList();
-					if (!instantiatedOperators.getOrDefault(op.getName(), 
-							new ArgumentNode(argumentIds)).contains(args)) {
+					if (!info.instantiatedOperators.contains(args)) {
 						
 						// Create and add new operator
 						Operator applicableOp = op.getOperatorWithGroundArguments(args);
 						applicableOps.add(applicableOp);
 						
 						// Remember that this operator has been instantiated
-						if (!instantiatedOperators.containsKey(op.getName())) {
-							instantiatedOperators.put(op.getName(), new ArgumentNode(argumentIds));
-						}
-						instantiatedOperators.get(op.getName()).add(args);
+						info.instantiatedOperators.add(args);
 					}
 					
 				} else {
@@ -365,5 +361,38 @@ public class OperatorIndex {
 		}
 		
 		return applicableOps;
+	}
+	
+	private boolean getFlatPreconditions(Operator op, List<Condition> result) {
+		
+		List<AbstractCondition> preconds = new ArrayList<>();
+		preconds.add(op.getPrecondition());
+		boolean hasPositivePreconds = false;
+		for (int preIdx = 0; preIdx < preconds.size(); preIdx++) {
+			AbstractCondition pre = preconds.get(preIdx);
+			switch (pre.getConditionType()) {
+			case conjunction:
+				preconds.addAll(((ConditionSet) pre).getConditions());
+				break;
+			case atomic:
+				Condition opCond = (Condition) pre;
+				if (opCond.getPredicate().isDerived()) {
+					// Derived predicate -- ignore
+					break;
+				} else {
+					result.add(opCond);
+					if (!opCond.isNegated())
+						hasPositivePreconds = true;
+					break;
+				}
+			default:
+				break;				
+			}
+		}
+		return hasPositivePreconds;
+	}
+	
+	public Map<String, Integer> getArgumentIds() {
+		return argumentIds;
 	}
 }

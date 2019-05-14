@@ -1,13 +1,23 @@
-package edu.kit.aquaplanning.planning;
+package edu.kit.aquaplanning.planning.sat;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 import edu.kit.aquaplanning.Configuration;
-import edu.kit.aquaplanning.model.ground.*;
+import edu.kit.aquaplanning.model.ground.Action;
+import edu.kit.aquaplanning.model.ground.Atom;
+import edu.kit.aquaplanning.model.ground.AtomSet;
+import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
+import edu.kit.aquaplanning.model.ground.Plan;
+import edu.kit.aquaplanning.planning.GroundPlanner;
 import edu.kit.aquaplanning.sat.AbstractSatSolver;
 import edu.kit.aquaplanning.util.Logger;
 
-public class HegemannsSatPlanner extends Planner {
+public class HegemannsSatPlanner extends GroundPlanner {
 
     /**
      * A ranking of actions for use in SAT encodings of planning problems
@@ -123,7 +133,7 @@ public class HegemannsSatPlanner extends Planner {
         // Find the plan
         int step = 0;
         while (true) {
-            Logger.log(Logger.INFO_V, "Step " + step + " - " + (int)Math.ceil(timeLimit) + " seconds limit");
+            Logger.log(Logger.INFO_V, "Step " + step + ": " + (int)Math.ceil(timeLimit) + " seconds limit");
 
             for (int i = 0; i < skipLayers; i++) {
                 addRecurrentClauses(solver, step);

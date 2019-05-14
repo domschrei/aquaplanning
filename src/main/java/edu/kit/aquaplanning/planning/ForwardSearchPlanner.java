@@ -6,6 +6,10 @@ import edu.kit.aquaplanning.model.ground.Goal;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
 import edu.kit.aquaplanning.model.ground.State;
+import edu.kit.aquaplanning.planning.datastructures.ActionIndex;
+import edu.kit.aquaplanning.planning.datastructures.SearchNode;
+import edu.kit.aquaplanning.planning.datastructures.SearchQueue;
+import edu.kit.aquaplanning.planning.datastructures.SearchStrategy;
 import edu.kit.aquaplanning.planning.heuristic.Heuristic;
 import edu.kit.aquaplanning.util.Logger;
 
@@ -18,7 +22,7 @@ import edu.kit.aquaplanning.util.Logger;
  * 
  * @author Dominik Schreiber
  */
-public class ForwardSearchPlanner extends Planner {
+public class ForwardSearchPlanner extends GroundPlanner {
 	
 	public ForwardSearchPlanner(Configuration config) {
 		super(config);

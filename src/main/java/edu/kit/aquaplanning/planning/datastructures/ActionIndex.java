@@ -1,4 +1,4 @@
-package edu.kit.aquaplanning.planning;
+package edu.kit.aquaplanning.planning.datastructures;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -17,6 +17,8 @@ public class ActionIndex {
 	protected Map<Integer, List<Action>> atomActionMap;
 	protected List<Action> noPrecondActions;
 	
+	protected boolean relaxed;
+	
 	protected void addAction(int index, Action action) {
 		if (!atomActionMap.containsKey(index)) {
 			atomActionMap.put(index, new ArrayList<>());
@@ -24,23 +26,36 @@ public class ActionIndex {
 		atomActionMap.get(index).add(action);
 	}
 	
-	protected ActionIndex() {
+	protected ActionIndex() {}
+	protected ActionIndex(boolean relaxed) {
+		this.relaxed = relaxed;
+	}
+	
+	public ActionIndex(GroundPlanningProblem gpp, boolean relaxed) {
+		init(gpp, relaxed);
 	}
 	
 	public ActionIndex(GroundPlanningProblem gpp) {
+		init(gpp, false);
+	}
+	
+	public void init(GroundPlanningProblem gpp, boolean relaxed) {
+		this.relaxed = relaxed;
 		atomActionMap = new HashMap<>();
 		noPrecondActions = new ArrayList<>();
 		for (Action a : gpp.getActions()) {
 			int posx = a.getPreconditionsPos().getFirstTrueAtom();
 			if (posx >= 0) {
 				addAction(posx+1, a);
-			} else {
+			} else if (!relaxed) {
 				int negx = a.getPreconditionsNeg().getFirstTrueAtom();
 				if (negx >= 0) {
 					addAction(-negx-1, a);
 				} else {
 					noPrecondActions.add(a);
 				}
+			} else {
+				noPrecondActions.add(a);
 			}
 		}
 	}
@@ -52,7 +67,10 @@ public class ActionIndex {
 		// Add actions without any (simple) preconditions
 		for (Action candidate : noPrecondActions) {
 			// Still check applicability (derived predicates etc.)
-			if (candidate.isApplicable(state)) {				
+			if (!relaxed && candidate.isApplicable(state)) {				
+				result.add(candidate);
+			}
+			if (relaxed && candidate.isApplicableRelaxed(state)) {				
 				result.add(candidate);
 			}
 		}
@@ -65,7 +83,10 @@ public class ActionIndex {
 				continue;
 			}
 			for (Action candidate : atomActionMap.get(index)) {
-				if (candidate.isApplicable(state)) {
+				if (!relaxed && candidate.isApplicable(state)) {
+					result.add(candidate);
+				}
+				if (relaxed && candidate.isApplicableRelaxed(state)) {
 					result.add(candidate);
 				}
 			}

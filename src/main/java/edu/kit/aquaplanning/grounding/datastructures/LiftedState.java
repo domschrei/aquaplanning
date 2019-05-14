@@ -1,4 +1,4 @@
-package edu.kit.aquaplanning.grounding;
+package edu.kit.aquaplanning.grounding.datastructures;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -127,5 +127,9 @@ public class LiftedState {
 			out += "¬" + conds.toString();
 		}
 		return out;
+	}
+	
+	public Map<String, Integer> getArgumentIds() {
+		return argumentIds;
 	}
 }

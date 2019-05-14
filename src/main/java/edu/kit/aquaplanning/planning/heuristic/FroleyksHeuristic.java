@@ -5,8 +5,8 @@ import java.util.ArrayList;
 import edu.kit.aquaplanning.model.ground.Action;
 import edu.kit.aquaplanning.model.ground.Plan;
 import edu.kit.aquaplanning.model.ground.State;
-import edu.kit.aquaplanning.planning.GroundRelaxedPlanningGraph;
-import edu.kit.aquaplanning.planning.SearchNode;
+import edu.kit.aquaplanning.planning.datastructures.GroundRelaxedPlanningGraph;
+import edu.kit.aquaplanning.planning.datastructures.SearchNode;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 
 /**
@@ -33,7 +33,7 @@ public class FroleyksHeuristic extends Heuristic {
 		// Traverse deletion-relaxed planning graph
 		List<State> states = new ArrayList<>();
 		states.add(state);
-		GroundRelaxedPlanningGraph graph = new GroundRelaxedPlanningGraph(state, groundProblem.getActions());
+		GroundRelaxedPlanningGraph graph = new GroundRelaxedPlanningGraph(groundProblem, state, groundProblem.getActions());
 		State g_hat = new State(groundProblem.getGoal().getAtoms());
 		while (graph.hasNextLayer()) {
 			State nextState = graph.computeNextLayer();

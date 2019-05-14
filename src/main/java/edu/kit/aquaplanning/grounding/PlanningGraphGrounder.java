@@ -3,9 +3,11 @@ package edu.kit.aquaplanning.grounding;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import edu.kit.aquaplanning.Configuration;
+import edu.kit.aquaplanning.grounding.datastructures.LiftedState;
 import edu.kit.aquaplanning.model.ground.Action;
 import edu.kit.aquaplanning.model.ground.Goal;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
@@ -24,6 +26,7 @@ import edu.kit.aquaplanning.model.lifted.condition.Condition;
 public class PlanningGraphGrounder extends BaseGrounder {
 	
 	private PlanningGraph graph;
+	private boolean reduceAtoms;
 	
 	public PlanningGraphGrounder(Configuration config) {
 		super(config);
@@ -46,7 +49,7 @@ public class PlanningGraphGrounder extends BaseGrounder {
 		constants.sort((c1, c2) -> c1.getName().compareTo(c2.getName()));
 		
 		// Will rigid predicates be removed from the problem?
-		boolean reduceAtoms = !config.keepRigidConditions && !config.keepDisjunctions;
+		reduceAtoms = !config.keepRigidConditions && !config.keepDisjunctions;
 		if (reduceAtoms && !problem.getDerivedPredicates().isEmpty()) {
 			// TODO properly handle it by also simplifying the DPs' semantics
 			Logger.log(Logger.WARN, "Derived predicates are in the problem: "
@@ -82,6 +85,7 @@ public class PlanningGraphGrounder extends BaseGrounder {
 		Logger.log(Logger.INFO_V, "Generating ground and simplified action objects ...");
 		Set<Action> actionSet = new HashSet<>();
 		LiftedState finalState = getState();
+		List<Operator> filteredActions = new ArrayList<>();
 		for (Operator op : graph.getLiftedActions()) {
 			if (reduceAtoms) {
 				op = simplifyRigidConditions(op, finalState);
@@ -90,8 +94,10 @@ public class PlanningGraphGrounder extends BaseGrounder {
 			if (op != null) {
 				// -- no
 				actionSet.add(getAction(op));
+				filteredActions.add(op);
 			}
 		}
+		graph.setFilteredActions(filteredActions);
 		actions = new ArrayList<>();
 		actions.addAll(actionSet);
 		actions.sort((a1,a2) -> a1.getName().compareTo(a2.getName()));
@@ -115,7 +121,11 @@ public class PlanningGraphGrounder extends BaseGrounder {
 		return new LiftedState(graph.getLiftedState(graph.getCurrentLayer()));
 	}
 	
-	public List<Operator> getLiftedActions() {
-		return graph.getLiftedActions();
+	public List<Operator> getFilteredActions() {
+		return graph.getFilteredActions();
+	}
+	
+	public Map<String, Integer> getArgumentIndices() {
+		return graph.getArgumentIndices();
 	}
 }

@@ -124,7 +124,7 @@ public class Reduction {
 	}
 	
 	public Precondition getConstraint(int position) {
-		return constraints[position];
+		return position >= constraints.length ? null : constraints[position];
 	}
 	
 	public Method getBaseMethod() {

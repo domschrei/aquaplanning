@@ -120,7 +120,7 @@ public class Ipasir4j {
 	 * Stop the solver, causes 'solve' to return with INDETERMINATE
 	 */
 	public void interrupt() {
-		//Ipasir4jNative.interrupt(solverId);
+		Ipasir4jNative.interrupt(solverId);
 	}
 
 }

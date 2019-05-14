@@ -83,6 +83,7 @@ import edu.kit.aquaplanning.parsing.PddlHtnParser.TaskContext;
 import edu.kit.aquaplanning.parsing.PddlHtnParser.TypedNameListContext;
 import edu.kit.aquaplanning.parsing.PddlHtnParser.TypedVariableListContext;
 import edu.kit.aquaplanning.parsing.PddlHtnParser.TypesDefContext;
+import edu.kit.aquaplanning.util.Logger;
 
 @SuppressWarnings("deprecation")
 public class ProblemParser extends PddlHtnBaseListener {
@@ -154,6 +155,8 @@ public class ProblemParser extends PddlHtnBaseListener {
 		supertype = new Type("_root_type"); // virtual supertype
 		types.put("_root_type",  supertype);
 		
+		Logger.log(Logger.INFO_V, "Parsing domain file ...");
+
 		// Get domain
         ANTLRInputStream in = new ANTLRInputStream(new FileInputStream(domainFile));
         PddlHtnLexer lexer = new PddlHtnLexer(in);
@@ -162,10 +165,14 @@ public class ProblemParser extends PddlHtnBaseListener {
         parser.setBuildParseTree(true);
         PddlDocContext ctx = parser.pddlDoc();
         
+        Logger.log(Logger.INFO_V, "Traversing domain AST ...");
+        
         // Parse domain
         parsedFile = domainFile;
         ParseTreeWalker walker = new ParseTreeWalker();
         walker.walk(this, ctx);
+        
+        Logger.log(Logger.INFO_V, "Parsing problem file ...");
         
         // Get problem
         in = new ANTLRInputStream(new FileInputStream(problemFile));
@@ -175,10 +182,14 @@ public class ProblemParser extends PddlHtnBaseListener {
         parser.setBuildParseTree(true);
         ctx = parser.pddlDoc();
         
+        Logger.log(Logger.INFO_V, "Traversing problem AST ...");
+        
         // Parse problem
         parsedFile = problemFile;
         walker = new ParseTreeWalker();
         walker.walk(this, ctx);
+        
+        Logger.log(Logger.INFO_V, "Creating lifted planning problem instance ...");
         
         // Create object to return
         PlanningProblem problem;
@@ -513,22 +524,23 @@ public class ProblemParser extends PddlHtnBaseListener {
 				return;
 			} 		
 			
+			List<Argument> dpArgs = new ArrayList<>();
 			for (int childIdx = ctx.children.size()-1; childIdx >= 0; childIdx--) {
 				if (ctx.children.get(childIdx).getChildCount() > 1) {
 					// Typed definition
 					break;
 				}
-				
 				// We don't know the type of this argument, 
 				// so we assume the supertype
 				if (context == ParseContext.predicateDefs) {						
 					predicate.addArgumentType(supertype);
 				} else if (context == ParseContext.derivedPredicateDef) {
-
 					String varName = ctx.children.get(childIdx).getText().toLowerCase();
-					derivedPredicates.get(predicate.getName()).addArgument(new Argument(varName, supertype));
+					dpArgs.add(0, new Argument(varName, supertype));
 				}
 			}
+			// Add arguments to derived predicate in correct order
+			for (Argument arg : dpArgs) derivedPredicates.get(predicate.getName()).addArgument(arg);
 			
 		} else if (context == ParseContext.actionDef || context == ParseContext.methodDef) {
 			// Action or method parameter definition
@@ -538,8 +550,8 @@ public class ProblemParser extends PddlHtnBaseListener {
 			}
 			
 			// Read variables from left to right until a SingleTypeVarList is hit
+			List<Argument> argsBackwards = new ArrayList<>();
 			for (int childIdx = ctx.children.size()-1; childIdx >= 0; childIdx--) {
-				
 				if (ctx.children.get(childIdx).getChildCount() > 1) {
 					// A typed definition begins here
 					break;
@@ -548,14 +560,18 @@ public class ProblemParser extends PddlHtnBaseListener {
 					String varName = ctx.children.get(childIdx).getText().toLowerCase();
 					Type type = supertype;
 					Argument arg = new Argument(varName, type);
-					if (context == ParseContext.methodDef) {
-						currentMethod().addExplicitArgument(arg);
-					} else {						
-						currentOperator().addArgument(arg);
-					}
+					argsBackwards.add(arg);
 				}
 			}
-			
+			// Now append the arguments to the current object in the correct order
+			for (int i = argsBackwards.size()-1; i >= 0; i--) {
+				Argument arg = argsBackwards.get(i);
+				if (context == ParseContext.methodDef) {
+					currentMethod().addExplicitArgument(arg);
+				} else {						
+					currentOperator().addArgument(arg);
+				}
+			}
 		}
 	}
 	
@@ -635,7 +651,7 @@ public class ProblemParser extends PddlHtnBaseListener {
 	
 	
 	@Override
-	public void enterMethodDef(MethodDefContext ctx) {
+	public void enterMethodDef(MethodDefContext ctx) {		
 		this.context = ParseContext.methodDef;
 		String methodName = ctx.children.get(3).getText().toLowerCase();
 		methodNames.add(methodName);
@@ -715,6 +731,14 @@ public class ProblemParser extends PddlHtnBaseListener {
 					ctx.children.get(3).getText().toLowerCase());
 		}
 		method.addConstraint(constraint);
+	}
+	
+	@Override
+	public void exitConstraint(ConstraintContext ctx) {
+		// Simplify constraint
+		List<Constraint> constraints = currentMethod().getConstraints();
+		AbstractCondition c = constraints.get(constraints.size()-1).getCondition();
+		constraints.get(constraints.size()-1).setCondition(c.getDNF());
 	}
 	
 	

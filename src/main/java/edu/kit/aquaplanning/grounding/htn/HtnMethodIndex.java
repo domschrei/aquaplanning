@@ -1,4 +1,4 @@
-package edu.kit.aquaplanning.grounding;
+package edu.kit.aquaplanning.grounding.htn;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -7,9 +7,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
-import java.util.function.Function;
 
-import edu.kit.aquaplanning.model.ground.Precondition;
+import edu.kit.aquaplanning.grounding.PlanningGraphGrounder;
+import edu.kit.aquaplanning.grounding.datastructures.ArgumentAssignment;
+import edu.kit.aquaplanning.grounding.datastructures.LiftedState;
 import edu.kit.aquaplanning.model.ground.htn.Reduction;
 import edu.kit.aquaplanning.model.lifted.Argument;
 import edu.kit.aquaplanning.model.lifted.Operator;
@@ -24,6 +25,7 @@ import edu.kit.aquaplanning.model.lifted.htn.Task;
 public class HtnMethodIndex {
 
 	private PlanningProblem p;
+	private PlanningGraphGrounder grounder;
 	
 	private Set<String> primitiveTaskNames;
 	private Set<String> actionStrings;
@@ -40,9 +42,11 @@ public class HtnMethodIndex {
 		}
 	}
 	
-	public HtnMethodIndex(PlanningProblem p, LiftedState convergedState, List<Operator> instantiatedOperators) {
+	public HtnMethodIndex(PlanningGraphGrounder grounder, 
+			LiftedState convergedState, List<Operator> instantiatedOperators) {
 		
-		this.p = p;
+		this.grounder = grounder;
+		this.p = grounder.getProblem();
 		this.primitiveTaskNames = new HashSet<>();
 		this.actionStrings = new HashSet<>();
 		
@@ -55,16 +59,16 @@ public class HtnMethodIndex {
 		this.reductions = new HashMap<>();
 	}
 	
-	public List<Reduction> getRelevantReductions(List<Method> methods, Function<AbstractCondition, Precondition> conditionGrounder) {
+	public List<Reduction> getRelevantReductions(List<Method> methods) {
 		
 		List<Reduction> reductions = new ArrayList<>();
 		for (Method m : methods) {
-			reductions.addAll(getRelevantReductions(m, conditionGrounder));
+			reductions.addAll(getRelevantReductions(m));
 		}
 		return reductions;
 	}
 	
-	public List<Reduction> getRelevantReductions(Method m, Function<AbstractCondition, Precondition> conditionGrounder) {
+	public List<Reduction> getRelevantReductions(Method m) {
 		
 		List<Reduction> newReductions = new ArrayList<>();
 		
@@ -75,9 +79,21 @@ public class HtnMethodIndex {
 			return new ArrayList<>();
 		}
 		if (m.getImplicitArguments().size() == 0) {
-			newReductions.add(new Reduction(m, conditionGrounder));
-			reductions.put(m, newReductions);
-			return newReductions;
+			m = simplify(m);
+			if (m != null) {				
+				newReductions.add(new Reduction(m, c -> grounder.toPrecondition(c, false)));
+				reductions.put(m, newReductions);
+
+				m = simplify(m);
+				if (m != null) {
+					List<Reduction> simplifiedList = new ArrayList<>();
+					simplifiedList.add(new Reduction(m, c -> grounder.toPrecondition(c, false)));
+					return simplifiedList;
+				} else {
+					return new ArrayList<>();
+				}
+			}
+			
 		}
 		
 		List<List<Argument>> eligibleConstants = new ArrayList<>();
@@ -99,14 +115,14 @@ public class HtnMethodIndex {
 		
 		List<Argument> sortedArgs = new ArrayList<>();
 		sortedArgs.addAll(m.getImplicitArguments());
-		Map<Argument, Integer> argOccurrences = getArgumentOccurrences(m);
+		Map<Argument, Float> argOccurrences = getArgumentOccurrences(m);
 		int[] orderedArgIndices = new int[m.getImplicitArguments().size()];
 		sortedArgs.sort((arg1, arg2) -> {
 			// Sort arguments in decreasing order by the amount 
 			// of occurrences in constraints and subtasks
-			int occ1 = argOccurrences.get(arg1);
-			int occ2 = argOccurrences.get(arg2);
-			return occ2 - occ1;
+			float occ1 = argOccurrences.get(arg1);
+			float occ2 = argOccurrences.get(arg2);
+			return (int) (1000 * (occ2 - occ1));
 		});
 		int idx = 0;
 		for (Argument arg : sortedArgs) {
@@ -127,10 +143,13 @@ public class HtnMethodIndex {
 			if (assignment.getDecisionLevel() == implicitArgs.size()) {
 				
 				// Finished
-				try {
-					newReductions.add(new Reduction(method, conditionGrounder));
-				} catch (IllegalArgumentException e) {
-					continue;
+				method = simplify(method);
+				if (method != null) {
+					try {
+						newReductions.add(new Reduction(method, c -> grounder.toPrecondition(c, false)));
+					} catch (IllegalArgumentException e) {
+						continue;
+					}
 				}
 				
 			} else {
@@ -158,17 +177,18 @@ public class HtnMethodIndex {
 		Method newMethod = pgm.method.copy();
 		newMethod.setImplicitArgument(refArg, argVal);
 		
-		boolean consistent = checkConsistency(newMethod);
-		if (consistent) {
+		if (checkConsistency(newMethod)) {
 			return new PartiallyGroundMethod(newAssignment, newMethod);
-		} else return null;
+		} else {
+			return null;
+		}
 	}
 	
-	private boolean checkConsistency(Method newMethod) {
-			
+	private boolean checkConsistency(Method method) {
+		
 		// If the method contains any primitive tasks,
 		// see if the respective action occurs in the problem
-		for (Task t : newMethod.getSubtasks()) {
+		for (Task t : method.getSubtasks()) {
 			if (primitiveTaskNames.contains(t.getName())) {
 				// Subtask is primitive
 				if (t.getArguments().stream().allMatch(arg -> arg.isConstant())) {
@@ -183,7 +203,7 @@ public class HtnMethodIndex {
 		
 		// If the method contains any constraints,
 		// see if all pos. conditions exist in the lifted superstate
-		for (Constraint c : newMethod.getConstraints()) {
+		for (Constraint c : method.getConstraints()) {
 			AbstractCondition cond = c.getCondition();
 			List<AbstractCondition> conditions = new ArrayList<>();
 			conditions.add(cond);
@@ -208,22 +228,44 @@ public class HtnMethodIndex {
 				}
 			}
 		}
-		
+				
 		return true;
 	}
 	
-	private Map<Argument, Integer> getArgumentOccurrences(Method m) {
+	public Method simplify(Method method) {
 		
-		Map<Argument, Integer> argOccurrences = new HashMap<>();
+		if (!checkConsistency(method)) {
+			return null;
+		}
+		Method newMethod = method.copy();
+		newMethod.getConstraints().clear();
+		for (Constraint c : method.getConstraints()) {
+			AbstractCondition simplified = grounder.simplifyRigidConditions(c.getCondition(), convergedState, "method-constr");
+			if (simplified == null) {
+				// Condition is not satisfiable: method is invalid
+				return null;
+			}
+			
+			Constraint newC = c.copy();
+			newC.setCondition(simplified);
+			newMethod.addConstraint(newC);
+		}
+		return newMethod;
+	}
+	
+	private Map<Argument, Float> getArgumentOccurrences(Method m) {
+		
+		Map<Argument, Float> argOccurrences = new HashMap<>();
 		for (Argument arg : m.getExplicitArguments())
-			argOccurrences.put(arg, 0);
+			argOccurrences.put(arg, 0f);
 		for (Argument arg : m.getImplicitArguments())
-			argOccurrences.put(arg, 0);
+			argOccurrences.put(arg, 0f);
 		
 		for (Task t : m.getSubtasks()) {
 			if (primitiveTaskNames.contains(t.getName())) {
+				// Primitive task
 				for (Argument arg : t.getArguments()) {
-					argOccurrences.put(arg, argOccurrences.getOrDefault(arg,0)+1);
+					argOccurrences.put(arg, argOccurrences.getOrDefault(arg,0f)+1f/t.getArguments().size());
 				}
 			}
 		}
@@ -237,7 +279,7 @@ public class HtnMethodIndex {
 				case atomic:
 					Condition atom = (Condition) cond;
 					for (Argument arg : atom.getArguments()) {
-						argOccurrences.put(arg, argOccurrences.getOrDefault(arg,0)+1);
+						argOccurrences.put(arg, argOccurrences.getOrDefault(arg,0f)+1f/atom.getNumArgs());
 					}
 					break;
 				case conjunction:

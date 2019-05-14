@@ -18,13 +18,14 @@ import edu.kit.aquaplanning.optimization.SimplePlanOptimizer;
 import edu.kit.aquaplanning.parsing.PlanParser;
 import edu.kit.aquaplanning.parsing.ProblemParser;
 import edu.kit.aquaplanning.planning.ForwardSearchPlanner;
-import edu.kit.aquaplanning.planning.HegemannsSatPlanner;
+import edu.kit.aquaplanning.planning.GroundPlanner;
 import edu.kit.aquaplanning.planning.Planner;
-import edu.kit.aquaplanning.planning.SimpleSatPlanner;
-import edu.kit.aquaplanning.planning.SymbolicReachabilityPlanner;
-import edu.kit.aquaplanning.planning.SearchStrategy.Mode;
+import edu.kit.aquaplanning.planning.datastructures.SearchStrategy.Mode;
+import edu.kit.aquaplanning.planning.sat.HegemannsSatPlanner;
+import edu.kit.aquaplanning.planning.sat.SimpleSatPlanner;
+import edu.kit.aquaplanning.planning.sat.SymbolicReachabilityPlanner;
 import edu.kit.aquaplanning.validation.Validator;
-import junit.framework.*;
+import junit.framework.TestCase;
 
 public class TestPlanners extends TestCase {
 	
@@ -89,7 +90,7 @@ public class TestPlanners extends TestCase {
 		config.problemFile = "testfiles/gripper/p01.pddl";
 		PlanningProblem pp = new ProblemParser().parse(config.domainFile, config.problemFile);
 		GroundPlanningProblem gpp = new PlanningGraphGrounder(config).ground(pp);
-		Plan plan = Planner.getPlanner(config).findPlan(gpp);
+		Plan plan = Planner.getPlanner(pp, config).plan(pp);
 		assertTrue(Validator.planIsValid(gpp, plan));
 		System.out.println("Initial plan length: " + plan.getLength());
 		System.out.println(plan);
@@ -101,8 +102,17 @@ public class TestPlanners extends TestCase {
 				plan.getLength() >= newPlan.getLength());
 	}
 	
+	public void testGreedyOnDefaultDomains() throws FileNotFoundException, IOException {
+		
+		Configuration config = new Configuration();
+		config.plannerType = PlannerType.greedy;
+		for (String domain : DEFAULT_TEST_DOMAINS) {
+			fullTest("testfiles/" + domain + "/domain.pddl", "testfiles/" + domain + "/p01.pddl", config);
+		}
+	}
+	
 	public void testDefaultDomains() throws FileNotFoundException, IOException {
-
+		
 		for (String domain : DEFAULT_TEST_DOMAINS) {
 			fullTest("testfiles/" + domain + "/domain.pddl", "testfiles/" + domain + "/p01.pddl");
 		}
@@ -125,7 +135,7 @@ public class TestPlanners extends TestCase {
 	}
 	
 	private void testSatPlan(GroundPlanningProblem gpp) {
-		Planner planner = new SimpleSatPlanner(new Configuration());
+		GroundPlanner planner = new SimpleSatPlanner(new Configuration());
 		Plan plan = planner.findPlan(gpp);
 		System.out.println(plan);
 		assertNotNull(plan);
@@ -134,7 +144,7 @@ public class TestPlanners extends TestCase {
 	}
 
 	private void testHegemannsSatPlan(GroundPlanningProblem gpp) {
-		Planner planner = new HegemannsSatPlanner(new Configuration());
+		GroundPlanner planner = new HegemannsSatPlanner(new Configuration());
 		Plan plan = planner.findPlan(gpp);
 		System.out.println(plan);
 		assertNotNull(plan);
@@ -143,7 +153,7 @@ public class TestPlanners extends TestCase {
 	}
 	
 	private void testReachabilityPlanner(GroundPlanningProblem gpp) {
-		Planner planner = new SymbolicReachabilityPlanner(new Configuration());
+		GroundPlanner planner = new SymbolicReachabilityPlanner(new Configuration());
 		Plan plan = planner.findPlan(gpp);
 		assertNotNull(plan);
 		System.out.println(plan);
@@ -198,7 +208,7 @@ public class TestPlanners extends TestCase {
 			config.searchStrategy = Mode.bestFirst;
 			config.heuristic = HeuristicType.relaxedPathLength;
 		}
-		Planner planner = new ForwardSearchPlanner(config);
+		GroundPlanner planner = new ForwardSearchPlanner(config);
 		Plan plan = planner.findPlan(gpp);
 		
 		System.out.println(plan);
@@ -234,7 +244,7 @@ public class TestPlanners extends TestCase {
 			
 			// See if the plan is valid under the reference problem, too
 			assertTrue("The produced plan is invalid under the problem that is generated using default settings.", 
-					Validator.planIsValid(reference, parsedPlan));
+					parsedPlan == null || Validator.planIsValid(reference, parsedPlan));
 		}
 		
 		System.out.println("Done.\n");

@@ -123,6 +123,12 @@ public class HierarchyLayer {
 		return Math.max(Math.max(reductions.size(), actions.size()), facts.size());
 	}
 
+	public boolean contains(int pos, Reduction r) {
+		return pos >= 0 && pos < reductionVars.size() && reductionVars.get(pos).containsKey(r);
+	}
+	public boolean contains(int pos, Action a) {
+		return pos >= 0 && pos < actionVars.size() && actionVars.get(pos).containsKey(a);
+	}
 	public int getReductionVariable(int pos, Reduction r) {
 		if (pos >= reductionVars.size() || !reductionVars.get(pos).containsKey(r)) error();
 		return reductionVars.get(pos).get(r);
@@ -168,7 +174,7 @@ public class HierarchyLayer {
 			out += (pos + " : ");
 			int i = 0;
 			for (Reduction r : getReductions(pos)) {
-				out += (r.getBaseMethod().getTaskString() + " , ");
+				out += (r.getBaseMethod().toTaskWithImplicitArgs().toTaskString() + " , ");
 				i++;
 				if (i == 5) {
 					out += "... (" + getReductions(pos).size() + "), ";

@@ -10,8 +10,8 @@ import edu.kit.aquaplanning.model.ground.Atom;
 import edu.kit.aquaplanning.model.ground.Action;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.State;
-import edu.kit.aquaplanning.planning.GroundRelaxedPlanningGraph;
-import edu.kit.aquaplanning.planning.SearchNode;
+import edu.kit.aquaplanning.planning.datastructures.GroundRelaxedPlanningGraph;
+import edu.kit.aquaplanning.planning.datastructures.SearchNode;
 import edu.kit.aquaplanning.model.ground.AtomSet;
 
 public class WilliamsHeuristic extends Heuristic {
@@ -86,7 +86,7 @@ public class WilliamsHeuristic extends Heuristic {
         }
 
         // Traverse deletion-relaxed planning graph
-        GroundRelaxedPlanningGraph graph = new GroundRelaxedPlanningGraph(state, problem.getActions());
+        GroundRelaxedPlanningGraph graph = new GroundRelaxedPlanningGraph(problem, state, problem.getActions());
         Deque<State> states = new ArrayDeque<State>();
         states.addFirst(state);
         while (graph.hasNextLayer()) {

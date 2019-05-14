@@ -371,87 +371,99 @@ public class Preprocessor {
 			return;
 		}
 		
-		// Compute all functions which never change
-		Set<Function> rigidFunctions = getRigidFunctions();
-		
-		// For each operator:
 		Function totalCost = functions.get("total-cost");
 		List<Integer> costs = new ArrayList<>();
-		boolean error = false;
-		for (Operator op : problem.getOperators()) {
-			int cost = 0;
+
+		// Should action costs definitions be considered overall?
+		if (!config.keepActionCosts) {
+			Logger.log(Logger.INFO, "Clearing all action cost definitions from the problem.");
 			
-			// Check precondition
-			AbstractCondition precond = op.getPrecondition();
-			if (precond.toString().contains("(total-cost)")) {
-				Logger.log(Logger.WARN, "(total-cost) is used in an operator precondition.");
-				error = true;
-				break;
-			}
+		} else {
+			// Check if action costs can be extracted into flat integers per operator
 			
-			// Traverse effect, and extract cost increases
-			List<AbstractCondition> effects = new ArrayList<>();
-			effects.add(op.getEffect());
-			while (!effects.isEmpty()) {
-				AbstractCondition c = effects.remove(0);
+			// Compute all functions which never change
+			Set<Function> rigidFunctions = getRigidFunctions();
+			
+			// For each operator:
+			boolean error = false;
+			for (Operator op : problem.getOperators()) {
+				int cost = 0;
 				
-				if (c.getConditionType() == ConditionType.numericEffect) {
-					NumericEffect eff = (NumericEffect) c;
-					if (eff.getFunction().equals(totalCost)) {
-						if (eff.getType() != Type.increase) {
-							Logger.log(Logger.WARN, "(total-cost) function is defined "
-									+ "using operators other than \"increase\".");
-							error = true;
-						} else if (eff.getExpression().getType() == TermType.constant) {
-							cost += eff.getExpression().getValue();
-						} else {
-							// Allow numeric update if expression is effectively constant,
-							// i.e. only rigid functions are used
-							List<Function> usedFunctions = getContainedFunctions(eff.getExpression());
-							for (Function f : usedFunctions) {
-								if (!rigidFunctions.contains(f)) {
-									Logger.log(Logger.WARN, "(total-cost) function is increased "
-											+ "by a non-atomic and/or non-constant value.");
-									error = true;
-									break;
-								}
-							}
-							if (!error) {
-								Logger.log(Logger.WARN, "(total-cost) function is increased "
-										+ "by an effectively constant value, but simplification "
-										+ "to an actual constant is not implemented yet.");
+				// Check precondition
+				AbstractCondition precond = op.getPrecondition();
+				if (precond.toString().contains("(total-cost)")) {
+					Logger.log(Logger.WARN, "(total-cost) is used in an operator precondition.");
+					error = true;
+					break;
+				}
+				
+				// Traverse effect, and extract cost increases
+				List<AbstractCondition> effects = new ArrayList<>();
+				effects.add(op.getEffect());
+				while (!effects.isEmpty()) {
+					AbstractCondition c = effects.remove(0);
+					
+					if (c.getConditionType() == ConditionType.numericEffect) {
+						NumericEffect eff = (NumericEffect) c;
+						if (eff.getFunction().equals(totalCost)) {
+							if (eff.getType() != Type.increase) {
+								Logger.log(Logger.WARN, "(total-cost) function is defined "
+										+ "using operators other than \"increase\".");
 								error = true;
-							}
-						} 
-					}
-				} else if (c.getConditionType() == ConditionType.conjunction) {
-					// Process children as well
-					effects.addAll(((ConditionSet) c).getConditions());
-				} else if (c.getConditionType() == ConditionType.consequential) {
-					// Check if total-cost occurs here
-					if (c.toString().contains("(total-cost)")) {
-						Logger.log(Logger.WARN, "(total-cost) function appears "
-								+ "in a conditional effect.");
-						error = true;
-					}
-				} 
+							} else if (eff.getExpression().getType() == TermType.constant) {
+								cost += eff.getExpression().getValue();
+							} else {
+								// Allow numeric update if expression is effectively constant,
+								// i.e. only rigid functions are used
+								List<Function> usedFunctions = getContainedFunctions(eff.getExpression());
+								for (Function f : usedFunctions) {
+									if (!rigidFunctions.contains(f)) {
+										Logger.log(Logger.WARN, "(total-cost) function is increased "
+												+ "by a non-atomic and/or non-constant value.");
+										error = true;
+										break;
+									}
+								}
+								if (!error) {
+									Logger.log(Logger.WARN, "(total-cost) function is increased "
+											+ "by an effectively constant value, but simplification "
+											+ "to an actual constant is not implemented yet.");
+									error = true;
+								}
+							} 
+						}
+					} else if (c.getConditionType() == ConditionType.conjunction) {
+						// Process children as well
+						effects.addAll(((ConditionSet) c).getConditions());
+					} else if (c.getConditionType() == ConditionType.consequential) {
+						// Check if total-cost occurs here
+						if (c.toString().contains("(total-cost)")) {
+							Logger.log(Logger.WARN, "(total-cost) function appears "
+									+ "in a conditional effect.");
+							error = true;
+						}
+					} 
+				}
+				// Can total-cost be compiled away here?
+				if (error) {
+					// -- no
+					Logger.log(Logger.WARN, "The (total-cost) function will be kept "
+							+ "as a full-featured numeric fluent in the problem "
+							+ "definition. This can affect performance.");
+					return;
+				}
+				// Remember found cost for this operator
+				costs.add(cost);
 			}
-			// Can total-cost be compiled away here?
-			if (error) {
-				// -- no
-				Logger.log(Logger.WARN, "The (total-cost) function will be kept "
-						+ "as a full-featured numeric fluent in the problem "
-						+ "definition. This can affect performance.");
-				return;
-			}
-			// Remember found cost for this operator
-			costs.add(cost);
 		}
 		
 		// Remove all total-cost numeric effects from the operators
 		for (int i = 0; i < problem.getOperators().size(); i++) {
+			
 			Operator op = problem.getOperators().get(i);
-			op.setCost(costs.get(i));
+			if (config.keepActionCosts)
+				op.setCost(costs.get(i));
+			
 			AbstractCondition cond = op.getEffect();
 			
 			// Traverse effect condition, removing all total-cost effects

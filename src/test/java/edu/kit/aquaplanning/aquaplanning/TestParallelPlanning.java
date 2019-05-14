@@ -14,8 +14,8 @@ import edu.kit.aquaplanning.parsing.ProblemParser;
 import edu.kit.aquaplanning.planning.ForwardSearchPlanner;
 import edu.kit.aquaplanning.planning.Planner;
 import edu.kit.aquaplanning.planning.PortfolioParallelPlanner;
-import edu.kit.aquaplanning.planning.SimpleSatPlanner;
-import edu.kit.aquaplanning.planning.SearchStrategy.Mode;
+import edu.kit.aquaplanning.planning.datastructures.SearchStrategy.Mode;
+import edu.kit.aquaplanning.planning.sat.SimpleSatPlanner;
 import edu.kit.aquaplanning.validation.Validator;
 import junit.framework.TestCase;
 
@@ -64,12 +64,10 @@ public class TestParallelPlanning extends TestCase {
 	private void testPlannerOnBenchmark(Planner planner, String domain, String problem) throws IOException {
 		System.out.println("Testing planner on " + domain + ", " + problem);
 		PlanningProblem pp = new ProblemParser().parse(domain, problem);
-		Grounder grounder = new PlanningGraphGrounder(new Configuration());
-		GroundPlanningProblem gpp = grounder.ground(pp);
-		Plan p = planner.findPlan(gpp);
+		Plan p = planner.plan(pp);
 		if (p != null) {
 			System.out.println(p);
-			System.out.println("Plan is valid:" + Validator.planIsValid(gpp, p));
+			System.out.println("Plan is valid:" + planner.validatePlan(p));
 		} else {
 			System.out.println("TIMEOUT");
 		}
