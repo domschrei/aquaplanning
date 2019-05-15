@@ -2,6 +2,7 @@ package edu.kit.aquaplanning.model.lifted.condition;
 
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import edu.kit.aquaplanning.model.lifted.Argument;
 
@@ -53,4 +54,6 @@ public abstract class AbstractCondition {
 	public static final int RECURSE_TAIL = 2;
 
 	public abstract AbstractCondition traverse(Function<AbstractCondition, AbstractCondition> map, int recurseMode);
+	
+	public abstract boolean holds(Predicate<Condition> liftedStateMap);
 }

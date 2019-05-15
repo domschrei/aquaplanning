@@ -2,6 +2,7 @@ package edu.kit.aquaplanning.model.lifted.condition;
 
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import edu.kit.aquaplanning.model.lifted.Argument;
 
@@ -92,5 +93,10 @@ public class Implication extends AbstractCondition {
 		}
 
 		return result;
+	}
+	
+	@Override
+	public boolean holds(Predicate<Condition> liftedStateMap) {
+		return (!ifCondition.holds(liftedStateMap)) || thenCondition.holds(liftedStateMap);
 	}
 }

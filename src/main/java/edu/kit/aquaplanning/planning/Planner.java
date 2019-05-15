@@ -24,11 +24,12 @@ public abstract class Planner {
 	}
 
 	public static Planner getPlanner(PlanningProblem problem, Configuration config) {
+		
 		if (problem instanceof HtnPlanningProblem) {
 			return new TreeRexPlanner(config);
 		}
 		if (config.planFileToValidate != null) {
-			return new ValidationPlanner(config);
+			return new FileReaderPlanner(config);
 		}
 		switch (config.plannerType) {
 		case forwardSSS:

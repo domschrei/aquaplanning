@@ -35,8 +35,9 @@ public class ForwardSearchPlanner extends GroundPlanner {
 	 */
 	@Override
 	public Plan findPlan(GroundPlanningProblem problem) {
+		
 		startSearch();
-		Logger.log(Logger.INFO, "Starting forward search with " + config.toString());
+
 		// Important objects from the planning problem
 		State initState = problem.getInitialState();
 		Goal goal = problem.getGoal();

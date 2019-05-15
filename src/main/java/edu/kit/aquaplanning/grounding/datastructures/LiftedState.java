@@ -1,6 +1,7 @@
 package edu.kit.aquaplanning.grounding.datastructures;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,16 +32,53 @@ public class LiftedState {
 	 * Maps each problem constant to a unique positive integer.
 	 */
 	private Map<String, Integer> argumentIds;
+	
+	private boolean modified = false;
 
-	public LiftedState(Set<Condition> conditions) {
+	public LiftedState(List<Argument> allConstants, Collection<Condition> conditions) {
+		
+		initArgumentIds(allConstants);
+		init(conditions);
+	}
+	
+	public LiftedState(Collection<Condition> conditions) {
 
+		this.argumentIds = new HashMap<>();
+
+		int argId = 1;
+		for (Condition c : conditions) {
+			
+			// Set ID of each argument
+			for (Argument arg : c.getArguments()) {
+				if (!argumentIds.containsKey(arg.getName())) {
+					argumentIds.put(arg.getName(), argId++);
+				}
+			}
+		}
+		
+		init(conditions);
+	}
+	
+	private void initArgumentIds(List<Argument> constants) {
+		
+		this.argumentIds = new HashMap<>();
+
+		int argId = 1;
+		// Set ID of each argument
+		for (Argument arg : constants) {
+			if (!argumentIds.containsKey(arg.getName())) {
+				argumentIds.put(arg.getName(), argId++);
+			}
+		}
+	}
+	
+	private void init(Collection<Condition> conditions) {
+		
 		this.conditionsPos = new HashMap<>();
 		this.conditionsNeg = new HashMap<>();
 		this.conditionTreePos = new HashMap<>();
 		this.conditionTreeNeg = new HashMap<>();
-		this.argumentIds = new HashMap<>();
-
-		int argId = 1;
+		
 		for (Condition c : conditions) {
 			Map<String, List<Condition>> stateConditions = c.isNegated() ? conditionsNeg : conditionsPos;
 			Map<String, ArgumentNode> conditionTree = c.isNegated() ? conditionTreeNeg : conditionTreePos;
@@ -51,13 +89,6 @@ public class LiftedState {
 				stateConditions.put(predicateName, new ArrayList<>());
 			}
 			stateConditions.get(predicateName).add(c);
-
-			// Set ID of each argument
-			for (Argument arg : c.getArguments()) {
-				if (!argumentIds.containsKey(arg.getName())) {
-					argumentIds.put(arg.getName(), argId++);
-				}
-			}
 
 			// Add condition arguments to correct set structure
 			if (!conditionTree.containsKey(predicateName)) {
@@ -79,6 +110,11 @@ public class LiftedState {
 	 * Returns all conditions in the state of the provided predicate name.
 	 */
 	public List<Condition> getConditions(String p, boolean negated) {
+		
+		if (modified)
+			throw new RuntimeException("The LiftedState instance has been modified; "
+					+ "the called method is only available on constant LiftedState objects.");
+		
 		Map<String, List<Condition>> conditions = negated ? conditionsNeg : conditionsPos;
 		if (!conditions.containsKey(p)) {
 			conditions.put(p, new ArrayList<>());
@@ -117,14 +153,37 @@ public class LiftedState {
 				.contains(condition.getArguments());
 	}
 
+	public void add(Condition condition) {
+		modified = true;
+		Map<String, ArgumentNode> tree = (condition.isNegated() ? conditionTreeNeg : conditionTreePos);
+		if (!tree.containsKey(condition.getPredicate().getName()))
+			tree.put(condition.getPredicate().getName(), new ArgumentNode(argumentIds));
+		tree.get(condition.getPredicate().getName()).add(condition.getArguments());
+		
+		condition = condition.copy();
+		condition.setNegated(!condition.isNegated());
+		remove(condition);
+	}
+	private void remove(Condition condition) {
+		modified = true;
+		ArgumentNode node = (condition.isNegated() ? conditionTreeNeg : conditionTreePos).get(condition.getPredicate().getName());
+		if (node != null) 
+			node.remove(condition.getArguments());
+	}
+	
 	@Override
 	public String toString() {
 		String out = "";
-		for (List<Condition> conds : conditionsPos.values()) {
-			out += conds.toString();
-		}
-		for (List<Condition> conds : conditionsNeg.values()) {
-			out += "¬" + conds.toString();
+		if (modified) {
+			out += "POSITIVE: " + conditionTreePos.toString() + " ";
+			out += "NEGATIVE: " + conditionTreeNeg.toString();
+		} else {			
+			for (List<Condition> conds : conditionsPos.values()) {
+				out += conds.toString();
+			}
+			for (List<Condition> conds : conditionsNeg.values()) {
+				out += "¬" + conds.toString();
+			}
 		}
 		return out;
 	}

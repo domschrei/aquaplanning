@@ -163,4 +163,9 @@ public class Condition extends AbstractCondition {
 	public AbstractCondition traverse(Function<AbstractCondition, AbstractCondition> map, int recurseMode) {
 		return map.apply(this);
 	}
+	
+	@Override
+	public boolean holds(java.util.function.Predicate<Condition> liftedStateMap) {
+		return negated != liftedStateMap.test(this);
+	}
 }

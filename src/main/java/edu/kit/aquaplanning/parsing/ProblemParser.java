@@ -149,13 +149,13 @@ public class ProblemParser extends PddlHtnBaseListener {
 		methods = new ArrayList<>();
 		methodNames = new HashSet<>();
 		tasks = new HashMap<>();
-
+		
 		// Initialize typing
 		types = new HashMap<>();
-		supertype = new Type("_root_type"); // virtual supertype
-		types.put("_root_type", supertype);
+		supertype = new Type(PlanningProblem.ROOT_TYPE_NAME); // virtual supertype
+		types.put(PlanningProblem.ROOT_TYPE_NAME, supertype);
 
-		Logger.log(Logger.INFO_V, "Parsing domain file ...");
+		Logger.log(Logger.INFO_V, "Parsing domain file \"" + domainFile + "\" ...");
 
 		// Get domain
 		ANTLRInputStream in = new ANTLRInputStream(new FileInputStream(domainFile));
@@ -172,7 +172,7 @@ public class ProblemParser extends PddlHtnBaseListener {
 		ParseTreeWalker walker = new ParseTreeWalker();
 		walker.walk(this, ctx);
 
-		Logger.log(Logger.INFO_V, "Parsing problem file ...");
+		Logger.log(Logger.INFO_V, "Parsing problem file \"" + problemFile + "\" ...");
 
 		// Get problem
 		in = new ANTLRInputStream(new FileInputStream(problemFile));
@@ -653,7 +653,7 @@ public class ProblemParser extends PddlHtnBaseListener {
 		for (int i = 2; i < ctx.children.size() - 1; i++) {
 
 			if (i - 2 >= taskTypes.size()) {
-				taskTypes.add(new Type("_IMPLICIT"));
+				taskTypes.add(supertype);
 			}
 			Type type = taskTypes.get(i - 2);
 
@@ -664,7 +664,7 @@ public class ProblemParser extends PddlHtnBaseListener {
 					method.addImplicitArgument(new Argument(argName, type));
 				} else {
 					Type typeFromMethod = method.getTypeOfArgument(argName);
-					if (type.getName().equals("_IMPLICIT"))
+					if (type.equals(supertype))
 						type = typeFromMethod;
 				}
 
@@ -853,21 +853,25 @@ public class ProblemParser extends PddlHtnBaseListener {
 						}
 					}
 				}
-
+				
 				if (type == null) {
 					if (context == ParseContext.methodDef) {
 						Method method = currentMethod();
-						if (method.hasArgument(termStr)) {
-							type = method.getTypeOfArgument(termStr);
-							if (type.getName().equals("_IMPLICIT")) {
-								// Try to infer type
-								type = predicate.getArgumentTypes().get(childIdx - 2);
-								method.updateArgumentType(termStr, type);
-							}
-						} else {
+						if (!method.hasArgument(termStr)) {
+							// Create new implicit argument
 							type = predicate.getArgumentTypes().get(childIdx - 2);
 							method.addImplicitArgument(new Argument(termStr, type));
 						}
+						type = method.getTypeOfArgument(termStr);
+						
+						// Try to infer / concretize type
+						Type predType = predicate.getArgumentTypes().get(childIdx - 2);
+						if (!isArgumentOfType(new Argument(termStr, type), predType) 
+							&& isArgumentOfType(new Argument(termStr, predType), type) ) {
+							type = predType;
+						}
+						method.updateArgumentType(termStr, type);
+						
 					} else {
 						// Check if the variable occurs in the operator definition,
 						// and which type it has
@@ -902,7 +906,7 @@ public class ProblemParser extends PddlHtnBaseListener {
 		// Normal predicate: atomic condition
 		enterCondition(cond);
 		exitCondition();
-
+		
 		// Basic checks for correct typing and predicate use
 		checkConsistency(cond);
 	}

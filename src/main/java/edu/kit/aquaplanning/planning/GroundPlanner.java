@@ -43,6 +43,7 @@ public abstract class GroundPlanner extends Planner {
 
 	@Override
 	public Plan plan(PlanningProblem p) {
+		
 		Logger.log(Logger.INFO, "Grounding ...");
 		grounder = new PlanningGraphGrounder(config);
 		problem = grounder.ground(p);
@@ -50,6 +51,7 @@ public abstract class GroundPlanner extends Planner {
 			Logger.log(Logger.ESSENTIAL, "The problem has been found to be unsatisfiable. Exiting.");
 			return null;
 		}
+		
 		// Print ground problem
 		if (Logger.INFO_VV <= config.verbosityLevel) {
 			Logger.log(Logger.INFO_VV, problem.toString());
@@ -60,7 +62,7 @@ public abstract class GroundPlanner extends Planner {
 				+ " conditional effects.");
 		Logger.log(Logger.INFO,
 				"Ground problem contains " + (problem.hasComplexConditions() ? "some" : "no") + " complex conditions.");
-
+		
 		Plan plan = findPlan(problem);
 
 		Logger.log(Logger.INFO, "Plan length: " + plan.getLength());

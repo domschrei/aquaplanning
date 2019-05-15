@@ -9,6 +9,8 @@ import edu.kit.aquaplanning.model.lifted.condition.Condition;
 
 public class PlanningProblem {
 
+	public static final String ROOT_TYPE_NAME = "_root_type";
+	
 	private String domainName;
 	private String problemName;
 	private Map<String, Type> types;
@@ -79,6 +81,10 @@ public class PlanningProblem {
 
 	public Type getType(String name) {
 		return types.get(name);
+	}
+	
+	public Type getSupertype() {
+		return getType(ROOT_TYPE_NAME);
 	}
 
 	public List<Argument> getConstants() {

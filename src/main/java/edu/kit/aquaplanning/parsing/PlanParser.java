@@ -5,19 +5,95 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collector;
 import java.util.zip.ZipFile;
 
 import edu.kit.aquaplanning.model.ground.Action;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
+import edu.kit.aquaplanning.model.lifted.Argument;
+import edu.kit.aquaplanning.model.lifted.Operator;
+import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.util.Logger;
 
 public class PlanParser {
 
+	public static List<Operator> parsePlan(String planFile, PlanningProblem pp) throws IOException {
+		
+		Map<String, Operator> operatorsByName = new HashMap<>();
+		for (Operator op : pp.getOperators()) {
+			operatorsByName.put(op.getName(), op);
+		}
+		
+		Collector<String, List<Operator>, List<Operator>> planBuilder = Collector.of(
+			// Supplier: New partial plan
+			() -> new ArrayList<Operator>(),
+			// Accumulator: Read a new line
+			(partialPlan, line) -> {
+				String[] words = line.split(":");
+				if (words.length < 2) {
+					Logger.log(Logger.ERROR, "Error: Plan file is syntactically invalid. (line \"" + line + "\")");
+				}
+				String actionName = words[1].trim();
+				Operator operator = parseOperator(pp, operatorsByName, actionName);
+				if (operator == null) {
+					Logger.log(Logger.ERROR, "Could not parse action \"" + actionName + "\". (line \"" + line + "\")");
+				}
+				partialPlan.add(operator);
+			},
+			// Combiner: Combine two partial plans (for parallelism)
+			(partialPlan1, partialPlan2) -> {
+				partialPlan1.addAll(partialPlan2);
+				return partialPlan1;
+			}, 
+			// Finisher: Transform list of actions into final Plan object
+			partialPlan -> partialPlan
+		);
+		
+		return parse(planFile, planBuilder);
+	}
+	
 	public static Plan parsePlan(String planFile, GroundPlanningProblem gpp) throws IOException {
-		Plan plan = new Plan();
-
+		
+		HashMap<String, Action> actionMap = new HashMap<>();
+		for (Action a : gpp.getActions()) {
+			actionMap.put(a.getCleanedName(), a);
+		}
+		
+		Collector<String, List<Action>, Plan> planBuilder = Collector.of(
+			// Supplier: New partial plan
+			() -> new ArrayList<Action>(), 
+			// Accumulator: Read a new line
+			(partialPlan, line) -> {
+				String[] words = line.split(":");
+				if (words.length < 2) {
+					Logger.log(Logger.ERROR, "Error: Plan file is syntactically invalid. (line \"" + line + "\")");
+				}
+				String actionName = words[1].trim();
+				Action action = actionMap.get(actionName);
+				if (action == null) {
+					Logger.log(Logger.ERROR, "Could not parse action \"" + actionName + "\". (line \"" + line + "\")");
+				}
+				partialPlan.add(action);
+			}, 
+			// Combiner: Combine two partial plans (for parallelism)
+			(partialPlan1, partialPlan2) -> {
+				partialPlan1.addAll(partialPlan2);
+				return partialPlan1;
+			}, 
+			// Finisher: Transform list of actions into final Plan object
+			partialPlan -> new Plan(partialPlan)
+		);
+		
+		return parse(planFile, planBuilder);
+	}
+	
+	private static <S, T> T parse(String planFile, Collector<String, S, T> lineHandler) throws IOException {
+		
 		BufferedReader reader = null;
 		ZipFile zf = null;
 
@@ -29,35 +105,39 @@ public class PlanParser {
 			FileReader fr = new FileReader(planFile);
 			reader = new BufferedReader(fr);
 		}
-		HashMap<String, Action> actionMap = new HashMap<>();
-		for (Action a : gpp.getActions()) {
-			actionMap.put(a.getCleanedName(), a);
-		}
-		int lineNo = 1;
+		
+		S partialPlan = lineHandler.supplier().get();
 		while (true) {
 			String line = reader.readLine();
 			if (line == null) {
 				break;
 			}
-			String[] words = line.split(":");
-			if (words.length < 2) {
-				Logger.log(Logger.ERROR, "Error: Plan file is syntactically invalid. (line " + lineNo + ")");
-				return null;
-			}
-			String actionName = words[1].trim();
-			Action action = actionMap.get(actionName);
-			if (action == null) {
-				Logger.log(Logger.ERROR, "Could not parse action \"" + actionName + "\". (line " + lineNo + ")");
-				return null;
-			}
-			plan.appendAtBack(action);
-			lineNo++;
+			lineHandler.accumulator().accept(partialPlan, line);
 		}
 		reader.close();
 		if (zf != null) {
 			zf.close();
 		}
+		T plan = lineHandler.finisher().apply(partialPlan);
+		
 		return plan;
+	}
+	
+	private static Operator parseOperator(PlanningProblem pp, Map<String, Operator> operatorsByName, String opString) {
+		
+		// Remove brackets
+		opString = opString.substring(1, opString.length()-1);
+		
+		String[] words = opString.split(" ");
+		String opName = words[0];
+		
+		Operator op = operatorsByName.get(opName);
+		
+		List<Argument> args = new ArrayList<>();
+		for (int i = 1; i < words.length; i++) 
+			args.add(new Argument(words[i], op.getArgumentTypes().get(i-1)));
+		
+		return op.getOperatorWithGroundArguments(args);
 	}
 
 }

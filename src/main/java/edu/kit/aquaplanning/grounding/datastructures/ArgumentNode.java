@@ -42,6 +42,10 @@ public class ArgumentNode {
 	public void add(List<Argument> args) {
 		add(args, 0);
 	}
+	
+	public void remove(List<Argument> args) {
+		remove(args, 0);
+	}
 
 	/**
 	 * Decides whether the tree rooted at this node contains the provided "path" of
@@ -68,11 +72,23 @@ public class ArgumentNode {
 			// Recurse on the child node which corresponds to the
 			// argument at the first considered position (argPos),
 			// creating it if it does not exist yet
-			int argId = argumentIds.get(args.get(argPos).getName());
+			String argName = args.get(argPos).getName();
+			int argId = argumentIds.get(argName);
 			if (!children.containsKey(argId)) {
 				children.put(argId, new ArgumentNode(argumentIds));
 			}
 			children.get(argId).add(args, argPos + 1);
+		}
+	}
+	
+	private void remove(List<Argument> args, int argPos) {
+		if (argPos == args.size()) {
+			isLeafNode = false;
+		} else {
+			int argId = argumentIds.get(args.get(argPos).getName());
+			if (children.containsKey(argId)) {
+				children.get(argId).remove(args, argPos + 1);
+			}
 		}
 	}
 

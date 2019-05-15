@@ -170,11 +170,12 @@ public class Configuration {
 	@Override
 	public String toString() {
 
-		StringBuilder out = new StringBuilder("Configuration {\n");
+		StringBuilder out = new StringBuilder("Configuration { ");
 		try {
 			for (Field field : this.getClass().getDeclaredFields()) {
-				if (!Modifier.isFinal(field.getModifiers()))
-					out.append("  " + field.getName() + " : " + field.get(this) + "\n");
+				// Only print non-final fields which have a value other than null
+				if (!Modifier.isFinal(field.getModifiers()) && field.get(this) != null)
+					out.append(field.getName() + "=" + field.get(this) + " ");
 			}
 		} catch (IllegalArgumentException | IllegalAccessException e) {
 			e.printStackTrace();

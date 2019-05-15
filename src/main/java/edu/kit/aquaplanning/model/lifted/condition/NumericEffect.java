@@ -1,6 +1,7 @@
 package edu.kit.aquaplanning.model.lifted.condition;
 
 import java.util.List;
+import java.util.function.Predicate;
 
 import edu.kit.aquaplanning.model.lifted.Argument;
 import edu.kit.aquaplanning.model.lifted.Function;
@@ -96,5 +97,11 @@ public class NumericEffect extends AbstractCondition {
 	public AbstractCondition traverse(java.util.function.Function<AbstractCondition, AbstractCondition> map,
 			int recurseMode) {
 		return map.apply(this);
+	}
+	
+	@Override
+	public boolean holds(Predicate<Condition> liftedStateMap) {
+		throw new RuntimeException("The evaluation of lifted numeric conditions is not supported yet. "
+				+ "Please try evaluating the condition's ground representation instead.");
 	}
 }

@@ -8,6 +8,10 @@ public class Plan implements Iterable<Action> {
 
 	private List<Action> actions;
 
+	public Plan(List<Action> actions) {
+		this.actions = actions;
+	}
+	
 	public Plan() {
 		this.actions = new LinkedList<>();
 	}

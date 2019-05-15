@@ -76,10 +76,12 @@ public class Main {
 		// Welcome message
 		Logger.log(Logger.INFO, "This is Aquaplanning - QUick Automated Planning.");
 		Logger.log(Logger.INFO, "Running on " + InetAddress.getLocalHost().getHostName());
-
+		
 		// Configuration defaults are editable in Configuration.java.
 		// For debugging, you can also override the configuration here, e.g.
 		// config.heuristic = HeuristicType.manhattanGoalDistance;
+
+		Logger.log(Logger.INFO, "Executed with " + config.toString());
 
 		try {
 			// Parsing of domain and problem files

@@ -3,6 +3,7 @@ package edu.kit.aquaplanning.model.lifted.condition;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import edu.kit.aquaplanning.model.lifted.Argument;
 
@@ -156,5 +157,11 @@ public class Quantification extends AbstractCondition {
 		}
 
 		return result;
+	}
+	
+	@Override
+	public boolean holds(Predicate<Condition> liftedStateMap) {
+		throw new RuntimeException("The evaluation of lifted quantifications is not supported yet. "
+				+ "Please try evaluating the condition's ground representation instead.");
 	}
 }

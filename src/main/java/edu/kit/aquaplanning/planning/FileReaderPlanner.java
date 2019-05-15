@@ -8,9 +8,9 @@ import edu.kit.aquaplanning.model.ground.Plan;
 import edu.kit.aquaplanning.parsing.PlanParser;
 import edu.kit.aquaplanning.util.Logger;
 
-public class ValidationPlanner extends GroundPlanner {
+public class FileReaderPlanner extends GroundPlanner {
 
-	public ValidationPlanner(Configuration config) {
+	public FileReaderPlanner(Configuration config) {
 		super(config);
 	}
 
