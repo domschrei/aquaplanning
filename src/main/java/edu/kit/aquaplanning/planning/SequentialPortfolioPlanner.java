@@ -4,7 +4,7 @@ import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.Configuration.HeuristicType;
 import edu.kit.aquaplanning.Configuration.PlannerType;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
-import edu.kit.aquaplanning.model.ground.Plan;
+import edu.kit.aquaplanning.model.ground.ActionPlan;
 import edu.kit.aquaplanning.planning.datastructures.SearchStrategy.Mode;
 import edu.kit.aquaplanning.util.Logger;
 
@@ -19,10 +19,10 @@ public class SequentialPortfolioPlanner extends GroundPlanner {
 	}
 
 	@Override
-	public Plan findPlan(GroundPlanningProblem problem) {
+	public ActionPlan findPlan(GroundPlanningProblem problem) {
 
 		startSearch();
-		Plan plan = null;
+		ActionPlan plan = null;
 
 		/* 1. Greedy forward search */
 

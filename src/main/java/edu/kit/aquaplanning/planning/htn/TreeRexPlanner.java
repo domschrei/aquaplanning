@@ -12,7 +12,7 @@ import edu.kit.aquaplanning.model.ground.Atom;
 import edu.kit.aquaplanning.model.ground.AtomSet;
 import edu.kit.aquaplanning.model.ground.Goal;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
-import edu.kit.aquaplanning.model.ground.Plan;
+import edu.kit.aquaplanning.model.ground.ActionPlan;
 import edu.kit.aquaplanning.model.ground.Precondition;
 import edu.kit.aquaplanning.model.ground.Precondition.PreconditionType;
 import edu.kit.aquaplanning.model.ground.State;
@@ -38,7 +38,7 @@ public class TreeRexPlanner extends GroundPlanner {
 		this.config = config;
 	}
 
-	public Plan findPlan(GroundPlanningProblem problem) {
+	public ActionPlan findPlan(GroundPlanningProblem problem) {
 
 		Logger.log(Logger.INFO, "Initializing HTN grounding ...");
 		htnGrounder = new HtnGrounder(problem, grounder);
@@ -108,7 +108,7 @@ public class TreeRexPlanner extends GroundPlanner {
 
 		if (result == true) {
 			Logger.log(Logger.INFO, "Extracting plan ...");
-			Plan plan = extractPlan();
+			ActionPlan plan = extractPlan();
 			solver.release();
 			return plan;
 		} else {
@@ -595,8 +595,8 @@ public class TreeRexPlanner extends GroundPlanner {
 		return result;
 	}
 
-	private Plan extractPlan() {
-		Plan plan = new Plan();
+	private ActionPlan extractPlan() {
+		ActionPlan plan = new ActionPlan();
 
 		HierarchyLayer finalLayer = htnGrounder.getHierarchyLayers().get(depth);
 		for (int pos = 0; pos < finalLayer.getSize(); pos++) {

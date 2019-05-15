@@ -12,7 +12,7 @@ import edu.kit.aquaplanning.model.ground.Action;
 import edu.kit.aquaplanning.model.ground.Atom;
 import edu.kit.aquaplanning.model.ground.AtomSet;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
-import edu.kit.aquaplanning.model.ground.Plan;
+import edu.kit.aquaplanning.model.ground.ActionPlan;
 import edu.kit.aquaplanning.planning.GroundPlanner;
 import edu.kit.aquaplanning.sat.AbstractSatSolver;
 import edu.kit.aquaplanning.util.Logger;
@@ -111,7 +111,7 @@ public class HegemannsSatPlanner extends GroundPlanner {
 		return 1 + atomId + step * satVarsPerLayer;
 	}
 
-	public Plan findPlan(GroundPlanningProblem problem) {
+	public ActionPlan findPlan(GroundPlanningProblem problem) {
 		this.numAtoms = problem.getNumAtoms();
 		maxSatVar = 0;
 		double timeLimit = initialTimeLimit;
@@ -161,7 +161,7 @@ public class HegemannsSatPlanner extends GroundPlanner {
 		}
 
 		// Decode the plan
-		Plan plan = new Plan();
+		ActionPlan plan = new ActionPlan();
 		for (int i = 0; i <= step; i++) {
 			for (int r = 0; r < rankedActions.size(); r++) {
 				Action a = rankedActions.get(r);

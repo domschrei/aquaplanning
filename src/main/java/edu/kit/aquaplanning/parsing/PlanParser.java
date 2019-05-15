@@ -14,7 +14,8 @@ import java.util.zip.ZipFile;
 
 import edu.kit.aquaplanning.model.ground.Action;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
-import edu.kit.aquaplanning.model.ground.Plan;
+import edu.kit.aquaplanning.model.ground.OperatorPlan;
+import edu.kit.aquaplanning.model.ground.ActionPlan;
 import edu.kit.aquaplanning.model.lifted.Argument;
 import edu.kit.aquaplanning.model.lifted.Operator;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
@@ -22,16 +23,16 @@ import edu.kit.aquaplanning.util.Logger;
 
 public class PlanParser {
 
-	public static List<Operator> parsePlan(String planFile, PlanningProblem pp) throws IOException {
+	public static OperatorPlan parsePlan(String planFile, PlanningProblem pp) throws IOException {
 		
 		Map<String, Operator> operatorsByName = new HashMap<>();
 		for (Operator op : pp.getOperators()) {
 			operatorsByName.put(op.getName(), op);
 		}
 		
-		Collector<String, List<Operator>, List<Operator>> planBuilder = Collector.of(
+		Collector<String, OperatorPlan, OperatorPlan> planBuilder = Collector.of(
 			// Supplier: New partial plan
-			() -> new ArrayList<Operator>(),
+			() -> new OperatorPlan(),
 			// Accumulator: Read a new line
 			(partialPlan, line) -> {
 				String[] words = line.split(":");
@@ -43,13 +44,10 @@ public class PlanParser {
 				if (operator == null) {
 					Logger.log(Logger.ERROR, "Could not parse action \"" + actionName + "\". (line \"" + line + "\")");
 				}
-				partialPlan.add(operator);
+				partialPlan.appendAtBack(operator);
 			},
 			// Combiner: Combine two partial plans (for parallelism)
-			(partialPlan1, partialPlan2) -> {
-				partialPlan1.addAll(partialPlan2);
-				return partialPlan1;
-			}, 
+			(partialPlan1, partialPlan2) -> (OperatorPlan) partialPlan1.appendAtBack(partialPlan2),
 			// Finisher: Transform list of actions into final Plan object
 			partialPlan -> partialPlan
 		);
@@ -57,16 +55,16 @@ public class PlanParser {
 		return parse(planFile, planBuilder);
 	}
 	
-	public static Plan parsePlan(String planFile, GroundPlanningProblem gpp) throws IOException {
+	public static ActionPlan parsePlan(String planFile, GroundPlanningProblem gpp) throws IOException {
 		
 		HashMap<String, Action> actionMap = new HashMap<>();
 		for (Action a : gpp.getActions()) {
 			actionMap.put(a.getCleanedName(), a);
 		}
 		
-		Collector<String, List<Action>, Plan> planBuilder = Collector.of(
+		Collector<String, ActionPlan, ActionPlan> planBuilder = Collector.of(
 			// Supplier: New partial plan
-			() -> new ArrayList<Action>(), 
+			() -> new ActionPlan(), 
 			// Accumulator: Read a new line
 			(partialPlan, line) -> {
 				String[] words = line.split(":");
@@ -78,15 +76,12 @@ public class PlanParser {
 				if (action == null) {
 					Logger.log(Logger.ERROR, "Could not parse action \"" + actionName + "\". (line \"" + line + "\")");
 				}
-				partialPlan.add(action);
+				partialPlan.appendAtBack(action);
 			}, 
 			// Combiner: Combine two partial plans (for parallelism)
-			(partialPlan1, partialPlan2) -> {
-				partialPlan1.addAll(partialPlan2);
-				return partialPlan1;
-			}, 
+			(partialPlan1, partialPlan2) -> (ActionPlan) partialPlan1.appendAtBack(partialPlan2), 
 			// Finisher: Transform list of actions into final Plan object
-			partialPlan -> new Plan(partialPlan)
+			partialPlan -> partialPlan
 		);
 		
 		return parse(planFile, planBuilder);

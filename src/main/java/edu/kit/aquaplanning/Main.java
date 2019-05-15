@@ -53,7 +53,7 @@ public class Main {
 	 * Prints the provided plan to stdout. If the config says so, also outputs the
 	 * plan to a file.
 	 */
-	private static void printPlan(Configuration config, Plan plan) throws IOException {
+	private static void printPlan(Configuration config, Plan<?> plan) throws IOException {
 
 		if (config.planOutputFile != null) {
 			// Write plan to file
@@ -91,8 +91,8 @@ public class Main {
 			Logger.log(Logger.INFO, "Parsing complete.\n");
 
 			Planner planner = Planner.getPlanner(p, config);
-			Plan plan = planner.plan(p);
-
+			Plan<?> plan = planner.plan(p);
+			
 			// Solution found?
 			if (plan == null) {
 				// -- no

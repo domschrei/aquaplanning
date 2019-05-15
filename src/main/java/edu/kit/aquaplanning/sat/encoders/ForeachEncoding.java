@@ -8,7 +8,7 @@ import java.util.Map;
 import edu.kit.aquaplanning.model.ground.Action;
 import edu.kit.aquaplanning.model.ground.Atom;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
-import edu.kit.aquaplanning.model.ground.Plan;
+import edu.kit.aquaplanning.model.ground.ActionPlan;
 import edu.kit.aquaplanning.sat.SatFormula;
 import edu.kit.aquaplanning.sat.SymbolicReachabilityFormula;
 
@@ -33,9 +33,9 @@ public class ForeachEncoding implements PlanningToSatEncoder {
 	}
 
 	@Override
-	public Plan decodePlan(GroundPlanningProblem problem, List<int[]> model) {
+	public ActionPlan decodePlan(GroundPlanningProblem problem, List<int[]> model) {
 		initializeActionIdsAndSupports(problem);
-		Plan plan = new Plan();
+		ActionPlan plan = new ActionPlan();
 		for (int i = 0; i < model.size(); i++) {
 			for (Action a : problem.getActions()) {
 				if (model.get(i)[getActionSatVariable(a.getName(), 0)] > 0) {

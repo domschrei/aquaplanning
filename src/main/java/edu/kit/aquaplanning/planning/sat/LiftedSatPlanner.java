@@ -6,7 +6,7 @@ import java.util.Map;
 import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.grounding.PlanningGraphGrounder;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
-import edu.kit.aquaplanning.model.ground.Plan;
+import edu.kit.aquaplanning.model.ground.ActionPlan;
 import edu.kit.aquaplanning.model.lifted.Operator;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.planning.LiftedPlanner;
@@ -19,7 +19,9 @@ public class LiftedSatPlanner extends LiftedPlanner {
 	}
 
 	@Override
-	public Plan plan(PlanningProblem problem) {
+	public ActionPlan plan(PlanningProblem problem) {
+		this.problem = problem;
+		
 		Map<String, Operator> liftedOperator = new HashMap<String, Operator>();
 		for (Operator o : problem.getOperators()) {
 			liftedOperator.put(o.getName(), o);
@@ -28,12 +30,7 @@ public class LiftedSatPlanner extends LiftedPlanner {
 		GroundPlanningProblem groundedProblem = grounder.ground(problem);
 		return null;
 	}
-
-	@Override
-	public boolean validatePlan(Plan plan) {
-		return false;
-	}
-
+	
 	private SymbolicReachabilityFormula encoding;
 
 }

@@ -2,7 +2,7 @@ package edu.kit.aquaplanning.planning.heuristic;
 
 import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
-import edu.kit.aquaplanning.model.ground.Plan;
+import edu.kit.aquaplanning.model.ground.ActionPlan;
 import edu.kit.aquaplanning.planning.datastructures.SearchNode;
 import edu.kit.aquaplanning.planning.sat.SimpleSatPlanner;
 
@@ -21,7 +21,7 @@ public class SatAbstractionHeuristic extends Heuristic {
 	@Override
 	public int value(SearchNode node) {
 		problem.setInitialState(node.state);
-		Plan p = satPlanner.findPlan(problem);
+		ActionPlan p = satPlanner.findPlan(problem);
 		if (p != null) {
 			return p.getCost();
 		} else {

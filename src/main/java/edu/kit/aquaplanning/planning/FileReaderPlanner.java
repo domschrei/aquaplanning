@@ -4,7 +4,7 @@ import java.io.IOException;
 
 import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
-import edu.kit.aquaplanning.model.ground.Plan;
+import edu.kit.aquaplanning.model.ground.ActionPlan;
 import edu.kit.aquaplanning.parsing.PlanParser;
 import edu.kit.aquaplanning.util.Logger;
 
@@ -15,7 +15,7 @@ public class FileReaderPlanner extends GroundPlanner {
 	}
 
 	@Override
-	public Plan findPlan(GroundPlanningProblem problem) {
+	public ActionPlan findPlan(GroundPlanningProblem problem) {
 		if (Logger.INFO_VV <= config.verbosityLevel) {
 			Logger.log(Logger.INFO_VV, problem.toString());
 		}

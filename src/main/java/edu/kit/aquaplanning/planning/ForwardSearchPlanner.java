@@ -4,7 +4,7 @@ import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.model.ground.Action;
 import edu.kit.aquaplanning.model.ground.Goal;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
-import edu.kit.aquaplanning.model.ground.Plan;
+import edu.kit.aquaplanning.model.ground.ActionPlan;
 import edu.kit.aquaplanning.model.ground.State;
 import edu.kit.aquaplanning.planning.datastructures.ActionIndex;
 import edu.kit.aquaplanning.planning.datastructures.SearchNode;
@@ -34,7 +34,7 @@ public class ForwardSearchPlanner extends GroundPlanner {
 	 * constructor.
 	 */
 	@Override
-	public Plan findPlan(GroundPlanningProblem problem) {
+	public ActionPlan findPlan(GroundPlanningProblem problem) {
 		
 		startSearch();
 
@@ -67,7 +67,7 @@ public class ForwardSearchPlanner extends GroundPlanner {
 			if (goal.isSatisfied(node.state)) {
 
 				// Extract plan
-				Plan plan = new Plan();
+				ActionPlan plan = new ActionPlan();
 				while (node != null && node.lastAction != null) {
 					plan.appendAtFront(node.lastAction);
 					node = node.parent;

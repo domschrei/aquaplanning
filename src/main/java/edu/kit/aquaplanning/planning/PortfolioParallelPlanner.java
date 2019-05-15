@@ -8,7 +8,7 @@ import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.Configuration.HeuristicType;
 import edu.kit.aquaplanning.Configuration.PlannerType;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
-import edu.kit.aquaplanning.model.ground.Plan;
+import edu.kit.aquaplanning.model.ground.ActionPlan;
 import edu.kit.aquaplanning.planning.datastructures.SearchStrategy.Mode;
 import edu.kit.aquaplanning.util.Logger;
 
@@ -20,7 +20,7 @@ public class PortfolioParallelPlanner extends GroundPlanner {
 
 	private int numThreads;
 	private List<Thread> threads;
-	private Plan plan;
+	private ActionPlan plan;
 
 	public PortfolioParallelPlanner(Configuration config) {
 		super(config);
@@ -30,7 +30,7 @@ public class PortfolioParallelPlanner extends GroundPlanner {
 	/**
 	 * Callback for when some planner finds a plan.
 	 */
-	private synchronized void onPlanFound(Plan plan) {
+	private synchronized void onPlanFound(ActionPlan plan) {
 		if (this.plan != null) {
 			// Another planner already found a plan
 			return;
@@ -46,7 +46,7 @@ public class PortfolioParallelPlanner extends GroundPlanner {
 	}
 
 	@Override
-	public Plan findPlan(GroundPlanningProblem problem) {
+	public ActionPlan findPlan(GroundPlanningProblem problem) {
 
 		startSearch();
 		threads = new ArrayList<>();
@@ -104,7 +104,7 @@ public class PortfolioParallelPlanner extends GroundPlanner {
 			Thread thread = new Thread(new Runnable() {
 				@Override
 				public void run() {
-					Plan plan = planner.findPlan(problem);
+					ActionPlan plan = planner.findPlan(problem);
 					if (plan != null) {
 						Logger.log(Logger.INFO, "Planner \"" + planner + "\" (index " + threadNum + ") found a plan.");
 						onPlanFound(plan);

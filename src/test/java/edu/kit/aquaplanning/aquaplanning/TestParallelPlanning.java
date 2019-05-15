@@ -5,9 +5,6 @@ import java.io.IOException;
 
 import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.Configuration.HeuristicType;
-import edu.kit.aquaplanning.grounding.Grounder;
-import edu.kit.aquaplanning.grounding.PlanningGraphGrounder;
-import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.parsing.ProblemParser;
@@ -16,7 +13,6 @@ import edu.kit.aquaplanning.planning.Planner;
 import edu.kit.aquaplanning.planning.PortfolioParallelPlanner;
 import edu.kit.aquaplanning.planning.datastructures.SearchStrategy.Mode;
 import edu.kit.aquaplanning.planning.sat.SimpleSatPlanner;
-import edu.kit.aquaplanning.validation.Validator;
 import junit.framework.TestCase;
 
 public class TestParallelPlanning extends TestCase {
@@ -64,7 +60,7 @@ public class TestParallelPlanning extends TestCase {
 	private void testPlannerOnBenchmark(Planner planner, String domain, String problem) throws IOException {
 		System.out.println("Testing planner on " + domain + ", " + problem);
 		PlanningProblem pp = new ProblemParser().parse(domain, problem);
-		Plan p = planner.plan(pp);
+		Plan<?> p = planner.plan(pp);
 		if (p != null) {
 			System.out.println(p);
 			System.out.println("Plan is valid:" + planner.validatePlan(p));

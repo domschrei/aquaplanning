@@ -11,8 +11,11 @@ import edu.kit.aquaplanning.model.lifted.Argument;
 import edu.kit.aquaplanning.model.lifted.condition.Condition;
 
 /**
- * Static (immutable) structure for a certain lifted state, with a couple of
- * data structures accelerating checks of conditions.
+ * Represents a state in a dual representation: All positive atoms AND all negative atoms
+ * are both stored explicitly in the form of argument trees for each predicate name.
+ * As such, a LiftedState instance may also represent a super-state where some atoms are
+ * both false AND true. If an atom occurs neither positive nor negated, it is assumed
+ * to be false (closed-world assumption).
  */
 public class LiftedState {
 
@@ -35,20 +38,27 @@ public class LiftedState {
 	
 	private boolean modified = false;
 
+	/**
+	 * @param allConstants All of the constants occurring in the surrounding planning problem
+	 * @param conditions The set of conditions contained in the initial state 
+	 * (may contain positive and negated conditions)
+	 */
 	public LiftedState(List<Argument> allConstants, Collection<Condition> conditions) {
 		
 		initArgumentIds(allConstants);
 		init(conditions);
 	}
 	
+	/**
+	 * @param conditions The set of conditions contained in the initial state 
+	 * (may contain positive and negated conditions)
+	 */
 	public LiftedState(Collection<Condition> conditions) {
 
+		// Set ID of each argument occurring in the conditions
 		this.argumentIds = new HashMap<>();
-
 		int argId = 1;
 		for (Condition c : conditions) {
-			
-			// Set ID of each argument
 			for (Argument arg : c.getArguments()) {
 				if (!argumentIds.containsKey(arg.getName())) {
 					argumentIds.put(arg.getName(), argId++);
@@ -108,6 +118,9 @@ public class LiftedState {
 
 	/**
 	 * Returns all conditions in the state of the provided predicate name.
+	 * <b>Warning</b>: This method is only valid on immutable / constant LiftedState instances.
+	 * As soon as the state is altered by adding or removing conditions, this method
+	 * cannot be called any more and will throw an exception.
 	 */
 	public List<Condition> getConditions(String p, boolean negated) {
 		
@@ -153,6 +166,10 @@ public class LiftedState {
 				.contains(condition.getArguments());
 	}
 
+	/**
+	 * Adds a (positive or negated) condition to the state 
+	 * and removes its complementary condition as necessary.
+	 */
 	public void add(Condition condition) {
 		modified = true;
 		Map<String, ArgumentNode> tree = (condition.isNegated() ? conditionTreeNeg : conditionTreePos);
@@ -171,6 +188,10 @@ public class LiftedState {
 			node.remove(condition.getArguments());
 	}
 	
+	/**
+	 * Note: Depending on whether the state object has been modified by add() calls,
+	 * the textual representation will vary.
+	 */
 	@Override
 	public String toString() {
 		String out = "";

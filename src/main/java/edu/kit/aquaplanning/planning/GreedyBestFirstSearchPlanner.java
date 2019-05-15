@@ -13,7 +13,7 @@ import edu.kit.aquaplanning.model.ground.Atom;
 import edu.kit.aquaplanning.model.ground.AtomSet;
 import edu.kit.aquaplanning.model.ground.Goal;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
-import edu.kit.aquaplanning.model.ground.Plan;
+import edu.kit.aquaplanning.model.ground.ActionPlan;
 import edu.kit.aquaplanning.model.ground.State;
 import edu.kit.aquaplanning.planning.datastructures.FullActionIndex;
 import edu.kit.aquaplanning.util.Logger;
@@ -32,7 +32,7 @@ public class GreedyBestFirstSearchPlanner extends GroundPlanner {
 	}
 
 	@Override
-	public Plan findPlan(GroundPlanningProblem problem) {
+	public ActionPlan findPlan(GroundPlanningProblem problem) {
 		startSearch();
 		ArrayDeque<State> stateHistory = new ArrayDeque<>();
 		ArrayDeque<Action> plan = new ArrayDeque<>();
@@ -86,7 +86,7 @@ public class GreedyBestFirstSearchPlanner extends GroundPlanner {
 
 		if (goal.isSatisfied(state)) {
 			// make the plan
-			Plan finalplan = new Plan();
+			ActionPlan finalplan = new ActionPlan();
 			for (Action a : plan) {
 				finalplan.appendAtBack(a);
 			}

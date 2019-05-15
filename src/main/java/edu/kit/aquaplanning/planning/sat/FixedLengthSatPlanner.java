@@ -3,7 +3,7 @@ package edu.kit.aquaplanning.planning.sat;
 import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.model.ground.Action;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
-import edu.kit.aquaplanning.model.ground.Plan;
+import edu.kit.aquaplanning.model.ground.ActionPlan;
 import edu.kit.aquaplanning.sat.AbstractSatSolver;
 
 /**
@@ -19,7 +19,7 @@ public class FixedLengthSatPlanner extends SimpleSatPlanner {
 	}
 
 	@Override
-	public Plan findPlan(GroundPlanningProblem problem) {
+	public ActionPlan findPlan(GroundPlanningProblem problem) {
 
 		// calculate number of sat variables required for each step
 		satVarsPerStep = problem.getNumAtoms() + problem.getActions().size();
@@ -48,13 +48,13 @@ public class FixedLengthSatPlanner extends SimpleSatPlanner {
 		if (config.maxTimeSeconds > 0) {
 			solver.setTimeLimit(config.maxTimeSeconds);
 		}
-		Plan plan = null;
+		ActionPlan plan = null;
 		Boolean result = solver.isSatisfiable(assumptions);
 		if (result != null && result) {
 			System.out.println("Found plan!");
 			// We found a Plan!
 			// Decode the plan
-			plan = new Plan();
+			plan = new ActionPlan();
 			for (int i = 0; i < planLength; i++) {
 				for (Action a : problem.getActions()) {
 					if (solver.getValue(getActionSatVariable(a.getName(), i)) > 0) {

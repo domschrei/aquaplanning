@@ -4,7 +4,7 @@ import java.util.List;
 
 import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
-import edu.kit.aquaplanning.model.ground.Plan;
+import edu.kit.aquaplanning.model.ground.ActionPlan;
 import edu.kit.aquaplanning.planning.GroundPlanner;
 import edu.kit.aquaplanning.sat.Sat4jSolver;
 import edu.kit.aquaplanning.sat.SymbolicReachabilityFormula;
@@ -19,7 +19,7 @@ public class SymbolicReachabilityPlanner extends GroundPlanner {
 	}
 
 	@Override
-	public Plan findPlan(GroundPlanningProblem problem) {
+	public ActionPlan findPlan(GroundPlanningProblem problem) {
 		PlanningToSatEncoder encoder = new ForeachEncoding();
 		SymbolicReachabilityFormula fla = encoder.encodeProblem(problem);
 		SymbolicReachabilitySolver solver = new SymbolicReachabilitySolver(new Sat4jSolver());

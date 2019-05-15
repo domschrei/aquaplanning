@@ -11,7 +11,7 @@ import edu.kit.aquaplanning.Configuration.PlannerType;
 import edu.kit.aquaplanning.grounding.Grounder;
 import edu.kit.aquaplanning.grounding.PlanningGraphGrounder;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
-import edu.kit.aquaplanning.model.ground.Plan;
+import edu.kit.aquaplanning.model.ground.ActionPlan;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.optimization.Clock;
 import edu.kit.aquaplanning.optimization.SimplePlanOptimizer;
@@ -89,11 +89,11 @@ public class TestPlanners extends TestCase {
 		config.problemFile = "testfiles/gripper/p01.pddl";
 		PlanningProblem pp = new ProblemParser().parse(config.domainFile, config.problemFile);
 		GroundPlanningProblem gpp = new PlanningGraphGrounder(config).ground(pp);
-		Plan plan = Planner.getPlanner(pp, config).plan(pp);
+		ActionPlan plan = (ActionPlan) Planner.getPlanner(pp, config).plan(pp);
 		assertTrue(Validator.planIsValid(gpp, plan));
 		System.out.println("Initial plan length: " + plan.getLength());
 		System.out.println(plan);
-		Plan newPlan = new SimplePlanOptimizer(gpp).improvePlan(plan, new Clock(5000));
+		ActionPlan newPlan = new SimplePlanOptimizer(gpp).improvePlan(plan, new Clock(5000));
 		assertTrue(Validator.planIsValid(gpp, newPlan));
 		System.out.println("New plan length: " + newPlan.getLength());
 		System.out.println(newPlan);
@@ -133,7 +133,7 @@ public class TestPlanners extends TestCase {
 
 	private void testSatPlan(GroundPlanningProblem gpp) {
 		GroundPlanner planner = new SimpleSatPlanner(new Configuration());
-		Plan plan = planner.findPlan(gpp);
+		ActionPlan plan = planner.findPlan(gpp);
 		System.out.println(plan);
 		assertNotNull(plan);
 		assertTrue(plan.getLength() > 0);
@@ -142,7 +142,7 @@ public class TestPlanners extends TestCase {
 
 	private void testHegemannsSatPlan(GroundPlanningProblem gpp) {
 		GroundPlanner planner = new HegemannsSatPlanner(new Configuration());
-		Plan plan = planner.findPlan(gpp);
+		ActionPlan plan = planner.findPlan(gpp);
 		System.out.println(plan);
 		assertNotNull(plan);
 		assertTrue(plan.getLength() > 0);
@@ -151,7 +151,7 @@ public class TestPlanners extends TestCase {
 
 	private void testReachabilityPlanner(GroundPlanningProblem gpp) {
 		GroundPlanner planner = new SymbolicReachabilityPlanner(new Configuration());
-		Plan plan = planner.findPlan(gpp);
+		ActionPlan plan = planner.findPlan(gpp);
 		assertNotNull(plan);
 		System.out.println(plan);
 		assertTrue(plan.getLength() > 0);
@@ -204,7 +204,7 @@ public class TestPlanners extends TestCase {
 			config.heuristic = HeuristicType.relaxedPathLength;
 		}
 		GroundPlanner planner = new ForwardSearchPlanner(config);
-		Plan plan = planner.findPlan(gpp);
+		ActionPlan plan = planner.findPlan(gpp);
 
 		System.out.println(plan);
 
@@ -235,7 +235,7 @@ public class TestPlanners extends TestCase {
 			FileWriter w = new FileWriter("_tmp_plan.txt");
 			w.write(plan.toString());
 			w.close();
-			Plan parsedPlan = PlanParser.parsePlan("_tmp_plan.txt", reference);
+			ActionPlan parsedPlan = PlanParser.parsePlan("_tmp_plan.txt", reference);
 
 			// See if the plan is valid under the reference problem, too
 			assertTrue("The produced plan is invalid under the problem that is generated using default settings.",

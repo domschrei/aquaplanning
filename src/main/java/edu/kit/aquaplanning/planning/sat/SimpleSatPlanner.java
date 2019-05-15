@@ -9,7 +9,7 @@ import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.model.ground.Action;
 import edu.kit.aquaplanning.model.ground.Atom;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
-import edu.kit.aquaplanning.model.ground.Plan;
+import edu.kit.aquaplanning.model.ground.ActionPlan;
 import edu.kit.aquaplanning.planning.GroundPlanner;
 import edu.kit.aquaplanning.sat.AbstractSatSolver;
 
@@ -80,7 +80,7 @@ public class SimpleSatPlanner extends GroundPlanner {
 	}
 
 	@Override
-	public Plan findPlan(GroundPlanningProblem problem) {
+	public ActionPlan findPlan(GroundPlanningProblem problem) {
 
 		// calculate number of sat variables required for each step
 		satVarsPerStep = problem.getNumAtoms() + problem.getActions().size();
@@ -123,7 +123,7 @@ public class SimpleSatPlanner extends GroundPlanner {
 		}
 
 		// Decode the plan
-		Plan plan = new Plan();
+		ActionPlan plan = new ActionPlan();
 		for (int i = 0; i <= step; i++) {
 			for (Action a : problem.getActions()) {
 				if (solver.getValue(getActionSatVariable(a.getName(), i)) > 0) {

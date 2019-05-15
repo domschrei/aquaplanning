@@ -4,6 +4,7 @@ import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.grounding.PlanningGraphGrounder;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
 import edu.kit.aquaplanning.model.ground.Plan;
+import edu.kit.aquaplanning.model.ground.ActionPlan;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.optimization.Clock;
 import edu.kit.aquaplanning.optimization.SimplePlanOptimizer;
@@ -42,7 +43,7 @@ public abstract class GroundPlanner extends Planner {
 	}
 
 	@Override
-	public Plan plan(PlanningProblem p) {
+	public ActionPlan plan(PlanningProblem p) {
 		
 		Logger.log(Logger.INFO, "Grounding ...");
 		grounder = new PlanningGraphGrounder(config);
@@ -63,7 +64,7 @@ public abstract class GroundPlanner extends Planner {
 		Logger.log(Logger.INFO,
 				"Ground problem contains " + (problem.hasComplexConditions() ? "some" : "no") + " complex conditions.");
 		
-		Plan plan = findPlan(problem);
+		ActionPlan plan = findPlan(problem);
 
 		Logger.log(Logger.INFO, "Plan length: " + plan.getLength());
 
@@ -78,11 +79,14 @@ public abstract class GroundPlanner extends Planner {
 		return plan;
 	}
 
-	public abstract Plan findPlan(GroundPlanningProblem problem);
+	public abstract ActionPlan findPlan(GroundPlanningProblem problem);
 
 	@Override
-	public boolean validatePlan(Plan plan) {
-		return Validator.planIsValid(problem, plan);
+	public boolean validatePlan(Plan<?> plan) {
+		if (plan instanceof ActionPlan)
+			return Validator.planIsValid(problem, (ActionPlan) plan);
+		else
+			throw new RuntimeException("A plan of invalid type was handed to the planner's validation.");
 	}
 
 }

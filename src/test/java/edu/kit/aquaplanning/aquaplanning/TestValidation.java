@@ -10,13 +10,13 @@ import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.grounding.Grounder;
 import edu.kit.aquaplanning.grounding.PlanningGraphGrounder;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
-import edu.kit.aquaplanning.model.ground.Plan;
+import edu.kit.aquaplanning.model.ground.OperatorPlan;
+import edu.kit.aquaplanning.model.ground.ActionPlan;
 import edu.kit.aquaplanning.model.lifted.Operator;
 import edu.kit.aquaplanning.model.lifted.PlanningProblem;
 import edu.kit.aquaplanning.parsing.PlanParser;
 import edu.kit.aquaplanning.parsing.ProblemParser;
 import edu.kit.aquaplanning.util.Triple;
-import edu.kit.aquaplanning.validation.LiftedValidator;
 import edu.kit.aquaplanning.validation.Validator;
 import junit.framework.TestCase;
 
@@ -32,7 +32,7 @@ public class TestValidation extends TestCase {
 			Grounder grounder = new PlanningGraphGrounder(new Configuration());
 			GroundPlanningProblem gpp = grounder.ground(pp);
 			
-			Plan p = PlanParser.parsePlan(plan, gpp);
+			ActionPlan p = PlanParser.parsePlan(plan, gpp);
 			assertTrue("Plan is reported to be invalid, but should be valid.", Validator.planIsValid(gpp, p));
 		}
 		
@@ -46,15 +46,15 @@ public class TestValidation extends TestCase {
 			System.out.println("Testing lifted plan validation on " + plan);
 			PlanningProblem pp = new ProblemParser().parse(domain, problem);
 			
-			List<Operator> p = PlanParser.parsePlan(plan, pp);
-			assertTrue(plan + ": Plan is reported to be invalid, but should be valid.", LiftedValidator.planIsValid(pp, p));
+			OperatorPlan p = PlanParser.parsePlan(plan, pp);
+			assertTrue(plan + ": Plan is reported to be invalid, but should be valid.", Validator.planIsValid(pp, p));
 
 			Operator op = p.remove(0);
-			assertFalse(plan + ": Plan is reported to be valid, but should be invalid.", LiftedValidator.planIsValid(pp, p));
-			p.add(0, op);
+			assertFalse(plan + ": Plan is reported to be valid, but should be invalid.", Validator.planIsValid(pp, p));
+			p.appendAtFront(op);
 			
-			op = p.remove(p.size()-1);
-			assertFalse(plan + ": Plan is reported to be valid, but should be invalid.", LiftedValidator.planIsValid(pp, p));
+			op = p.remove(p.getLength()-1);
+			assertFalse(plan + ": Plan is reported to be valid, but should be invalid.", Validator.planIsValid(pp, p));
 		}
 	}
 

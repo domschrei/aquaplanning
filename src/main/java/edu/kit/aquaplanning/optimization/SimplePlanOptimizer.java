@@ -5,7 +5,7 @@ import java.util.List;
 
 import edu.kit.aquaplanning.model.ground.Action;
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
-import edu.kit.aquaplanning.model.ground.Plan;
+import edu.kit.aquaplanning.model.ground.ActionPlan;
 import edu.kit.aquaplanning.model.ground.State;
 import edu.kit.aquaplanning.util.Logger;
 
@@ -25,10 +25,10 @@ public class SimplePlanOptimizer extends PlanOptimizer {
 	 * Finds and removes simple loops in state space.
 	 */
 	@Override
-	public Plan improvePlan(Plan initialPlan, Clock clock) {
+	public ActionPlan improvePlan(ActionPlan initialPlan, Clock clock) {
 
 		// Initial plan to be optimized
-		Plan plan = initialPlan.copy();
+		ActionPlan plan = initialPlan.copy();
 
 		while (true) {
 
@@ -63,7 +63,7 @@ public class SimplePlanOptimizer extends PlanOptimizer {
 			// Did the plan improve?
 			if (actions.size() < plan.getLength()) {
 				// -- yes: update plan
-				final Plan newPlan = new Plan();
+				final ActionPlan newPlan = new ActionPlan();
 				actions.forEach(action -> newPlan.appendAtBack(action));
 				plan = newPlan;
 			} else {

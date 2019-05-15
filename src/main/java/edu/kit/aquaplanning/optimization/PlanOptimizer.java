@@ -1,7 +1,7 @@
 package edu.kit.aquaplanning.optimization;
 
 import edu.kit.aquaplanning.model.ground.GroundPlanningProblem;
-import edu.kit.aquaplanning.model.ground.Plan;
+import edu.kit.aquaplanning.model.ground.ActionPlan;
 
 public abstract class PlanOptimizer {
 
@@ -11,5 +11,5 @@ public abstract class PlanOptimizer {
 		this.problem = problem;
 	}
 
-	public abstract Plan improvePlan(Plan initialPlan, Clock remainingTime);
+	public abstract ActionPlan improvePlan(ActionPlan initialPlan, Clock remainingTime);
 }

@@ -88,9 +88,9 @@ public abstract class Planner {
 	/**
 	 * Attempt to find a solution plan for the provided problem.
 	 */
-	public abstract Plan plan(PlanningProblem problem);
+	public abstract Plan<?> plan(PlanningProblem problem);
 
-	public abstract boolean validatePlan(Plan plan);
+	public abstract boolean validatePlan(Plan<?> plan);
 
 	@Override
 	public String toString() {

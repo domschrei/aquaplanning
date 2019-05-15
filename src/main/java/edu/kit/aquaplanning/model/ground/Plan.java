@@ -4,70 +4,49 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-public class Plan implements Iterable<Action> {
+public abstract class Plan<A> implements Iterable<A> {
 
-	private List<Action> actions;
-
-	public Plan(List<Action> actions) {
-		this.actions = actions;
-	}
+	protected List<A> sequence;
 	
 	public Plan() {
-		this.actions = new LinkedList<>();
+		this.sequence = new LinkedList<>();
 	}
-
-	public void appendAtBack(Action action) {
-		actions.add(action);
+	
+	public Plan(List<A> sequence) {
+		this.sequence = sequence;
 	}
-
-	public void appendAtFront(Action action) {
-		actions.add(0, action);
+	
+	public void appendAtFront(A a) {
+		sequence.add(0, a);
 	}
-
+	
+	public void appendAtBack(A a) {
+		sequence.add(a);
+	}
+	
+	public Plan<A> appendAtBack(Plan<A> other) {
+		this.sequence.addAll(other.sequence);
+		return this;
+	}
+	
+	public A remove(int index) {
+		return sequence.remove(index);
+	}
+	
+	public A get(int index) {
+		return sequence.get(index);
+	}
+	
 	public int getLength() {
-		return actions.size();
+		return sequence.size();
 	}
-
-	/**
-	 * Calculates the total cost of the plan
-	 * 
-	 * @return The cost of the plan
-	 */
-	public int getCost() {
-		int sum = 0;
-		for (Action a : actions) {
-			sum += a.getCost();
-		}
-		return sum;
-	}
-
+	
+	public abstract int getCost();
+	public abstract String toString();
+	public abstract Plan<A> copy();
+	
 	@Override
-	public String toString() {
-
-		StringBuilder builder = new StringBuilder();
-		int step = 0;
-		for (Action action : actions) {
-			builder.append(step + " : " + action.getCleanedName() + "\n");
-			step++;
-		}
-		return builder.toString();
-	}
-
-	@Override
-	public Iterator<Action> iterator() {
-
-		return actions.iterator();
-	}
-
-	public Action get(int index) {
-		return actions.get(index);
-	}
-
-	public Plan copy() {
-		Plan newPlan = new Plan();
-		for (Action a : actions) {
-			newPlan.appendAtBack(a);
-		}
-		return newPlan;
+	public Iterator<A> iterator() {
+		return sequence.iterator();
 	}
 }
