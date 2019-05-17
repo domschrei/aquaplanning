@@ -19,7 +19,8 @@ public class HierarchyLayer {
 	public static final Action BLANK_ACTION = new Action("_BLANK_ACTION",
 			new Precondition(PreconditionType.conjunction), new Effect(EffectType.conjunction));
 	public static final int BINARY_AMO_THRESHOLD = 512;
-
+	public static final boolean ADD_REDUCTION_AMO = false;
+	
 	public enum FactStatus {
 		constantPositive, constantNegative, fluent;
 	};
@@ -36,6 +37,7 @@ public class HierarchyLayer {
 	private List<Integer> successorPositions;
 	private List<Integer> variableStarts;
 	private List<BinaryEncoding> binaryActionHelperVars;
+	private List<BinaryEncoding> binaryReductionHelperVars;
 
 	public HierarchyLayer() {
 		this.reductions = new ArrayList<>();
@@ -84,6 +86,7 @@ public class HierarchyLayer {
 		factVars = new ArrayList<>();
 		variableStarts = new ArrayList<>();
 		binaryActionHelperVars = new ArrayList<>();
+		binaryReductionHelperVars = new ArrayList<>();
 
 		for (int pos = 0; pos < getSize(); pos++) {
 			variableStarts.add(globalVariableStart);
@@ -95,7 +98,17 @@ public class HierarchyLayer {
 				rVars.put(r, globalVariableStart++);
 			}
 			reductionVars.add(rVars);
-
+			if (ADD_REDUCTION_AMO) {
+				// At-most-one helper variables for reductions
+				if (getReductions(pos).size() >= BINARY_AMO_THRESHOLD) {
+					BinaryEncoding enc = new BinaryEncoding(getReductions(pos).size() + 1, globalVariableStart);
+					binaryReductionHelperVars.add(enc);
+					globalVariableStart += enc.getBitLength();
+				} else {
+					binaryReductionHelperVars.add(null);
+				}
+			}
+			
 			// Actions
 			Map<Action, Integer> aVars = new HashMap<>();
 			for (Action a : getActions(pos)) {
@@ -218,8 +231,11 @@ public class HierarchyLayer {
 		return variableStarts.get(pos);
 	}
 
-	public BinaryEncoding getBinaryEncoding(int pos) {
+	public BinaryEncoding getActionBinaryEncoding(int pos) {
 		return binaryActionHelperVars.get(pos);
+	}
+	public BinaryEncoding getReductionBinaryEncoding(int pos) {
+		return ADD_REDUCTION_AMO ? binaryReductionHelperVars.get(pos) : null;
 	}
 
 	public HierarchyLayerStatistics collectStatistics() {

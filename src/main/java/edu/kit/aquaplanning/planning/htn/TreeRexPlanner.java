@@ -2,8 +2,10 @@ package edu.kit.aquaplanning.planning.htn;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import edu.kit.aquaplanning.Configuration;
 import edu.kit.aquaplanning.grounding.htn.HtnGrounder;
@@ -24,6 +26,7 @@ import edu.kit.aquaplanning.planning.GroundPlanner;
 import edu.kit.aquaplanning.sat.AbstractSatSolver;
 import edu.kit.aquaplanning.util.BinaryEncoding;
 import edu.kit.aquaplanning.util.Logger;
+import edu.kit.aquaplanning.util.Pair;
 
 public class TreeRexPlanner extends GroundPlanner {
 
@@ -41,7 +44,7 @@ public class TreeRexPlanner extends GroundPlanner {
 	public ActionPlan findPlan(GroundPlanningProblem problem) {
 
 		Logger.log(Logger.INFO, "Initializing HTN grounding ...");
-		htnGrounder = new HtnGrounder(problem, grounder);
+		htnGrounder = new HtnGrounder(config, problem, grounder);
 
 		solver = AbstractSatSolver.getSolver(config);
 
@@ -52,7 +55,7 @@ public class TreeRexPlanner extends GroundPlanner {
 
 		HierarchyLayer newLayer = htnGrounder.getHierarchyLayers().get(depth);
 		HierarchyLayerStatistics statistics = newLayer.collectStatistics();
-		System.out.println(newLayer);
+		//System.out.println(newLayer);
 		System.out.println(statistics);
 
 		Logger.log(Logger.INFO, "Adding clauses ...");
@@ -82,7 +85,7 @@ public class TreeRexPlanner extends GroundPlanner {
 			HierarchyLayer oldLayer = newLayer;
 			htnGrounder.computeNextLayer();
 			newLayer = htnGrounder.getHierarchyLayers().get(depth);
-			System.out.println(newLayer);
+			//System.out.println(newLayer);
 			newLayer.extendStatistics(statistics);
 			System.out.println(statistics);
 
@@ -90,7 +93,11 @@ public class TreeRexPlanner extends GroundPlanner {
 
 			// Transitional clauses oldLayer -> newLayer
 			addPropagations(oldLayer, newLayer);
-			addExpansions(oldLayer, newLayer);
+			for (int oldPos = 0; oldPos < oldLayer.getSize(); oldPos++) {
+				Pair<List<Map<Reduction, Set<Reduction>>>, 
+					List<Map<Action, Set<Reduction>>>> predecessors = addExpansions(oldLayer, newLayer, oldPos);
+				addPredecessors(oldLayer, newLayer, oldPos, predecessors.getLeft(), predecessors.getRight());			
+			}
 
 			// Universal clauses for new layer
 			for (int pos = 0; pos + 1 < newLayer.getSize(); pos++) {
@@ -118,6 +125,7 @@ public class TreeRexPlanner extends GroundPlanner {
 
 	private void addInitState(HierarchyLayer layer) {
 
+		tagNextClauses(ClauseTag.INIT_STATE);
 		State initState = htnGrounder.getGroundProblem().getInitialState();
 		List<Boolean> atoms = initState.getAtoms();
 		for (int i = 0; i < atoms.size(); i++) {
@@ -127,7 +135,8 @@ public class TreeRexPlanner extends GroundPlanner {
 	}
 
 	private void addGoal(HierarchyLayer layer) {
-
+		
+		tagNextClauses(ClauseTag.GOAL_STATE);
 		Goal goal = htnGrounder.getGroundProblem().getGoal();
 		for (Atom atom : goal.getAtoms()) {
 			if (layer.isFactFluent(0, atom.getId() + 1))
@@ -142,6 +151,7 @@ public class TreeRexPlanner extends GroundPlanner {
 
 		for (int p = 0; p < r.getNumSubtasks(); p++) {
 
+			tagNextClauses(ClauseTag.INIT_TASKS);
 			String subtask = r.getSubtask(p);
 			boolean added = false;
 			Action a = htnGrounder.getAction(subtask);
@@ -150,13 +160,7 @@ public class TreeRexPlanner extends GroundPlanner {
 				added = true;
 			}
 			for (Reduction red : htnGrounder.getReductions(subtask)) {
-				if (htnGrounder.isReductionPseudoPrimitive(red)) {
-					Action action = htnGrounder.getAction(red.getSubtask(0));
-					if (action != null && layer.contains(p, action)) {
-						addToClause(layer.getActionVariable(p, action));
-						added = true;
-					}
-				} else if (layer.contains(p, red)) {
+				if (layer.contains(p, red)) {
 					addToClause(layer.getReductionVariable(p, red));
 					added = true;
 				}
@@ -166,11 +170,12 @@ public class TreeRexPlanner extends GroundPlanner {
 				System.exit(1);
 			}
 			finishClause();
-
+			
+			tagNextClauses(ClauseTag.REDUCTION_CONSTRAINTS);
 			Precondition constraint = r.getConstraint(p);
 			addCondition(layer, p, constraint, 0);
 		}
-
+		
 		Precondition constraint = r.getConstraint(r.getNumSubtasks());
 		addCondition(layer, r.getNumSubtasks(), constraint, 0);
 	}
@@ -180,11 +185,46 @@ public class TreeRexPlanner extends GroundPlanner {
 	 */
 	private void addReductionClauses(HierarchyLayer layer, int pos) {
 
-		for (Reduction r : layer.getReductions(pos)) {
-
-			// If the reduction occurs, the position is non-primitive
-			addClause(-layer.getReductionVariable(pos, r), -layer.getPrimitivenessVariable(pos));
+		List<Integer> reductionVars = new ArrayList<>();
+		
+		reductionLoop: for (Reduction r : layer.getReductions(pos)) {
+			
+			tagNextClauses(ClauseTag.REDUCTION_NONPRIMITIVENESS);
+			if (htnGrounder.isReductionPseudoPrimitive(r)) {
+				
+				// If the reduction is pseudo-primitive, then the position counts as primitive
+				// and its according action co-occurs there
+				
+				tagNextClauses(ClauseTag.REDUCTION_CONSTRAINTS);
+				
+				Action action = htnGrounder.getAction(r.getSubtask(0));
+				if (action == null || !layer.contains(pos, action)) {
+					addClause(-layer.getReductionVariable(pos, r));
+					continue;
+				}
+				
+				for (int i = 0; i <= 1; i++) {
+					if (r.getConstraint(i) == null)
+						continue;
+					if (!checkCondition(layer, pos+i, r.getConstraint(i))) {							
+						addClause(-layer.getReductionVariable(pos, r));
+						continue reductionLoop;
+					}
+					addCondition(layer, pos+i, r.getConstraint(i), -layer.getReductionVariable(pos, r));
+				}
+				
+				addClause(-layer.getReductionVariable(pos, r), layer.getActionVariable(pos, action));
+				
+			} else {	
+				// If a "proper" reduction occurs, the position is non-primitive
+				addClause(-layer.getReductionVariable(pos, r), -layer.getPrimitivenessVariable(pos));
+			}
+			
+			reductionVars.add(layer.getReductionVariable(pos, r));
 		}
+		
+		if (HierarchyLayer.ADD_REDUCTION_AMO)
+			addAtMostOne(reductionVars, layer.getReductionBinaryEncoding(pos));
 	}
 
 	/**
@@ -197,9 +237,10 @@ public class TreeRexPlanner extends GroundPlanner {
 
 		for (Action a : layer.getActions(pos)) {
 
+			tagNextClauses(ClauseTag.ACTION_PRIMITIVENESS);
 			// If the action occurs, the position is primitive
 			addClause(-layer.getActionVariable(pos, a), layer.getPrimitivenessVariable(pos));
-
+			
 			// Add preconditions and effects
 			List<Integer> facts = new ArrayList<>();
 			if (!checkCondition(layer, pos, a.getPreconditionsPos(), true)
@@ -208,6 +249,7 @@ public class TreeRexPlanner extends GroundPlanner {
 				addClause(-layer.getActionVariable(pos, a));
 				continue;
 			}
+			tagNextClauses(ClauseTag.ACTION_CONDITIONS);
 			addCondition(layer, pos, a.getPreconditionsPos(), -layer.getActionVariable(pos, a), true, null);
 			addCondition(layer, pos, a.getPreconditionsNeg(), -layer.getActionVariable(pos, a), false, null);
 			addCondition(layer, pos + 1, a.getEffectsPos(), -layer.getActionVariable(pos, a), true, facts);
@@ -224,29 +266,14 @@ public class TreeRexPlanner extends GroundPlanner {
 		List<Action> actions = new ArrayList<>();
 		actions.addAll(layer.getActions(pos));
 
-		BinaryEncoding enc = layer.getBinaryEncoding(pos);
-		if (enc == null) {
-			// Pairwise At-Most-One constraints
-			for (int i = 0; i < actions.size(); i++) {
-				for (int j = i + 1; j < actions.size(); j++) {
-					addClause(-layer.getActionVariable(pos, actions.get(i)),
-							-layer.getActionVariable(pos, actions.get(j)));
-				}
-			}
-		} else {
-			// Binary At-Most-One constraints
-			enc.getForbiddenValues().forEach(clause -> addClause(clause));
-			for (int i = 0; i < actions.size(); i++) {
-				Action a = actions.get(i);
-				int aLit = -layer.getActionVariable(pos, a);
-
-				int[] bitLits = enc.posLiterals(i);
-				for (int bitLit : bitLits) {
-					addClause(aLit, bitLit);
-				}
-			}
+		tagNextClauses(ClauseTag.ACTION_AMO);
+		List<Integer> actionVars = new ArrayList<>();
+		for (Action action : actions) {
+			actionVars.add(layer.getActionVariable(pos, action));
 		}
-
+		BinaryEncoding enc = layer.getActionBinaryEncoding(pos);
+		addAtMostOne(actionVars, enc);
+		
 		return supportingActions;
 	}
 
@@ -256,6 +283,8 @@ public class TreeRexPlanner extends GroundPlanner {
 	private void addFrameAxioms(HierarchyLayer layer, int pos, Map<Integer, List<Action>> supportingActions,
 			Map<Integer, List<Reduction>> supportingReductions) {
 
+		tagNextClauses(ClauseTag.FRAME_AXIOMS);
+		
 		for (int fact : layer.getFacts(pos + 1)) {
 
 			if (!layer.isFactFluent(pos + 1, fact)) {
@@ -263,22 +292,21 @@ public class TreeRexPlanner extends GroundPlanner {
 			}
 
 			int posBefore = layer.getLatestPositionOfFact(pos, fact);
-
+			
 			// NEGATIVE -> POSITIVE
 			if (layer.getFactStatus(posBefore, fact) != FactStatus.constantPositive
 					&& layer.getFactStatus(pos + 1, fact) != FactStatus.constantNegative) {
 
 				if (layer.isFactFluent(posBefore, fact))
 					addToClause(layer.getFactVariable(posBefore, fact));
-				if (layer.isFactFluent(pos + 1, fact))
-					addToClause(-layer.getFactVariable(pos + 1, fact));
-				for (int p = posBefore; p <= pos; p++) {
-					if (supportingReductions == null) {
+				addToClause(-layer.getFactVariable(pos + 1, fact));
+				if (supportingReductions == null) {
+					for (int p = posBefore; p <= pos; p++) {
 						addToClause(-layer.getPrimitivenessVariable(p));
-					} else {
-						for (Reduction r : supportingReductions.getOrDefault(fact, new ArrayList<>())) {
-							addToClause(layer.getReductionVariable(pos, r));
-						}
+					}
+				} else {
+					for (Reduction r : supportingReductions.getOrDefault(fact, new ArrayList<>())) {
+						addToClause(layer.getReductionVariable(pos, r));
 					}
 				}
 				for (Action a : supportingActions.getOrDefault(fact, new ArrayList<>())) {
@@ -293,15 +321,14 @@ public class TreeRexPlanner extends GroundPlanner {
 
 				if (layer.isFactFluent(posBefore, fact))
 					addToClause(-layer.getFactVariable(posBefore, fact));
-				if (layer.isFactFluent(pos + 1, fact))
-					addToClause(layer.getFactVariable(pos + 1, fact));
-				for (int p = posBefore; p <= pos; p++) {
-					if (supportingReductions == null) {
+				addToClause(layer.getFactVariable(pos + 1, fact));
+				if (supportingReductions == null) {
+					for (int p = posBefore; p <= pos; p++) {
 						addToClause(-layer.getPrimitivenessVariable(p));
-					} else {
-						for (Reduction r : supportingReductions.getOrDefault(fact, new ArrayList<>())) {
-							addToClause(layer.getReductionVariable(pos, r));
-						}
+					}
+				} else {
+					for (Reduction r : supportingReductions.getOrDefault(fact, new ArrayList<>())) {
+						addToClause(layer.getReductionVariable(pos, r));
 					}
 				}
 				for (Action a : supportingActions.getOrDefault(-fact, new ArrayList<>())) {
@@ -320,6 +347,8 @@ public class TreeRexPlanner extends GroundPlanner {
 		for (int pos = 0; pos < oldLayer.getSize(); pos++) {
 			int successorPos = oldLayer.getSuccessorPosition(pos);
 
+			tagNextClauses(ClauseTag.ACTION_PROPAGATION);
+			
 			addClause(-oldLayer.getPrimitivenessVariable(pos), newLayer.getPrimitivenessVariable(successorPos));
 
 			for (Action a : oldLayer.getActions(pos)) {
@@ -330,117 +359,197 @@ public class TreeRexPlanner extends GroundPlanner {
 				}
 				addClause(-oldLayer.getActionVariable(pos, a), newLayer.getActionVariable(successorPos, a));
 			}
-
-			/*
-			 * // Propagation of facts from previous layer to the next layer for (int fact :
-			 * oldLayer.getFacts(pos)) {
-			 * 
-			 * if (oldLayer.getFactStatus(pos, fact) == FactStatus.constantPositive) { if
-			 * (newLayer.isFactFluent(successorPos, fact)) {
-			 * addClause(newLayer.getFactVariable(successorPos, fact)); } } else if
-			 * (oldLayer.getFactStatus(pos, fact) == FactStatus.constantNegative) { if
-			 * (newLayer.isFactFluent(successorPos, fact)) {
-			 * addClause(-newLayer.getFactVariable(successorPos, fact)); } } else { if
-			 * (newLayer.isFactFluent(successorPos, fact)) { int oldVar =
-			 * oldLayer.getFactVariable(pos, fact); int newVar =
-			 * newLayer.getFactVariable(successorPos, fact); addClause(oldVar, -newVar);
-			 * addClause(-oldVar, newVar); } } }
-			 */
+			
+			tagNextClauses(ClauseTag.FACT_PROPAGATION);
+			
+			// Propagation of facts from previous layer to the next layer 
+			for (int fact : oldLayer.getFacts(pos)) {
+				if (oldLayer.getFactStatus(pos, fact) == FactStatus.constantPositive) { 
+					if (newLayer.isFactFluent(successorPos, fact)) {
+						addClause(newLayer.getFactVariable(successorPos, fact)); 
+					}
+				} else if (oldLayer.getFactStatus(pos, fact) == FactStatus.constantNegative) { 
+					if (newLayer.isFactFluent(successorPos, fact)) {
+						addClause(-newLayer.getFactVariable(successorPos, fact));
+					} 
+				} else { 
+					if (newLayer.isFactFluent(successorPos, fact)) { 
+						int oldVar = oldLayer.getFactVariable(pos, fact); 
+						int newVar = newLayer.getFactVariable(successorPos, fact);
+						if (oldVar != newVar) {
+							addClause(oldVar, -newVar);
+							addClause(-oldVar, newVar); 
+						}
+					} 
+				} 
+			}
+			 
 		}
 	}
 
 	/**
 	 * Reductions
 	 */
-	private void addExpansions(HierarchyLayer oldLayer, HierarchyLayer newLayer) {
+	private Pair<List<Map<Reduction, Set<Reduction>>>, List<Map<Action, Set<Reduction>>>> 
+					addExpansions(HierarchyLayer oldLayer, HierarchyLayer newLayer, int oldPos) {
+		
+		int successorPos = oldLayer.getSuccessorPosition(oldPos);
+		int maxExpansionSize;
+		if (oldLayer.getSuccessorPosition(oldPos+1) > 0)
+			maxExpansionSize = oldLayer.getSuccessorPosition(oldPos + 1) - successorPos;
+		else
+			maxExpansionSize = newLayer.getSize() - successorPos;
+		
+		
+		List<Map<Reduction, Set<Reduction>>> reductionPredecessors = new ArrayList<>();
+		List<Map<Action, Set<Reduction>>> actionPredecessors = new ArrayList<>();
+		for (int p = 0; p <= maxExpansionSize; p++) {
+			reductionPredecessors.add(new HashMap<>());
+			actionPredecessors.add(new HashMap<>());
+		}
+		
+		loopReductions: for (Reduction r : oldLayer.getReductions(oldPos)) {
 
-		int numEliminatedReductions = 0;
-
-		for (int pos = 0; pos < oldLayer.getSize(); pos++) {
-
-			loopReductions: for (Reduction r : oldLayer.getReductions(pos)) {
-
-				int successorPos = oldLayer.getSuccessorPosition(pos);
-				int maxExpansionSize = oldLayer.getSuccessorPosition(pos + 1) - successorPos;
-
-				for (int p = 0; p < r.getNumSubtasks(); p++) {
-
-					// Check if there is some subtask that turns out to be impossible
-					String subtask = r.getSubtask(p);
-
-					Action action = htnGrounder.getAction(subtask);
-					if (action != null && !newLayer.contains(successorPos + p, action)) {
-						// There is no such action => the reduction turns out to be impossible
-						addClause(-oldLayer.getReductionVariable(pos, r));
-						numEliminatedReductions++;
-						continue loopReductions;
+			if (htnGrounder.isReductionPseudoPrimitive(r)) {
+				Action action = htnGrounder.getAction(r.getSubtask(0));
+				if (!actionPredecessors.get(0).containsKey(action)) {
+					actionPredecessors.get(0).put(action, new HashSet<>());
+				}
+				actionPredecessors.get(0).get(action).add(r);
+				continue;
+			}
+			
+			tagNextClauses(ClauseTag.REDUCTION_EXPANSION);
+			
+			int p = 0;
+			for (; p < r.getNumSubtasks(); p++) {
+				String subtask = r.getSubtask(p);
+				addToClause(-oldLayer.getReductionVariable(oldPos, r));
+				Action action = htnGrounder.getAction(subtask);
+				if (action != null && newLayer.contains(successorPos + p, action)) {
+					addToClause(newLayer.getActionVariable(successorPos + p, action));
+					if (!actionPredecessors.get(p).containsKey(action)) {
+						actionPredecessors.get(p).put(action, new HashSet<>());
 					}
-
-					for (Reduction red : htnGrounder.getReductions(subtask)) {
+					actionPredecessors.get(p).get(action).add(r);
+				}
+				for (Reduction red : htnGrounder.getReductions(subtask)) {
+					if (newLayer.contains(successorPos + p, red)) {
+						
 						if (htnGrounder.isReductionPseudoPrimitive(red)) {
-							if (!newLayer.contains(successorPos + p, htnGrounder.getAction(red.getSubtask(0)))) {
-								// There is no such action => the reduction turns out to be impossible
-								addClause(-oldLayer.getReductionVariable(pos, r));
-								numEliminatedReductions++;
-								continue loopReductions;
+							action = htnGrounder.getAction(red.getSubtask(0));
+							if (!actionPredecessors.get(p).containsKey(action)) {
+								actionPredecessors.get(p).put(action, new HashSet<>());
 							}
-						} else if (!newLayer.contains(successorPos + p, red)) {
-							// There is no such sub-reduction => the reduction turns out to be impossible
-							addClause(-oldLayer.getReductionVariable(pos, r));
-							numEliminatedReductions++;
-							continue loopReductions;
+							actionPredecessors.get(p).get(action).add(r);
 						}
-					}
-				}
-
-				int p = 0;
-				for (; p < r.getNumSubtasks(); p++) {
-
-					String subtask = r.getSubtask(p);
-					addToClause(-oldLayer.getReductionVariable(pos, r));
-					boolean successorFound = false;
-					Action action = htnGrounder.getAction(subtask);
-					if (action != null) {
-						addToClause(newLayer.getActionVariable(successorPos + p, action));
-						successorFound = true;
-					}
-					for (Reduction red : htnGrounder.getReductions(subtask)) {
-						if (htnGrounder.isReductionPseudoPrimitive(red)) {
-							addToClause(newLayer.getActionVariable(successorPos + p,
-									htnGrounder.getAction(red.getSubtask(0))));
-						} else {
-							addToClause(newLayer.getReductionVariable(successorPos + p, red));
+						
+						addToClause(newLayer.getReductionVariable(successorPos + p, red));
+						if (!reductionPredecessors.get(p).containsKey(red)) {
+							reductionPredecessors.get(p).put(red, new HashSet<>());
 						}
-						successorFound = true;
-					}
-					finishClause();
-					if (!successorFound) {
-						// Logger.log(Logger.WARN, "Reduction " + r + " does not have any successors on
-						// offset " + p);
-						continue loopReductions;
-						// System.exit(1);
+						reductionPredecessors.get(p).get(red).add(r);
 					}
 				}
-				// Fill empty positions with blank actions
-				for (; p < maxExpansionSize; p++) {
-					addClause(-oldLayer.getReductionVariable(pos, r),
-							newLayer.getActionVariable(successorPos + p, HierarchyLayer.BLANK_ACTION));
+				finishClause();
+			}
+			// Fill empty positions with blank actions
+			for (; p < maxExpansionSize; p++) {
+				Action blank = HierarchyLayer.BLANK_ACTION;
+				addClause(-oldLayer.getReductionVariable(oldPos, r),
+						newLayer.getActionVariable(successorPos + p, blank));
+				if (!actionPredecessors.get(p).containsKey(blank)) {
+					actionPredecessors.get(p).put(blank, new HashSet<>());
 				}
+				actionPredecessors.get(p).get(blank).add(r);
+			}
+			
+			tagNextClauses(ClauseTag.REDUCTION_CONSTRAINTS);
+			// Add reduction's constraints
+			for (p = 0; p <= r.getNumSubtasks(); p++) {
+				Precondition constraint = r.getConstraint(p);
+				if (!checkCondition(newLayer, successorPos + p, constraint)) {
+					addClause(-oldLayer.getReductionVariable(oldPos, r));
+					continue loopReductions;
+				}
+				addCondition(newLayer, successorPos + p, constraint, -oldLayer.getReductionVariable(oldPos, r));
+			}
+		}
+		
+		return new Pair<>(reductionPredecessors, actionPredecessors);
+	}
+	
+	private void addPredecessors(HierarchyLayer oldLayer, HierarchyLayer newLayer, int oldPos,
+			List<Map<Reduction, Set<Reduction>>> reductionPredecessors, 
+			List<Map<Action, Set<Reduction>>> actionPredecessors) {
+		
+		tagNextClauses(ClauseTag.REDUCTION_PREDECESSORS);
+		
+		int maxExpansionSize;
+		if (oldLayer.getSuccessorPosition(oldPos+1) > 0)
+			maxExpansionSize = oldLayer.getSuccessorPosition(oldPos + 1) - oldLayer.getSuccessorPosition(oldPos);
+		else
+			maxExpansionSize = newLayer.getSize() - oldLayer.getSuccessorPosition(oldPos);
+		
+		for (int succPos = oldLayer.getSuccessorPosition(oldPos); 
+				succPos < oldLayer.getSuccessorPosition(oldPos)+maxExpansionSize; succPos++) {
+			
+			int offset = succPos - oldLayer.getSuccessorPosition(oldPos);
+			
+			Map<Reduction, Set<Reduction>> pred = reductionPredecessors.get(offset);
+			Map<Action, Set<Reduction>> actionPred = actionPredecessors.get(offset);
+			
+			for (Reduction child : newLayer.getReductions(succPos)) {
+				
+				addToClause(-newLayer.getReductionVariable(succPos, child));
+				for (Reduction parent : pred.getOrDefault(child, new HashSet<>())) {
+					if (oldLayer.contains(oldPos, parent)) {
+						addToClause(oldLayer.getReductionVariable(oldPos, parent));
+					}
+				}
+				finishClause();
+			}
+			
+			for (Action child : newLayer.getActions(succPos)) {
+				
+				addToClause(-newLayer.getActionVariable(succPos, child));
+				if (offset == 0 && oldLayer.contains(oldPos, child))
+					addToClause(oldLayer.getActionVariable(oldPos, child));
+				if (offset > 0 && child == HierarchyLayer.BLANK_ACTION)
+					addToClause(oldLayer.getPrimitivenessVariable(oldPos));
+				
+				for (Reduction parent : actionPred.getOrDefault(child, new HashSet<>())) {
+					if (oldLayer.contains(oldPos, parent)) {
+						addToClause(oldLayer.getReductionVariable(oldPos, parent));
+					}
+				}
+				finishClause();
+			}
+		}
+	}
+	
+	private void addAtMostOne(List<Integer> variables, BinaryEncoding enc) {
+		
+		if (enc == null) {
+			// Pairwise At-Most-One constraints
+			for (int i = 0; i < variables.size(); i++) {
+				for (int j = i + 1; j < variables.size(); j++) {
+					addClause(-variables.get(i),
+							-variables.get(j));
+				}
+			}
+		} else {
+			// Binary At-Most-One constraints
+			enc.getForbiddenValues().forEach(clause -> addClause(clause));
+			for (int i = 0; i < variables.size(); i++) {
+				int lit = -variables.get(i);
 
-				// Add reduction's constraints
-				for (p = 0; p <= r.getNumSubtasks(); p++) {
-					Precondition constraint = r.getConstraint(p);
-					if (!checkCondition(newLayer, successorPos + p, constraint)) {
-						addClause(-oldLayer.getReductionVariable(pos, r));
-						numEliminatedReductions++;
-						continue loopReductions;
-					}
-					addCondition(newLayer, successorPos + p, constraint, -oldLayer.getReductionVariable(pos, r));
+				int[] bitLits = enc.posLiterals(i);
+				for (int bitLit : bitLits) {
+					addClause(lit, bitLit);
 				}
 			}
 		}
-
-		Logger.log(Logger.INFO, "Logically eliminated " + numEliminatedReductions + " reductions.");
 	}
 
 	private void assumeFinishedPlan(HierarchyLayer newLayer) {
@@ -482,19 +591,21 @@ public class TreeRexPlanner extends GroundPlanner {
 
 	private boolean checkCondition(HierarchyLayer layer, int pos, int fact, boolean sign) {
 
-		int posBefore = layer.getLatestPositionOfFactVariable(pos, Math.abs(fact));
-		if (pos == posBefore && !layer.isFactFluent(pos, fact)) {
-			if (layer.getFactStatus(pos, fact) == (sign ? FactStatus.constantNegative : FactStatus.constantPositive)) {
-				return false;
-			}
-		} else if (posBefore < 0) {
-			if (layer.getFactStatus(pos, fact) == (sign ? FactStatus.constantNegative : FactStatus.constantPositive)) {
-				return false;
-			}
-		} else if (posBefore < pos) {
-			System.out.println(fact + " : " + posBefore + " < " + pos);
-			throw new RuntimeException();
+		if (layer.getFactStatus(pos, fact) == (sign ? FactStatus.constantNegative : FactStatus.constantPositive)) {
+			return false;
 		}
+		if (layer.getFactStatus(pos, fact) == (!sign ? FactStatus.constantNegative : FactStatus.constantPositive)) {
+			return true;
+		}
+		
+		int posBefore = layer.getLatestPositionOfFactVariable(pos, Math.abs(fact));
+		if (posBefore < 0)
+			return false;
+		if (posBefore >= 0 && posBefore < pos) {
+			throw new RuntimeException();
+			//return checkCondition(layer, posBefore, fact, sign);
+		}
+		
 		return true;
 	}
 
@@ -511,13 +622,16 @@ public class TreeRexPlanner extends GroundPlanner {
 				if (!layer.isFactFluent(pos, fact)) {
 					continue;
 				}
-
 				int posBefore = layer.getLatestPositionOfFactVariable(pos, fact);
 				if (posBefore < pos) {
 					System.out.println(atom + " : " + posBefore + " < " + pos);
 					throw new RuntimeException();
+					//continue;
+					/*if (posBefore < 0 || !layer.isFactFluent(posBefore, fact)) {
+						continue;
+					}*/
 				}
-
+				
 				if (firstLit != 0) {
 					addToClause(firstLit);
 				}
@@ -536,20 +650,17 @@ public class TreeRexPlanner extends GroundPlanner {
 		for (int idx = atoms.getFirstTrueAtom(); idx >= 0; idx = atoms.getNextTrueAtom(idx + 1)) {
 			int fact = (sign ? 1 : -1) * (idx + 1);
 
-			int posBefore = layer.getLatestPositionOfFact(pos, Math.abs(fact));
-			if (posBefore < 0) {
-				System.out.println(fact + " never occurs");
+			if (!layer.isFactFluent(pos, fact)) {
 				continue;
-			} else if (posBefore < pos) {
+			}
+			int posBefore = layer.getLatestPositionOfFactVariable(pos, fact);
+			if (posBefore < pos) {
 				System.out.println(fact + " : " + posBefore + " < " + pos);
 				throw new RuntimeException();
-			}
-			if (posBefore < 0 || !layer.isFactFluent(posBefore, fact)) {
-				if (layer.getFactStatus(posBefore,
-						fact) == (sign ? FactStatus.constantNegative : FactStatus.constantPositive)) {
-
-				}
-				continue;
+				//continue;
+				/*if (posBefore < 0 || !layer.isFactFluent(posBefore, fact)) {
+					continue;
+				}*/
 			}
 
 			if (firstLit != 0) {
@@ -566,7 +677,22 @@ public class TreeRexPlanner extends GroundPlanner {
 	List<Integer> currentClause;
 	List<Integer> assumptions;
 	int addedClauses = 0;
-
+	ClauseTag clauseTag;
+	Map<ClauseTag, Integer> addedClausesByTag;
+	enum ClauseTag {
+		INIT_TASKS, INIT_STATE, GOAL_STATE, ACTION_CONDITIONS, REDUCTION_CONSTRAINTS, FACT_PROPAGATION, ACTION_PROPAGATION, REDUCTION_EXPANSION, 
+		ACTION_PRIMITIVENESS, REDUCTION_NONPRIMITIVENESS, ACTION_AMO, FRAME_AXIOMS, REDUCTION_PREDECESSORS;
+	}
+	
+	private void tagNextClauses(ClauseTag tag) {
+		clauseTag = tag;
+		if (addedClausesByTag == null)
+			addedClausesByTag = new HashMap<>();
+		if (!addedClausesByTag.containsKey(tag)) {
+			addedClausesByTag.put(tag, 0);
+		}
+	}
+	
 	private void addToClause(int lit) {
 		if (currentClause == null)
 			currentClause = new ArrayList<>();
@@ -578,11 +704,15 @@ public class TreeRexPlanner extends GroundPlanner {
 		addClause(array);
 		currentClause = null;
 		addedClauses++;
+		if (clauseTag != null)
+			addedClausesByTag.put(clauseTag, addedClausesByTag.get(clauseTag)+1);
 	}
 
 	private void addClause(int... lits) {
 		solver.addClause(lits);
 		addedClauses++;
+		if (clauseTag != null)
+			addedClausesByTag.put(clauseTag, addedClausesByTag.get(clauseTag)+1);
 	}
 
 	private void addAssumption(int lit) {
@@ -590,6 +720,10 @@ public class TreeRexPlanner extends GroundPlanner {
 	}
 
 	private Boolean solve() {
+		System.out.println("Added clauses by type:");
+		for (ClauseTag tag : addedClausesByTag.keySet()) {
+			System.out.println((tag.toString() + "        ").substring(0, 12) + "\t" + addedClausesByTag.get(tag));
+		}
 		Boolean result = solver.isSatisfiable();
 		Logger.log(Logger.INFO, "Solver returned " + (result != null && result ? "SAT" : "UNSAT") + ".");
 		return result;
@@ -601,12 +735,11 @@ public class TreeRexPlanner extends GroundPlanner {
 		HierarchyLayer finalLayer = htnGrounder.getHierarchyLayers().get(depth);
 		for (int pos = 0; pos < finalLayer.getSize(); pos++) {
 			for (Action a : finalLayer.getActions(pos)) {
-				if (a == HierarchyLayer.BLANK_ACTION)
+				if (htnGrounder.isActionNoop(a))
 					continue;
 				int actionVar = finalLayer.getActionVariable(pos, a);
 				if (solver.getValue(actionVar) > 0) {
-					if (!htnGrounder.isActionNoop(a))
-						plan.appendAtBack(a);
+					plan.appendAtBack(a);
 				}
 			}
 		}

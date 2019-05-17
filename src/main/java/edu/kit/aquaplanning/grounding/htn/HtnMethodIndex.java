@@ -31,6 +31,7 @@ public class HtnMethodIndex {
 	private Set<String> actionStrings;
 	private LiftedState convergedState;
 
+	// Stores method->reductions mappings that were already computed
 	private Map<Method, List<Reduction>> reductions;
 
 	private class PartiallyGroundMethod {

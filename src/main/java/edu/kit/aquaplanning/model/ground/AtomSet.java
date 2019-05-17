@@ -160,7 +160,7 @@ public class AtomSet {
 	}
 
 	@Override
-	protected Object clone() {
+	public AtomSet clone() {
 		AtomSet newSet = new AtomSet();
 		newSet.atoms = (BitSet) this.atoms.clone();
 		return newSet;

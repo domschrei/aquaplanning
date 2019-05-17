@@ -1,13 +1,16 @@
 package edu.kit.aquaplanning.grounding.htn;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
+import java.util.function.Function;
 
+import edu.kit.aquaplanning.grounding.datastructures.LiftedState;
 import edu.kit.aquaplanning.model.ground.htn.HtnPlanningProblem;
 import edu.kit.aquaplanning.model.lifted.Argument;
 import edu.kit.aquaplanning.model.lifted.Operator;
@@ -22,18 +25,22 @@ public class TaskEffectorTable {
 
 	private HtnPlanningProblem problem;
 
+	// Acceleration structures
 	private Map<String, List<Task>> posPrimitiveEffectors;
 	private Map<String, List<Task>> negPrimitiveEffectors;
-
 	private Map<String, Operator> operatorsByName;
 
+	// Resulting structures
+	private Map<Integer, Set<Task>> supportingTasksPos;
+	private Map<Integer, Set<Task>> supportingTasksNeg;
+	
 	public TaskEffectorTable(HtnPlanningProblem problem) {
 
 		this.problem = problem;
 		this.posPrimitiveEffectors = new HashMap<>();
 		this.negPrimitiveEffectors = new HashMap<>();
 		this.operatorsByName = new HashMap<>();
-
+		
 		for (Operator op : problem.getOperators()) {
 			operatorsByName.put(op.getName(), op);
 			Task task = op.toTask().normalize();
@@ -56,8 +63,43 @@ public class TaskEffectorTable {
 			}, AbstractCondition.RECURSE_HEAD);
 		}
 	}
-
-	public Set<Task> getSupportingLiftedTasks(Condition c) {
+	
+	public void calculateSupports(LiftedState convergedState, Function<Condition, Integer> atomIndices) {
+		
+		this.supportingTasksPos = new HashMap<>();
+		this.supportingTasksNeg = new HashMap<>();
+		
+		Set<Condition> allConditions = new HashSet<>();
+		for (boolean negated : Arrays.asList(false, true)) {
+			for (String predicate : convergedState.getOccurringPredicates(negated)) {
+				for (Condition c : convergedState.getConditions(predicate, negated)) {
+					allConditions.add(c);
+				}
+			}
+		}
+		
+		for (Condition c : allConditions) {
+			int atom = atomIndices.apply(c);
+			c = c.copy();
+			c.setNegated(false);
+			supportingTasksPos.put(atom, getSupportingLiftedTasks(c));
+			c = c.copy();
+			c.setNegated(true);
+			supportingTasksNeg.put(atom, getSupportingLiftedTasks(c));
+		}
+	}
+	
+	public Set<Task> getSupportingTasks(int fact) {
+		if (supportingTasksPos == null || supportingTasksNeg == null) {
+			throw new RuntimeException("Supporting tasks have not been calculated yet; "
+					+ "first call TaskEffectorTable::calculateSupports(.,.).");
+		}
+		boolean positive = fact > 0;
+		fact = Math.abs(fact) - 1;
+		return (positive ? supportingTasksPos : supportingTasksNeg).get(fact);
+	}
+	
+	private Set<Task> getSupportingLiftedTasks(Condition c) {
 
 		Set<Task> supportingTasks = new HashSet<>();
 
@@ -95,7 +137,7 @@ public class TaskEffectorTable {
 		return supportingTasks;
 	}
 
-	public List<Operator> getInstantiationsCausingEffect(Operator op, Condition effect) {
+	private List<Operator> getInstantiationsCausingEffect(Operator op, Condition effect) {
 
 		final List<Operator> instantiations = new ArrayList<>();
 
@@ -130,7 +172,7 @@ public class TaskEffectorTable {
 		return instantiations;
 	}
 
-	public List<Method> getInstantiationsContainingTask(Method method, Task task) {
+	private List<Method> getInstantiationsContainingTask(Method method, Task task) {
 
 		final List<Method> instantiations = new ArrayList<>();
 
@@ -151,7 +193,7 @@ public class TaskEffectorTable {
 		return instantiations;
 	}
 
-	public List<Argument> instantiate(List<Argument> originalArgs, List<Argument> uninstantiatedObjectArgs,
+	private List<Argument> instantiate(List<Argument> originalArgs, List<Argument> uninstantiatedObjectArgs,
 			List<Argument> instantiatedObjectArgs) {
 
 		List<Argument> instantiatedArgs = new ArrayList<>(originalArgs);
