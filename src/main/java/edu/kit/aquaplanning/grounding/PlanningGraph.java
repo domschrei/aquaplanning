@@ -202,6 +202,26 @@ public class PlanningGraph {
 		}
 	}
 
+	protected List<Condition> getUnreachablePreconditions(Operator op, LiftedState liftedState) {
+		
+		final List<Condition> unreachables = new ArrayList<>();
+		op.getPrecondition().traverse(c -> {
+			
+			AbstractCondition result = c;
+			if (c.getConditionType() == ConditionType.atomic) {
+				if (!liftedState.holds((Condition) c)) {
+					unreachables.add((Condition) c);
+				}
+			} else if (c.getConditionType() != ConditionType.conjunction) {
+				throw new RuntimeException("Invalid condition type \"" + c.getConditionType() + "\".");
+			}
+			return result;
+			
+		}, AbstractCondition.RECURSE_HEAD);
+		
+		return unreachables;
+	}
+	
 	/**
 	 * Checks if the provided condition inside the provided operator holds in the
 	 * given state when the operator arguments are assigned the provided list of
