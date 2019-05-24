@@ -1,11 +1,13 @@
 package edu.kit.aquaplanning.model.ground.htn;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Semaphore;
 
 import edu.kit.aquaplanning.model.ground.Action;
 import edu.kit.aquaplanning.model.ground.Effect;
@@ -39,18 +41,31 @@ public class HierarchyLayer {
 	private List<BinaryEncoding> binaryActionHelperVars;
 	private List<BinaryEncoding> binaryReductionHelperVars;
 
+	private List<Semaphore> modificationMutex;
+	
 	public HierarchyLayer() {
 		this.reductions = new ArrayList<>();
 		this.actions = new ArrayList<>();
 		this.facts = new ArrayList<>();
 		this.factsStatus = new ArrayList<>();
 		this.successorPositions = new ArrayList<>();
+		this.modificationMutex = new ArrayList<>();
 	}
 
 	public void addReduction(int position, Reduction r) {
 		while (position >= reductions.size())
 			reductions.add(new HashSet<>());
 		reductions.get(position).add(r);
+	}
+	
+	public Semaphore mutex(int position) {
+		return modificationMutex.get(position);
+	}
+	
+	public void removeReductions(int position, Collection<Reduction> reductionsToRemove) throws InterruptedException {
+		modificationMutex.get(position).acquire();
+		getReductions(position).removeAll(reductionsToRemove);
+		modificationMutex.get(position).release();
 	}
 
 	public void addAction(int position, Action a) {
@@ -89,6 +104,8 @@ public class HierarchyLayer {
 		binaryReductionHelperVars = new ArrayList<>();
 
 		for (int pos = 0; pos < getSize(); pos++) {
+			modificationMutex.add(new Semaphore(1));
+			
 			variableStarts.add(globalVariableStart);
 			globalVariableStart++; // primitiveness variable
 

@@ -56,6 +56,14 @@ public class Condition extends AbstractCondition {
 	public void setNegated(boolean negated) {
 		this.negated = negated;
 	}
+	
+	public boolean isConstant() {
+		for (Argument arg : arguments) {
+			if (!arg.isConstant())
+				return false;
+		}
+		return true;
+	}
 
 	@Override
 	public Condition getConditionBoundToArguments(List<Argument> refArgs, List<Argument> argValues) {

@@ -139,12 +139,6 @@ public class ArgumentNode {
 					if (args.get(nextPos).isConstant()) {
 
 						// print
-						/*
-						 * System.out.println(args + " (failed at pos " + argPos + ": lookahead to pos "
-						 * + nextPos + ")"); for (String arg : argumentIds.keySet()) { int argId =
-						 * argumentIds.get(arg); if (children.containsKey(argId))
-						 * System.out.println("  " + arg + " : " + children.get(argId)); }
-						 */
 						return false; // -- yes
 					}
 				}

@@ -133,6 +133,10 @@ public class Sat4jSolver extends AbstractSatSolver {
 	public int[] getModel() {
 		return model;
 	}
+	
+	public int[] getUnsatExplanation() {
+		return solver.unsatExplanation().toArray();
+	}
 
 	@Override
 	public int getValue(int variable) {

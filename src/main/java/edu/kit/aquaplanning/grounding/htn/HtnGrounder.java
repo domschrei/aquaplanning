@@ -27,7 +27,6 @@ import edu.kit.aquaplanning.model.lifted.condition.AbstractCondition;
 import edu.kit.aquaplanning.model.lifted.htn.Method;
 import edu.kit.aquaplanning.model.lifted.htn.Task;
 import edu.kit.aquaplanning.util.Logger;
-import edu.kit.aquaplanning.util.Pair;
 
 public class HtnGrounder {
 
@@ -61,9 +60,11 @@ public class HtnGrounder {
 		}
 		reductionMap = new HashMap<>();
 		
+		/*
 		// Preprocess HTN portion of the problem (implicit arguments etc.)
 		HtnPreprocessor preprocessor = new HtnPreprocessor(config);
 		preprocessor.preprocess(problem, grounder);
+		*/
 		
 		// Create index structure for finding all relevant reductions for a given compound task
 		methodIndex = new HtnMethodIndex(grounder, grounder.getState(), grounder.getFilteredActions());
@@ -83,8 +84,6 @@ public class HtnGrounder {
 		initMethod = methodIndex.simplify(initMethod);
 		initReduction = new Reduction(initMethod, conditionGrounder);
 		
-		Logger.log(Logger.INFO, "Creating initial layer ...");
-		
 		HierarchyLayer initLayer = new HierarchyLayer();
 		
 		State posState = new State(groundProblem.getInitialState());
@@ -97,9 +96,11 @@ public class HtnGrounder {
 			initLayer.addFact(0, p + 1);
 		}
 		
+		Logger.log(Logger.INFO_V, "Assembling initial layer ...");
+		
 		// Define each position of the initial layer, using the initial reduction
 		for (pos = 0; pos < initReduction.getNumSubtasks(); pos++) {
-
+			
 			addFactsStatus(initLayer, pos, posState, negState);
 
 			Set<Action> occurringActions = new HashSet<>();
@@ -146,7 +147,7 @@ public class HtnGrounder {
 			// Add constraints of initTaskNetwork @ pos(+1, if after)
 			Precondition p = initReduction.getConstraint(pos);
 			addCondition(p, pos, initLayer);
-
+			
 			extendState(occurringActions, occurringReductions, posState, negState);
 		}
 		// Add all facts at the final position
@@ -164,7 +165,7 @@ public class HtnGrounder {
 		hierarchyLayers.add(initLayer);
 	}
 	
-	public void computeNextLayer() {
+	public boolean computeNextLayer() throws InterruptedException {
 
 		HierarchyLayer lastLayer = hierarchyLayers.get(hierarchyLayers.size() - 1);
 		HierarchyLayer nextLayer = new HierarchyLayer();
@@ -178,7 +179,7 @@ public class HtnGrounder {
 
 		for (int pos = 0; pos < lastLayer.getSize(); pos++) {
 			lastLayer.setSuccessor(pos, successorPos);
-
+			
 			// Collect fact variables that can be reused at the next layer
 			Map<Integer, Integer> factVarsAtPos = new HashMap<>();
 			for (int fact : lastLayer.getFacts(pos)) {
@@ -188,8 +189,8 @@ public class HtnGrounder {
 			}
 			factVariablesToReuse.add(factVarsAtPos);
 
-			int offset = 1;
-			int minOffset = lastLayer.getSize();
+			int minOffset = Integer.MAX_VALUE;
+			int maxExpansionSize = 0;
 
 			for (Action a : lastLayer.getActions(pos)) {
 				if (!isActionApplicable(a, posState, negState)) {
@@ -198,55 +199,59 @@ public class HtnGrounder {
 				nextLayer.addAction(successorPos, a);
 				addActionFacts(a, successorPos, nextLayer);
 				minOffset = 1;
+				maxExpansionSize = 1;
 			}
 			for (int p : lastLayer.getFacts(pos)) {
 				nextLayer.addFact(successorPos, p);
 			}
 
-			int childIdx = 0;
 			List<Reduction> applicableReductions = new ArrayList<>();
 			List<Reduction> inapplicableReductions = new ArrayList<>();
 			for (Reduction r : lastLayer.getReductions(pos)) {
 				if (isReductionApplicable(r, 0, posState, negState)) {
 					applicableReductions.add(r);
+					minOffset = Math.min(minOffset, r.getNumSubtasks());
+					maxExpansionSize = Math.max(maxExpansionSize, r.getNumSubtasks());
 				} else {
 					inapplicableReductions.add(r);
 				}
 			}
-			lastLayer.getReductions(pos).removeAll(inapplicableReductions);
+			lastLayer.removeReductions(pos, inapplicableReductions);
 			
-			boolean children = true;
-			while (children) {
-				children = false;
-
+			if (minOffset == Integer.MAX_VALUE)
+				minOffset = 1;
+			
+			int offset = 0;
+			while (offset < maxExpansionSize) {
+				
 				for (Reduction r : applicableReductions) {
-					Pair<Integer, Integer> offsetInterval = addChildren(r, successorPos, childIdx, nextLayer, posState,
-							negState);
-					if (offsetInterval.getRight() > 0)
-						children = true;
-					minOffset = Math.min(minOffset, offsetInterval.getLeft());
-					offset = Math.max(offset, offsetInterval.getRight());
+					addChildren(r, successorPos, offset, nextLayer, posState, negState);
 				}
-				extendState(nextLayer.getActions(successorPos + childIdx),
-						nextLayer.getReductions(successorPos + childIdx), posState, negState);
-				addFactsStatus(nextLayer, successorPos + childIdx, posState, negState);
-
-				childIdx++;
+				extendState(nextLayer.getActions(successorPos + offset),
+						nextLayer.getReductions(successorPos + offset), posState, negState);
+				
+				offset++;
+				
+				addFactsStatus(nextLayer, successorPos + offset, posState, negState);
 			}
-
-			while (minOffset < offset) {
-				nextLayer.addAction(successorPos + minOffset, HierarchyLayer.BLANK_ACTION);
-				minOffset++;
+			offset = minOffset;
+			while (offset < maxExpansionSize) {
+				nextLayer.addAction(successorPos + offset, HierarchyLayer.BLANK_ACTION);
+				offset++;
 			}
-
-			successorPos += offset;
+			
+			successorPos += maxExpansionSize;
 			while (factVariablesToReuse.size() < successorPos) {
 				factVariablesToReuse.add(new HashMap<>());
 			}
+			
+			if (Thread.interrupted())
+				return false;
 		}
-
+		
 		globalVariableStart = nextLayer.consolidate(globalVariableStart, factVariablesToReuse);
 		hierarchyLayers.add(nextLayer);
+		return true;
 	}
 
 	public List<HierarchyLayer> getHierarchyLayers() {
@@ -271,19 +276,18 @@ public class HtnGrounder {
 		}
 	}
 
-	public Pair<Integer, Integer> addChildren(Reduction r, int startPos, int childIdx, HierarchyLayer nextLayer,
+	public boolean addChildren(Reduction r, int startPos, int childIdx, HierarchyLayer nextLayer,
 			State positives, State negatives) {
-
-		int maxOffset = 0;
-		int minOffset = nextLayer.getSize();
-
+		
 		if (childIdx >= r.getNumSubtasks())
-			return new Pair<>(minOffset, maxOffset);
+			return false;
 				
 		// Add constraints of r @ parentPos+pos
 		addCondition(r.getConstraint(childIdx + 1), startPos + childIdx + 1, nextLayer);
 		if (childIdx == 0)
 			addCondition(r.getConstraint(childIdx), startPos + childIdx, nextLayer);
+		
+		boolean hasChild = false;
 		
 		String task = r.getSubtask(childIdx);
 		Action a = actionMap.get(task);
@@ -292,9 +296,8 @@ public class HtnGrounder {
 				nextLayer.addAction(startPos + childIdx, a);
 				// add preconditions, effects @ parentPos+pos(+1)
 				addActionFacts(a, startPos + childIdx, nextLayer);
-				maxOffset = Math.max(maxOffset, childIdx + 1);
-				minOffset = Math.min(minOffset, 1);
-			} else return new Pair<>(minOffset, maxOffset);
+				hasChild = true;
+			}
 		} else {
 			List<Method> methods = new ArrayList<>();
 			for (Method m : htnLiftedProblem.getMethods()) {
@@ -322,14 +325,13 @@ public class HtnGrounder {
 							addCondition(child.getConstraint(1), startPos + childIdx+1, nextLayer);
 					} 
 					nextLayer.addReduction(startPos + childIdx, child);
-					maxOffset = Math.max(maxOffset, childIdx + 1);
-					minOffset = Math.min(minOffset, childIdx + 1);
+					hasChild = true;
 				}
 				reductionMap.put(task, instMethods);
 			}
 		}
-
-		return new Pair<>(minOffset, maxOffset);
+		
+		return hasChild;
 	}
 
 	public boolean matches(Task task, Method method) {
@@ -408,6 +410,7 @@ public class HtnGrounder {
 	 * True iff the reduction has expansion size 1 and its sole subtask is an action.
 	 */
 	public boolean isReductionPseudoPrimitive(Reduction r) {
+		//return false; // TODO
 		return r.getNumSubtasks() == 1 && actionMap.containsKey(r.getSubtask(0));
 	}
 
@@ -456,7 +459,7 @@ public class HtnGrounder {
 				for (Task t : support) {
 					if (methods.containsKey(t.getName())) {
 						if (!methods.get(t.getName()).containsPartiallyInstantiatedArgs(t.getArguments())) {
-							continue;
+							continue; // TODO
 						}
 						// Supporting task occurs here: extend state
 						if (value) {
@@ -498,6 +501,8 @@ public class HtnGrounder {
 			} else {
 				// Atom can be positive or negative as of now
 				layer.addFactStatus(pos, f + 1, FactStatus.fluent);
+				if (pos == 0)
+					throw new RuntimeException();
 			}
 		}
 	}
@@ -520,5 +525,9 @@ public class HtnGrounder {
 
 	public List<Reduction> getReductions(String task) {
 		return reductionMap.getOrDefault(task, new ArrayList<>());
+	}
+	
+	public int getGlobalVariableCount() {
+		return globalVariableStart;
 	}
 }

@@ -36,10 +36,18 @@ public class Task {
 		return name;
 	}
 
+	public boolean isConstant() {
+		for (Argument arg : arguments) {
+			if (!arg.isConstant())
+				return false;
+		}
+		return true;
+	}
+	
 	public Task getTaskBoundToArguments(List<Argument> refArgs, List<Argument> argVals) {
 		return getTaskBoundToArguments(refArgs, argVals, false);
 	}
-
+	
 	public Task getTaskBoundToArguments(List<Argument> refArgs, List<Argument> argVals, boolean setNullArgs) {
 		Task t = new Task(name);
 		t.setTag(tag);

@@ -43,12 +43,12 @@ public class TaskEffectorTable {
 		
 		for (Operator op : problem.getOperators()) {
 			operatorsByName.put(op.getName(), op);
-			Task task = op.toTask().normalize();
+			Task task = op.toTask();//.normalize();
 			op.getEffect().traverse(effect -> {
 				boolean negated = false;
-				if (effect.getConditionType() == ConditionType.negation) {
+				while (effect.getConditionType() == ConditionType.negation) {
 					effect = ((Negation) effect).getChildCondition();
-					negated = true;
+					negated = !negated;
 				}
 				if (effect.getConditionType() == ConditionType.atomic) {
 					Condition c = (Condition) effect.copy();
@@ -73,6 +73,8 @@ public class TaskEffectorTable {
 		for (boolean negated : Arrays.asList(false, true)) {
 			for (String predicate : convergedState.getOccurringPredicates(negated)) {
 				for (Condition c : convergedState.getConditions(predicate, negated)) {
+					c = c.copy();
+					c.setNegated(false);
 					allConditions.add(c);
 				}
 			}
@@ -80,12 +82,12 @@ public class TaskEffectorTable {
 		
 		for (Condition c : allConditions) {
 			int atom = atomIndices.apply(c);
-			c = c.copy();
-			c.setNegated(false);
 			supportingTasksPos.put(atom, getSupportingLiftedTasks(c));
+			//System.out.println(c + " : " + supportingTasksPos.get(atom));
 			c = c.copy();
 			c.setNegated(true);
 			supportingTasksNeg.put(atom, getSupportingLiftedTasks(c));
+			//System.out.println(c + " : " + supportingTasksNeg.get(atom));
 		}
 	}
 	
@@ -206,7 +208,7 @@ public class TaskEffectorTable {
 				continue;
 			Argument instantiatedArg = instantiatedObjectArgs.get(condArgIdx);
 			if (instantiatedArgs.get(opArgIdx).isConstant()
-					&& !instantiatedArgs.get(opArgIdx).equals(instantiatedArg)) {
+					&& !instantiatedArgs.get(opArgIdx).getName().equals(instantiatedArg.getName())) {
 				instantiatedArgs = null;
 				break; // some other argument was already set at this position -> illegal instantiation
 			}

@@ -194,7 +194,7 @@ public class HtnMethodIndex {
 		for (Task t : method.getSubtasks()) {
 			if (primitiveTaskNames.contains(t.getName())) {
 				// Subtask is primitive
-				if (t.getArguments().stream().allMatch(arg -> arg.isConstant())) {
+				if (t.isConstant()) {
 					// Subtask is fully instantiated
 					if (!actionStrings.contains(t.toTaskString())) {
 						// Action does not occur
@@ -205,29 +205,25 @@ public class HtnMethodIndex {
 		}
 
 		// If the method contains any constraints,
-		// see if all pos. conditions exist in the lifted superstate
+		// see if all conditions exist in the lifted superstate
 		for (Constraint c : method.getConstraints()) {
-			AbstractCondition cond = c.getCondition();
-			List<AbstractCondition> conditions = new ArrayList<>();
-			conditions.add(cond);
+			
+			List<AbstractCondition> conditions;
+			if (c.getCondition() instanceof Condition) {
+				conditions = new ArrayList<>();
+				conditions.add((Condition) c.getCondition());
+			} else {
+				conditions = ((ConditionSet) c.getCondition()).getConditions();
+			}
+			
 			for (int i = 0; i < conditions.size(); i++) {
-				cond = conditions.get(i);
-				switch (cond.getConditionType()) {
-				case atomic:
-					Condition atom = (Condition) cond;
-					if (atom.getArguments().stream().anyMatch(arg -> !arg.isConstant())) {
-						// Condition is not fully instantiated
-						continue;
-					}
-					if (!convergedState.holds(atom)) {
-						return false;
-					}
-					break;
-				case conjunction:
-					conditions.addAll(((ConditionSet) cond).getConditions());
-					break;
-				default:
-					break;
+				Condition atom = (Condition) conditions.get(i);
+				if (!atom.isConstant()) {
+					// Condition is not fully instantiated
+					continue;
+				}
+				if (!convergedState.holds(atom)) {
+					return false;
 				}
 			}
 		}
