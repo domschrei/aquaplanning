@@ -136,7 +136,7 @@ public class Action {
 		newState.addAll(effectsPos);
 		if (complexEffect != null) {
 			// Complex effect
-			newState = complexEffect.applyTo(state);
+			newState = complexEffect.applyTo(newState);
 		}
 		
 		// Apply (simple) conditional effects, if applicable
@@ -171,7 +171,7 @@ public class Action {
 		newState.addAll(effectsPos);
 		if (complexEffect != null) {
 			// Complex effect
-			newState = complexEffect.applyRelaxedTo(state);
+			newState = complexEffect.applyRelaxedTo(newState);
 		}
 		
 		// Apply (simple) positive conditional effects, if applicable
